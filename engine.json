@@ -1,7 +1,5 @@
 {
     "engine_name": "o3de",
-    "O3DEVersion": "0.1.0.0",
-    "O3DEBuildNumber": 0,
     "display_version": "00.00",
     "version": "2.7.0",
     "api_versions": {
