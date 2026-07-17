@@ -8,6 +8,7 @@
 #pragma once
 
 #include "CatalogDatabase.h"
+#include "CatalogGovernanceBlockerService.h"
 #include "CatalogGovernanceService.h"
 #include "CatalogPersistenceService.h"
 #include "CatalogPromotionService.h"
@@ -102,6 +103,7 @@ namespace TaintedGrailModdingSDK
         CatalogDatabase m_catalog;
         AZStd::string m_catalogFilePath;
         FoundationValidationService m_validationService;
+        CatalogGovernanceBlockerService m_governanceBlockerService;
         WorkspacePersistenceService m_workspacePersistence;
         PackPersistenceService m_packPersistence;
         SourceImportService m_sourceImportService;
