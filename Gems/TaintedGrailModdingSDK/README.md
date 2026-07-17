@@ -21,7 +21,7 @@ The dock window is available under **Tools → Tainted Grail SDK → Tainted Gra
 
 The status window can apply an in-memory configuration, save it as a `*.tgworkspace.json` document, and reopen it later. A workspace document contains only editor-owned configuration. It does not alter the FoA installation, game files, BepInEx configuration, or saves.
 
-Workspace changes automatically refresh the profile summary and blocker tables. Missing exact build information, Mono loader information, research paths, or output/staging/deployment paths remains visible as an explicit blocker.
+Workspace changes automatically refresh the profile summary and blocker tables. Missing exact build information, Mono loader information, research paths, or output/staging/deployment paths remains visible as an explicit blocker. Source intake must remain blocked until the active profile identifies the target build and evidence locations.
 
 The catalog, pack, source, and evidence stores are still in-memory and deliberately start without invented game facts.
 
