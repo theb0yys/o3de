@@ -194,9 +194,11 @@ namespace TaintedGrailModdingSDK
 
         const AZ::Outcome<ValidationState, AZStd::string> validationStateResult =
             ParseValidationState(request.m_state);
-        if (!validationStateResult.IsSuccess())
+        if (!validationStateResult.IsSuccess() || validationStateResult.GetValue() == ValidationState::Unset)
         {
-            return AZ::Failure(AZStd::string(validationStateResult.GetError()));
+            return AZ::Failure(validationStateResult.IsSuccess()
+                ? AZStd::string("Validation decisions require a non-empty state.")
+                : AZStd::string(validationStateResult.GetError()));
         }
         const ValidationState validationState = validationStateResult.GetValue();
 
@@ -206,7 +208,7 @@ namespace TaintedGrailModdingSDK
             subjectKind,
             request.m_subjectId,
             workspace,
-            sourceRegistry,
+            sourceEvidenceRegistry,
             catalog,
             evidenceError))
         {
@@ -285,11 +287,11 @@ namespace TaintedGrailModdingSDK
             {
                 return AZ::Failure(AZStd::string("Governance decision references an unknown catalog record."));
             }
-            maturity = record->m_researchStage.empty() ? "S0" : record->m_researchStage;
-            confidence = record->m_confidence.empty() ? "unknown" : record->m_confidence;
-            risk = record->m_operationalRisk.empty() ? "unknown" : record->m_operationalRisk;
-            validation = record->m_validationState.empty() ? "unvalidated" : record->m_validationState;
-            staleness = record->m_stalenessState.empty() ? "unknown" : record->m_stalenessState;
+            maturity = record->m_researchStage;
+            confidence = record->m_confidence;
+            risk = record->m_operationalRisk;
+            validation = record->m_validationState;
+            staleness = record->m_stalenessState;
             state.m_allowedUsages = record->m_allowedUsages;
             state.m_forbiddenUsages = record->m_forbiddenUsages;
             state.m_missingRefs = record->m_missingRefs;
@@ -304,11 +306,11 @@ namespace TaintedGrailModdingSDK
             {
                 return AZ::Failure(AZStd::string("Governance decision references an unknown catalog relationship."));
             }
-            maturity = relationship->m_researchStage.empty() ? "S0" : relationship->m_researchStage;
-            confidence = relationship->m_confidence.empty() ? "unknown" : relationship->m_confidence;
-            risk = relationship->m_operationalRisk.empty() ? "unknown" : relationship->m_operationalRisk;
-            validation = relationship->m_validationState.empty() ? "unvalidated" : relationship->m_validationState;
-            staleness = relationship->m_stalenessState.empty() ? "unknown" : relationship->m_stalenessState;
+            maturity = relationship->m_researchStage;
+            confidence = relationship->m_confidence;
+            risk = relationship->m_operationalRisk;
+            validation = relationship->m_validationState;
+            staleness = relationship->m_stalenessState;
             state.m_allowedUsages = relationship->m_allowedUsages;
             state.m_forbiddenUsages = relationship->m_forbiddenUsages;
             state.m_missingRefs = relationship->m_missingRefs;
@@ -409,7 +411,12 @@ namespace TaintedGrailModdingSDK
         case GovernanceAxis::Maturity:
         {
             const AZ::Outcome<ResearchStage, AZStd::string> value = ParseResearchStage(request.m_value);
-            if (!value.IsSuccess()) return AZ::Failure(AZStd::string(value.GetError()));
+            if (!value.IsSuccess() || value.GetValue() == ResearchStage::Unset)
+            {
+                return AZ::Failure(value.IsSuccess()
+                    ? AZStd::string("Maturity decisions require a non-empty value.")
+                    : AZStd::string(value.GetError()));
+            }
             event.m_previousValue = ToString(state.m_researchStage);
             state.m_researchStage = value.GetValue();
             break;
@@ -417,7 +424,12 @@ namespace TaintedGrailModdingSDK
         case GovernanceAxis::Confidence:
         {
             const AZ::Outcome<ConfidenceLevel, AZStd::string> value = ParseConfidenceLevel(request.m_value);
-            if (!value.IsSuccess()) return AZ::Failure(AZStd::string(value.GetError()));
+            if (!value.IsSuccess() || value.GetValue() == ConfidenceLevel::Unset)
+            {
+                return AZ::Failure(value.IsSuccess()
+                    ? AZStd::string("Confidence decisions require a non-empty value.")
+                    : AZStd::string(value.GetError()));
+            }
             event.m_previousValue = ToString(state.m_confidence);
             state.m_confidence = value.GetValue();
             break;
@@ -425,7 +437,12 @@ namespace TaintedGrailModdingSDK
         case GovernanceAxis::OperationalRisk:
         {
             const AZ::Outcome<OperationalRisk, AZStd::string> value = ParseOperationalRisk(request.m_value);
-            if (!value.IsSuccess()) return AZ::Failure(AZStd::string(value.GetError()));
+            if (!value.IsSuccess() || value.GetValue() == OperationalRisk::Unset)
+            {
+                return AZ::Failure(value.IsSuccess()
+                    ? AZStd::string("Operational-risk decisions require a non-empty value.")
+                    : AZStd::string(value.GetError()));
+            }
             event.m_previousValue = ToString(state.m_operationalRisk);
             state.m_operationalRisk = value.GetValue();
             break;
@@ -433,7 +450,12 @@ namespace TaintedGrailModdingSDK
         case GovernanceAxis::Staleness:
         {
             const AZ::Outcome<StalenessState, AZStd::string> value = ParseStalenessState(request.m_value);
-            if (!value.IsSuccess()) return AZ::Failure(AZStd::string(value.GetError()));
+            if (!value.IsSuccess() || value.GetValue() == StalenessState::Unset)
+            {
+                return AZ::Failure(value.IsSuccess()
+                    ? AZStd::string("Staleness decisions require a non-empty value.")
+                    : AZStd::string(value.GetError()));
+            }
             event.m_previousValue = ToString(state.m_stalenessState);
             state.m_stalenessState = value.GetValue();
             if (state.m_stalenessState == StalenessState::Current)
@@ -648,9 +670,10 @@ namespace TaintedGrailModdingSDK
         const AZStd::string& subjectId,
         size_t sequence)
     {
+        const AZStd::string subjectKindValue = ToString(subjectKind);
         return ToAzString(QStringLiteral("%1.%2.%3.%4")
             .arg(QString::fromUtf8(prefix))
-            .arg(QString::fromUtf8(ToString(subjectKind).c_str()))
+            .arg(QString::fromUtf8(subjectKindValue.c_str()))
             .arg(Sanitize(subjectId))
             .arg(static_cast<qulonglong>(sequence)));
     }
