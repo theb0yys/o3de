@@ -208,7 +208,7 @@ namespace TaintedGrailModdingSDK
             subjectKind,
             request.m_subjectId,
             workspace,
-            sourceEvidenceRegistry,
+            sourceRegistry,
             catalog,
             evidenceError))
         {
