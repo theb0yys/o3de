@@ -9,9 +9,11 @@
 
 #include "CatalogBrowserWidget.h"
 #include "CatalogGovernanceWidget.h"
+#include "EconomyModels.h"
 #include "FoundationModels.h"
 #include "FoundationService.h"
 #include "FoundationStatusWidget.h"
+#include "ItemRecipeEditorWidget.h"
 #include "PackManagerWidget.h"
 #include "SourceEvidenceIntakeWidget.h"
 
@@ -29,6 +31,7 @@ namespace TaintedGrailModdingSDK
         constexpr const char* SourceIntakeViewPaneName = "Tainted Grail Source Intake";
         constexpr const char* CatalogBrowserViewPaneName = "Tainted Grail Catalog Browser";
         constexpr const char* CatalogGovernanceViewPaneName = "Tainted Grail Catalog Governance";
+        constexpr const char* ItemRecipeEditorViewPaneName = "Tainted Grail Item and Recipe Editor";
     }
 
     void TaintedGrailModdingSDKSystemComponent::Reflect(AZ::ReflectContext* context)
@@ -46,6 +49,10 @@ namespace TaintedGrailModdingSDK
         CatalogRelationship::Reflect(context);
         CatalogValidationEvent::Reflect(context);
         CatalogGovernanceEvent::Reflect(context);
+        EconomyItemProfile::Reflect(context);
+        EconomyRecipeProfile::Reflect(context);
+        EconomyRecipeIngredient::Reflect(context);
+        EconomyRecipeOutput::Reflect(context);
         CatalogDocument::Reflect(context);
         BlockerRecord::Reflect(context);
         DomainCoverage::Reflect(context);
@@ -54,7 +61,7 @@ namespace TaintedGrailModdingSDK
         if (auto* serializeContext = azrtti_cast<AZ::SerializeContext*>(context))
         {
             serializeContext->Class<TaintedGrailModdingSDKSystemComponent, AZ::Component>()
-                ->Version(6);
+                ->Version(7);
         }
     }
 
@@ -89,6 +96,7 @@ namespace TaintedGrailModdingSDK
             AzToolsFramework::UnregisterViewPane(SourceIntakeViewPaneName);
             AzToolsFramework::UnregisterViewPane(CatalogBrowserViewPaneName);
             AzToolsFramework::UnregisterViewPane(CatalogGovernanceViewPaneName);
+            AzToolsFramework::UnregisterViewPane(ItemRecipeEditorViewPaneName);
             m_viewRegistered = false;
         }
 
@@ -158,6 +166,17 @@ namespace TaintedGrailModdingSDK
             CatalogGovernanceViewPaneName,
             "Tainted Grail SDK",
             governanceOptions);
+
+        AzToolsFramework::ViewPaneOptions itemRecipeOptions;
+        itemRecipeOptions.paneRect = QRect(200, 200, 1220, 980);
+        itemRecipeOptions.preferedDockingArea = Qt::RightDockWidgetArea;
+        itemRecipeOptions.isDeletable = true;
+        itemRecipeOptions.isPreview = true;
+        itemRecipeOptions.saveKeyName = QStringLiteral("TaintedGrailModdingSDK.ItemRecipeEditor");
+        AzToolsFramework::RegisterViewPane<ItemRecipeEditorWidget>(
+            ItemRecipeEditorViewPaneName,
+            "Tainted Grail SDK",
+            itemRecipeOptions);
 
         m_viewRegistered = true;
     }
