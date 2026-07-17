@@ -10,6 +10,7 @@
 #include "FoundationModels.h"
 #include "FoundationNotificationBus.h"
 
+#include <QFont>
 #include <QWidget>
 
 class QCheckBox;
