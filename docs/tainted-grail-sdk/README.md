@@ -7,9 +7,12 @@ This directory contains the public documentation for the TG SDK layer in this O3
 ### For users
 
 - [User Guide](USER_GUIDE.md) — build, open, configure, and use the current editor tools.
-- [Data Formats](DATA_FORMATS.md) — workspace, pack, source, evidence, issue, and catalog document contracts.
+- [Data Formats](DATA_FORMATS.md) — workspace, pack, source, evidence, issue, and canonical catalog contracts.
 - [Support](../../SUPPORT.md) — where and how to ask for help.
 - [Security](../../SECURITY.md) — private reporting and secure-use guidance.
+- [Privacy](PRIVACY.md) — local data handling and telemetry requirements.
+- [Accessibility](ACCESSIBILITY.md) — user-interface accessibility standard.
+- [Glossary](GLOSSARY.md) — shared project terminology.
 
 ### For contributors
 
@@ -18,8 +21,10 @@ This directory contains the public documentation for the TG SDK layer in this O3
 - [Architecture](ARCHITECTURE.md) — layers, responsibilities, invariants, and data flow.
 - [Code Quality](CODE_QUALITY.md) — mandatory C++, Qt, persistence, UI, testing, and evidence standards.
 - [Review and Merge Policy](REVIEW_AND_MERGE_POLICY.md) — design review, self-review, pull-request review, and merge gates.
+- [Data Formats](DATA_FORMATS.md) — versioned durable-document requirements.
 - [Release Process](RELEASE_PROCESS.md) — versioning, release evidence, packaging, and rollback.
 - [Maintainer Checklist](MAINTAINER_CHECKLIST.md) — recurring repository and release responsibilities.
+- [Legal and Content Policy](LEGAL_AND_CONTENT_POLICY.md) — redistribution and proprietary-content boundaries.
 
 ### Project governance
 
@@ -48,9 +53,10 @@ The project is pre-alpha. Current implemented editor workflows cover:
 - workspace and exact game profile;
 - mod and content-pack projects;
 - source and evidence intake;
-- foundation status, coverage, and blockers.
+- canonical catalog browser, record inspector, first-class relationships, validation history, and reviewed claim promotion;
+- foundation status, coverage, import issues, and blockers.
 
-The canonical catalog browser and record inspector are the next active development slice. Domain authoring tools, runtime adapters, and production deployment are not complete.
+The next active slice expands the independent maturity, confidence, operational-risk, validation, permission, and prohibition engine. Domain authoring tools, runtime adapters, and production deployment are not complete.
 
 ## Documentation contribution rules
 
