@@ -7,6 +7,7 @@
 
 #include "CatalogGovernanceService.h"
 
+#include <AzCore/std/algorithm.h>
 #include <AzTest/AzTest.h>
 
 namespace TaintedGrailModdingSDK
