@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "EconomyModels.h"
+
 #include <AzCore/RTTI/RTTI.h>
 #include <AzCore/std/containers/vector.h>
 #include <AzCore/std/string/string.h>
@@ -334,6 +336,10 @@ namespace TaintedGrailModdingSDK
         AZStd::vector<CatalogRelationship> m_relationships;
         AZStd::vector<CatalogValidationEvent> m_validationHistory;
         AZStd::vector<CatalogGovernanceEvent> m_governanceHistory;
+        AZStd::vector<EconomyItemProfile> m_economyItems;
+        AZStd::vector<EconomyRecipeProfile> m_economyRecipes;
+        AZStd::vector<EconomyRecipeIngredient> m_recipeIngredients;
+        AZStd::vector<EconomyRecipeOutput> m_recipeOutputs;
     };
 
     struct CatalogPromotionRequest
@@ -455,6 +461,10 @@ namespace TaintedGrailModdingSDK
         AZ::u64 m_catalogRelationshipCount = 0;
         AZ::u64 m_catalogValidationCount = 0;
         AZ::u64 m_catalogGovernanceCount = 0;
+        AZ::u64 m_economyItemCount = 0;
+        AZ::u64 m_economyRecipeCount = 0;
+        AZ::u64 m_recipeIngredientCount = 0;
+        AZ::u64 m_recipeOutputCount = 0;
         AZ::u64 m_staleCatalogSubjectCount = 0;
         AZ::u64 m_allowedUsageCount = 0;
         AZ::u64 m_forbiddenUsageCount = 0;
