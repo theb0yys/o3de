@@ -9,6 +9,8 @@
 
 #include "FoundationNotificationBus.h"
 
+#include <AzCore/std/algorithm.h>
+
 #include <QWidget>
 
 class QComboBox;
