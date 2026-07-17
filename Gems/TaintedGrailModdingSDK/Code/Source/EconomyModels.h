@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <AzCore/base.h>
 #include <AzCore/RTTI/RTTI.h>
 #include <AzCore/std/containers/vector.h>
 #include <AzCore/std/string/string.h>
