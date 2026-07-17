@@ -41,9 +41,10 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 - Recipe type, tab, unlock, duplicate-key, persistence-description, and hidden-state fields.
 - First-class economy acquisition relationships: `sold_by`, `dropped_by`, `found_at`, `rewarded_by`, `learned_from`, `granted_by`, and `crafted_at`.
 - Read-only item and recipe action-lane matrices derived from catalog governance.
+- Read-only recipe station visibility and learnability evidence rows combining exact station IDs, profile declarations, `crafted_at` and `learned_from` relationships, evidence health, governance state, and blockers.
 - Economy blockers for missing profiles/evidence/stations/outputs, unresolved joins, quest/unique risks, and identity-incompatible lanes.
-- Economy authoring unit tests covering profile identity, station references, joins, quantity/chance constraints, canonical round trips, acquisition defaults, and lane status.
-- Item and Recipe Editor user guide and typed economy data-format documentation.
+- Economy authoring unit tests covering profile identity, station references, joins, quantity/chance constraints, canonical round trips, acquisition defaults, lane status, deterministic evidence rows, fail-closed evidence/governance, and non-mutation.
+- Item and Recipe Editor user guide, recipe station evidence guide, and typed economy data-format documentation.
 - Full public project README, user, catalog, governance-engine, architecture, development, data-format, quality, review, governance, security, support, conduct, legal/content, privacy, accessibility, release, roadmap, glossary, changelog, and maintainer documentation.
 - GitHub issue forms, pull-request template, TG SDK CODEOWNERS rules, and CI-enforced documentation contracts.
 
@@ -58,7 +59,7 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 - Canonical catalog schema 1 accepts optional governance-history, typed economy arrays, and extended state fields without reinterpreting existing identity data.
 - Foundation status snapshots now count relationships, validation events, governance decisions, typed item/recipe profiles, recipe joins, stale subjects, allowed usages, and prohibitions.
 - Catalog blockers now cover missing evidence, missing pack ownership, conflicts, missing refs, unvalidated state, permission-before-validation, invalid supersession, relationship evidence, validation-profile mismatches, governance proof gaps, and economy authoring gaps.
-- The roadmap advances Phase 6 with the Item and Recipe Editor as the first specialised domain tool.
+- The roadmap advances Phase 6 with the Item and Recipe Editor and its first station/learnability evidence coverage view.
 
 ### Security
 
@@ -74,13 +75,15 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 - Item/recipe profile and join writes reject missing or unrelated evidence before persistence.
 - Native and synthetic item/recipe lanes are checked independently.
 - Quest-sensitive and unique item distribution lanes receive explicit blockers.
-- The Item and Recipe Editor exposes governance lanes as read-only status and cannot grant permission.
+- The Item and Recipe Editor exposes governance lanes and recipe station/learnability research as read-only status and cannot grant permission.
+- Missing, mismatched, unresolved, stale, blocked, conflicted, missing-reference, and superseded station/learnability inputs fail closed.
 - Public contribution rules require design review, pre-commit self-review, required CI, resolved review threads, and maintainer approval before merge.
 
 ### Known limitations
 
 - The Item and Recipe Editor does not yet generate adapter work orders.
-- Station visibility, recipe learnability, runtime append, custom registration, vendor/loot mutation, reward mutation, persistence, cleanup, and rollback remain adapter-side research or implementation work.
+- The evidence view reports station visibility and recipe learnability research but does not append, learn, register, persist, clean up, roll back, or prove runtime behavior.
+- Runtime append, custom registration, vendor/loot mutation, reward mutation, persistence, cleanup, and rollback remain adapter-side research or implementation work.
 - Permission usage names remain free-form pending typed adapter-capability contracts; the decision operation itself is strongly typed.
 - Remaining actor, spawn, world, faction, quest/state, asset, and localisation authoring tools are not implemented.
 - FoA runtime adapters and production deployment are not implemented.

@@ -7,6 +7,7 @@
 
 #include "CatalogDatabase.h"
 #include "EconomyAuthoringService.h"
+#include "SourceEvidenceRegistry.h"
 
 #include <AzCore/std/algorithm.h>
 #include <AzTest/AzTest.h>
@@ -38,6 +39,20 @@ namespace TaintedGrailModdingSDK
             return record;
         }
 
+        CatalogRecord MakeValidatedEconomyRecord(
+            AZStd::string recordId,
+            AZStd::string recordKind,
+            AZStd::string subjectRef)
+        {
+            CatalogRecord record = MakeEconomyRecord(
+                AZStd::move(recordId),
+                AZStd::move(recordKind),
+                AZStd::move(subjectRef));
+            record.m_validationState = "validated";
+            record.m_stalenessState = "current";
+            return record;
+        }
+
         EconomyRecipeProfile MakeRecipeProfile()
         {
             EconomyRecipeProfile profile;
@@ -50,6 +65,60 @@ namespace TaintedGrailModdingSDK
             profile.m_persistenceMode = "native_template";
             profile.m_evidenceIds = { "evidence.test" };
             return profile;
+        }
+
+        SourceRecord MakeSource()
+        {
+            SourceRecord source;
+            source.m_sourceId = "source.test";
+            source.m_fingerprint = "fingerprint.test";
+            source.m_profileId = "profile.test";
+            source.m_gameVersion = "version.test";
+            source.m_branch = "branch.test";
+            source.m_runtimeTarget = "mono";
+            source.m_importerId = "importer.test";
+            source.m_importerVersion = "1.0.0";
+            return source;
+        }
+
+        EvidenceRecord MakeEvidence(AZStd::string evidenceId, AZStd::string subjectRef)
+        {
+            EvidenceRecord evidence;
+            evidence.m_evidenceId = AZStd::move(evidenceId);
+            evidence.m_sourceId = "source.test";
+            evidence.m_sourceFingerprint = "fingerprint.test";
+            evidence.m_profileId = "profile.test";
+            evidence.m_gameVersion = "version.test";
+            evidence.m_branch = "branch.test";
+            evidence.m_subjectRef = AZStd::move(subjectRef);
+            evidence.m_claim = "test claim";
+            return evidence;
+        }
+
+        CatalogRelationship MakeValidatedRelationship(
+            const AZStd::string& relationshipId,
+            const AZStd::string& recipeRecordId,
+            const AZStd::string& targetRecordId,
+            const AZStd::string& targetSubjectRef,
+            const AZStd::string& relationshipKind,
+            const AZStd::vector<AZStd::string>& evidenceIds,
+            const CatalogDatabase& catalog)
+        {
+            EconomyAcquisitionRequest request;
+            request.m_relationshipId = relationshipId;
+            request.m_sourceRecordId = recipeRecordId;
+            request.m_targetRecordId = targetRecordId;
+            request.m_targetSubjectRef = targetSubjectRef;
+            request.m_relationshipKind = relationshipKind;
+            request.m_evidenceIds = evidenceIds;
+
+            EconomyAuthoringService service;
+            AZ::Outcome<CatalogRelationship, AZStd::string> result = service.BuildAcquisitionRelationship(request, catalog);
+            EXPECT_TRUE(result.IsSuccess());
+            CatalogRelationship relationship = result.TakeValue();
+            relationship.m_validationState = "validated";
+            relationship.m_stalenessState = "current";
+            return relationship;
         }
     } // namespace
 
@@ -226,5 +295,163 @@ namespace TaintedGrailModdingSDK
         EXPECT_EQ(lanes[0].m_status, "allowed");
         EXPECT_EQ(lanes[2].m_lane, "custom_item_registration");
         EXPECT_EQ(lanes[2].m_status, "forbidden");
+    }
+
+    TEST(TaintedGrailEconomyAuthoringTests, RecipeStationEvidenceCombinesSourcesDeterministically)
+    {
+        CatalogDatabase catalog;
+        AZStd::string error;
+        ASSERT_TRUE(catalog.InsertNew(
+            MakeValidatedEconomyRecord("recipe.test", "recipe", "subject:recipe:test"),
+            &error));
+        ASSERT_TRUE(catalog.InsertNew(
+            MakeValidatedEconomyRecord("station.a", "crafting_station", "subject:station:a"),
+            &error));
+        ASSERT_TRUE(catalog.InsertNew(
+            MakeValidatedEconomyRecord("station.b", "crafting_station", "subject:station:b"),
+            &error));
+        ASSERT_TRUE(catalog.InsertNew(
+            MakeValidatedEconomyRecord("learn.source", "knowledge_source", "subject:learn:source"),
+            &error));
+
+        EconomyRecipeProfile profile = MakeRecipeProfile();
+        profile.m_stationRecordIds = { "station.b", "station.a" };
+        profile.m_unlockSubjectRefs = { "subject:learn:source" };
+        profile.m_evidenceIds = { "evidence.recipe" };
+        ASSERT_TRUE(catalog.UpsertEconomyRecipe(profile, &error));
+
+        CatalogRelationship craftedAt = MakeValidatedRelationship(
+            "relationship.crafted-at.a",
+            "recipe.test",
+            "station.a",
+            {},
+            "crafted_at",
+            { "evidence.station.a" },
+            catalog);
+        ASSERT_TRUE(catalog.UpsertRelationship(craftedAt, &error));
+        CatalogRelationship learnedFrom = MakeValidatedRelationship(
+            "relationship.learned-from",
+            "recipe.test",
+            "learn.source",
+            {},
+            "learned_from",
+            { "evidence.learn" },
+            catalog);
+        ASSERT_TRUE(catalog.UpsertRelationship(learnedFrom, &error));
+
+        SourceEvidenceRegistry registry;
+        ASSERT_TRUE(registry.RegisterSource(MakeSource(), &error));
+        ASSERT_TRUE(registry.RegisterEvidence(
+            MakeEvidence("evidence.recipe", "subject:recipe:test"),
+            &error));
+        ASSERT_TRUE(registry.RegisterEvidence(
+            MakeEvidence("evidence.station.a", "subject:station:a"),
+            &error));
+        ASSERT_TRUE(registry.RegisterEvidence(
+            MakeEvidence("evidence.learn", "subject:learn:source"),
+            &error));
+
+        EconomyAuthoringService service;
+        const AZStd::vector<EconomyRecipeStationEvidenceRow> rows = service.BuildRecipeStationEvidence(
+            "recipe.test",
+            registry,
+            catalog,
+            {});
+
+        ASSERT_EQ(rows.size(), 2);
+        EXPECT_EQ(rows[0].m_stationRecordId, "station.a");
+        EXPECT_EQ(rows[0].m_status, "supported evidence");
+        EXPECT_EQ(rows[0].m_associationSources.size(), 2);
+        ASSERT_EQ(rows[0].m_learnedFromRelationshipIds.size(), 1);
+        EXPECT_EQ(rows[0].m_learnedFromRelationshipIds[0], "relationship.learned-from");
+        EXPECT_EQ(rows[1].m_stationRecordId, "station.b");
+        EXPECT_EQ(rows[1].m_status, "partial evidence");
+    }
+
+    TEST(TaintedGrailEconomyAuthoringTests, RecipeStationEvidenceFailsClosedForUnknownAndUnresolvedEvidence)
+    {
+        CatalogDatabase catalog;
+        AZStd::string error;
+        ASSERT_TRUE(catalog.InsertNew(
+            MakeValidatedEconomyRecord("recipe.test", "recipe", "subject:recipe:test"),
+            &error));
+        ASSERT_TRUE(catalog.InsertNew(
+            MakeValidatedEconomyRecord("station.test", "crafting_station", "subject:station:test"),
+            &error));
+
+        EconomyRecipeProfile profile = MakeRecipeProfile();
+        profile.m_evidenceIds = { "evidence.unknown" };
+        ASSERT_TRUE(catalog.UpsertEconomyRecipe(profile, &error));
+
+        CatalogRelationship unresolved = MakeValidatedRelationship(
+            "relationship.crafted-at.unresolved",
+            "recipe.test",
+            {},
+            "subject:station:unresolved",
+            "crafted_at",
+            { "evidence.unresolved.unknown" },
+            catalog);
+        ASSERT_TRUE(catalog.UpsertRelationship(unresolved, &error));
+
+        SourceEvidenceRegistry registry;
+        ASSERT_TRUE(registry.RegisterSource(MakeSource(), &error));
+
+        EconomyAuthoringService service;
+        const AZStd::vector<EconomyRecipeStationEvidenceRow> rows = service.BuildRecipeStationEvidence(
+            "recipe.test",
+            registry,
+            catalog,
+            {});
+
+        ASSERT_EQ(rows.size(), 2);
+        EXPECT_EQ(rows[0].m_status, "blocked");
+        EXPECT_FALSE(rows[0].m_reasons.empty());
+        EXPECT_TRUE(rows[1].m_stationRecordId.empty());
+        EXPECT_EQ(rows[1].m_stationSubjectRef, "subject:station:unresolved");
+        EXPECT_EQ(rows[1].m_status, "blocked");
+    }
+
+    TEST(TaintedGrailEconomyAuthoringTests, RecipeStationEvidenceBlocksStaleStationWithoutMutatingCatalog)
+    {
+        CatalogDatabase catalog;
+        AZStd::string error;
+        ASSERT_TRUE(catalog.InsertNew(
+            MakeValidatedEconomyRecord("recipe.test", "recipe", "subject:recipe:test"),
+            &error));
+        CatalogRecord staleStation = MakeValidatedEconomyRecord(
+            "station.test",
+            "crafting_station",
+            "subject:station:test");
+        staleStation.m_stalenessState = "stale";
+        ASSERT_TRUE(catalog.InsertNew(staleStation, &error));
+
+        EconomyRecipeProfile profile = MakeRecipeProfile();
+        profile.m_evidenceIds = { "evidence.recipe" };
+        ASSERT_TRUE(catalog.UpsertEconomyRecipe(profile, &error));
+
+        SourceEvidenceRegistry registry;
+        ASSERT_TRUE(registry.RegisterSource(MakeSource(), &error));
+        ASSERT_TRUE(registry.RegisterEvidence(
+            MakeEvidence("evidence.recipe", "subject:recipe:test"),
+            &error));
+
+        const size_t recordsBefore = catalog.GetRecords().size();
+        const size_t relationshipsBefore = catalog.GetRelationships().size();
+        const size_t governanceBefore = catalog.GetGovernanceHistory().size();
+        const AZStd::string stationStateBefore = catalog.FindByRecordId("station.test")->m_stalenessState;
+
+        EconomyAuthoringService service;
+        const AZStd::vector<EconomyRecipeStationEvidenceRow> rows = service.BuildRecipeStationEvidence(
+            "recipe.test",
+            registry,
+            catalog,
+            {});
+
+        ASSERT_EQ(rows.size(), 1);
+        EXPECT_EQ(rows[0].m_status, "blocked");
+        EXPECT_EQ(catalog.GetRecords().size(), recordsBefore);
+        EXPECT_EQ(catalog.GetRelationships().size(), relationshipsBefore);
+        EXPECT_EQ(catalog.GetGovernanceHistory().size(), governanceBefore);
+        EXPECT_EQ(catalog.FindByRecordId("station.test")->m_stalenessState, stationStateBefore);
     }
 } // namespace TaintedGrailModdingSDK
