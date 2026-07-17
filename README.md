@@ -14,6 +14,7 @@ The project is building a public modding editor and SDK that can:
 - create pack-owned mod projects and manifests;
 - import and fingerprint research, diagnostics, dumps, observations, logs, screenshots, CSV, JSON, and Avalon Core source sets;
 - preserve exact native references, GUIDs, paths, aliases, versions, and evidence;
+- maintain a canonical, queryable game-knowledge catalog;
 - separate research maturity, validation, risk, and runtime permission;
 - author items, recipes, actors, troops, spawns, routes, factions, quests, state, assets, and localisation through shared governed data;
 - generate reviewed work orders and manifests for separately validated FoA runtime adapters;
@@ -90,6 +91,18 @@ Sources/<source-id>/source.tgsource.json
 Sources/<source-id>/evidence.tgevidence.json
 ```
 
+### Tainted Grail Catalog Browser
+
+Provides:
+
+- exact native-reference and GUID search;
+- search by record ID, subject, alias, domain, kind, pack, confidence, validation, permission, evidence, blocker state, and supersession;
+- inspection of identity, pack ownership, evidence, relationships, validation history, conflicts, missing refs, prohibitions, and blockers;
+- evidence-backed promotion into reviewed-but-unvalidated canonical records;
+- durable `Catalog/catalog.tgcatalog.json` persistence bound to the active workspace and exact game profile.
+
+Catalog records are never merged by display name. Claim promotion cannot grant allowed usage and automatically adds `no_unvalidated_runtime_use`.
+
 ## Development roadmap
 
 The active roadmap is maintained in [ROADMAP.md](ROADMAP.md). Major capability areas are:
@@ -114,6 +127,10 @@ Start with the [TG SDK documentation hub](docs/tainted-grail-sdk/README.md).
 - [Review and merge policy](docs/tainted-grail-sdk/REVIEW_AND_MERGE_POLICY.md)
 - [Data formats](docs/tainted-grail-sdk/DATA_FORMATS.md)
 - [Release process](docs/tainted-grail-sdk/RELEASE_PROCESS.md)
+- [Legal and content policy](docs/tainted-grail-sdk/LEGAL_AND_CONTENT_POLICY.md)
+- [Privacy and telemetry](docs/tainted-grail-sdk/PRIVACY.md)
+- [Accessibility](docs/tainted-grail-sdk/ACCESSIBILITY.md)
+- [Glossary](docs/tainted-grail-sdk/GLOSSARY.md)
 - [Governance](GOVERNANCE.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security](SECURITY.md)
