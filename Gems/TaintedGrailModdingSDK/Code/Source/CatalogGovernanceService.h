@@ -36,13 +36,15 @@ namespace TaintedGrailModdingSDK
             const CatalogGovernanceRequest& request,
             const WorkspaceModel& workspace,
             const SourceEvidenceRegistry& sourceRegistry,
-            const CatalogDatabase& catalog) const;
+            const CatalogDatabase& catalog,
+            const AZStd::string& eventIdOverride = {}) const;
 
         AZ::Outcome<CatalogValidationApplyResult, AZStd::string> ApplyValidation(
             const CatalogValidationRequest& request,
             const WorkspaceModel& workspace,
             const SourceEvidenceRegistry& sourceRegistry,
-            const CatalogDatabase& catalog) const;
+            const CatalogDatabase& catalog,
+            const AZStd::string& validationIdOverride = {}) const;
 
     private:
         static AZ::Outcome<GovernedSubjectState, AZStd::string> ReadSubjectState(
@@ -80,6 +82,12 @@ namespace TaintedGrailModdingSDK
             CatalogSubjectKind subjectKind,
             const CatalogDatabase& catalog,
             AZStd::string& error);
+
+        static AZStd::string BuildUniqueEventId(
+            const char* prefix,
+            CatalogSubjectKind subjectKind,
+            const AZStd::string& subjectId,
+            const CatalogDatabase& catalog);
 
         static AZStd::string BuildEventId(
             const char* prefix,
