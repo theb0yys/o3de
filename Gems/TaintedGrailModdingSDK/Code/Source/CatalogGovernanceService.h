@@ -37,10 +37,7 @@ namespace TaintedGrailModdingSDK
             const CatalogGovernanceRequest& request,
             const WorkspaceModel& workspace,
             const SourceEvidenceRegistry& sourceRegistry,
-            const CatalogDatabase& catalog) const
-        {
-            return ApplyDecision(request, workspace, sourceRegistry, catalog, {});
-        }
+            const CatalogDatabase& catalog) const;
 
         AZ::Outcome<CatalogGovernanceApplyResult, AZStd::string> ApplyDecision(
             const CatalogGovernanceRequest& request,
@@ -53,10 +50,7 @@ namespace TaintedGrailModdingSDK
             const CatalogValidationRequest& request,
             const WorkspaceModel& workspace,
             const SourceEvidenceRegistry& sourceRegistry,
-            const CatalogDatabase& catalog) const
-        {
-            return ApplyValidation(request, workspace, sourceRegistry, catalog, {});
-        }
+            const CatalogDatabase& catalog) const;
 
         AZ::Outcome<CatalogValidationApplyResult, AZStd::string> ApplyValidation(
             const CatalogValidationRequest& request,
@@ -114,4 +108,22 @@ namespace TaintedGrailModdingSDK
             const AZStd::string& subjectId,
             size_t sequence);
     };
+
+    inline AZ::Outcome<CatalogGovernanceApplyResult, AZStd::string> CatalogGovernanceService::ApplyDecision(
+        const CatalogGovernanceRequest& request,
+        const WorkspaceModel& workspace,
+        const SourceEvidenceRegistry& sourceRegistry,
+        const CatalogDatabase& catalog) const
+    {
+        return ApplyDecision(request, workspace, sourceRegistry, catalog, {});
+    }
+
+    inline AZ::Outcome<CatalogValidationApplyResult, AZStd::string> CatalogGovernanceService::ApplyValidation(
+        const CatalogValidationRequest& request,
+        const WorkspaceModel& workspace,
+        const SourceEvidenceRegistry& sourceRegistry,
+        const CatalogDatabase& catalog) const
+    {
+        return ApplyValidation(request, workspace, sourceRegistry, catalog, {});
+    }
 } // namespace TaintedGrailModdingSDK
