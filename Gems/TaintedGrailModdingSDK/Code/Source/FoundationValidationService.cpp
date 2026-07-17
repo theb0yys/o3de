@@ -36,6 +36,7 @@ namespace TaintedGrailModdingSDK
         const WorkspaceModel& workspace,
         const AZStd::vector<PackManifest>& packs,
         const SourceEvidenceRegistry& sourceRegistry,
+        const AZStd::vector<ImportIssue>& importIssues,
         const CatalogDatabase& catalog) const
     {
         AZStd::vector<BlockerRecord> blockers;
@@ -275,6 +276,34 @@ namespace TaintedGrailModdingSDK
                 "No registered research, diagnostic, or extracted source artifacts are available."));
         }
 
+        for (const SourceRecord& source : sourceRegistry.GetSources())
+        {
+            if (activeProfile
+                && (source.m_profileId != activeProfile->m_profileId
+                    || source.m_gameVersion != activeProfile->m_gameVersion
+                    || source.m_branch != activeProfile->m_branch
+                    || source.m_runtimeTarget != activeProfile->m_runtimeTarget))
+            {
+                blockers.push_back(MakeBlocker(
+                    "foundation.source.profile-mismatch." + source.m_sourceId,
+                    "error",
+                    "source-intake",
+                    source.m_sourceId,
+                    "The source is bound to a different FoA profile, build, branch, or runtime target than the active workspace profile.",
+                    { "evidence_review", "catalog_promotion" }));
+            }
+            if (source.m_importStatus == "error")
+            {
+                blockers.push_back(MakeBlocker(
+                    "foundation.source.import-error." + source.m_sourceId,
+                    "error",
+                    "source-intake",
+                    source.m_sourceId,
+                    "The source was registered, but structured extraction reported one or more errors.",
+                    { "catalog_promotion" }));
+            }
+        }
+
         if (!sourceRegistry.GetSources().empty() && sourceRegistry.GetEvidence().empty())
         {
             blockers.push_back(MakeBlocker(
@@ -283,6 +312,23 @@ namespace TaintedGrailModdingSDK
                 "evidence-registry",
                 "evidence-set:workspace",
                 "Registered sources have not yet been decomposed into evidence records."));
+        }
+
+        for (const ImportIssue& issue : importIssues)
+        {
+            if (issue.m_severity != "error" && issue.m_severity != "warning")
+            {
+                continue;
+            }
+            blockers.push_back(MakeBlocker(
+                "foundation.import." + issue.m_issueId,
+                issue.m_severity,
+                "source-intake",
+                issue.m_locator.empty() ? AZStd::string("source:unknown") : issue.m_locator,
+                issue.m_code + ": " + issue.m_message,
+                issue.m_severity == "error"
+                    ? AZStd::vector<AZStd::string>{ "evidence_review", "catalog_promotion" }
+                    : AZStd::vector<AZStd::string>{}));
         }
 
         if (catalog.GetRecords().empty())
