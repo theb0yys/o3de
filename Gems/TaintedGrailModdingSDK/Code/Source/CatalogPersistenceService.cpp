@@ -10,8 +10,11 @@
 #include <AzCore/Serialization/Json/JsonUtils.h>
 #include <AzCore/std/utility/move.h>
 
+#include <QByteArray>
 #include <QDir>
 #include <QFileInfo>
+
+#include <cstddef>
 
 namespace TaintedGrailModdingSDK
 {
@@ -26,6 +29,33 @@ namespace TaintedGrailModdingSDK
         QString ToQString(const AZStd::string& value)
         {
             return QString::fromUtf8(value.c_str());
+        }
+
+        AZ::Outcome<void, AZStd::string> ValidatePersistedIdentity(const CatalogDocument& document)
+        {
+            for (const CatalogRecord& record : document.m_records)
+            {
+                const bool knownKind = record.m_identityKind == "native"
+                    || record.m_identityKind == "synthetic"
+                    || record.m_identityKind == "composite"
+                    || record.m_identityKind == "source_scoped";
+                if (!knownKind)
+                {
+                    return AZ::Failure(AZStd::string(
+                        "Canonical catalog contains an unsupported identity kind."));
+                }
+                if (record.m_identityKind == "native" && !record.m_ownerPackId.empty())
+                {
+                    return AZ::Failure(AZStd::string(
+                        "Native catalog records must not claim custom pack ownership."));
+                }
+                if (record.m_identityKind == "synthetic" && !record.m_nativeRefExact.empty())
+                {
+                    return AZ::Failure(AZStd::string(
+                        "Synthetic catalog records must not borrow an exact native reference."));
+                }
+            }
+            return AZ::Success();
         }
     } // namespace
 
@@ -61,6 +91,11 @@ namespace TaintedGrailModdingSDK
         {
             return AZ::Failure(AZStd::string(
                 "Canonical catalog documents require workspace, profile, game version, and branch binding."));
+        }
+        const AZ::Outcome<void, AZStd::string> identityResult = ValidatePersistedIdentity(document);
+        if (!identityResult.IsSuccess())
+        {
+            return AZ::Failure(AZStd::string(identityResult.GetError()));
         }
 
         const AZStd::string path = GetCatalogPath(workspaceRoot);
@@ -100,6 +135,11 @@ namespace TaintedGrailModdingSDK
         if (!document.UsesSupportedSchema())
         {
             return AZ::Failure(AZStd::string("Unsupported canonical catalog schema version."));
+        }
+        const AZ::Outcome<void, AZStd::string> identityResult = ValidatePersistedIdentity(document);
+        if (!identityResult.IsSuccess())
+        {
+            return AZ::Failure(AZStd::string(identityResult.GetError()));
         }
         return AZ::Success(AZStd::move(document));
     }
