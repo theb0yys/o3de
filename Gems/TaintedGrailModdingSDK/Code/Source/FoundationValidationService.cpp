@@ -57,7 +57,14 @@ namespace TaintedGrailModdingSDK
                 if (!pack.HasStableIdentity())
                 {
                     AZStd::string blockerId = "foundation.pack.identity.";
-                    blockerId += pack.m_displayName.empty() ? "unnamed" : pack.m_displayName;
+                    if (pack.m_displayName.empty())
+                    {
+                        blockerId += "unnamed";
+                    }
+                    else
+                    {
+                        blockerId += pack.m_displayName;
+                    }
                     blockers.push_back(MakeBlocker(
                         AZStd::move(blockerId),
                         "error",
