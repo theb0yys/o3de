@@ -11,6 +11,7 @@
 #include "SourceEvidenceRegistry.h"
 
 #include <AzCore/Outcome/Outcome.h>
+#include <AzCore/std/algorithm.h>
 
 namespace TaintedGrailModdingSDK
 {
