@@ -64,7 +64,7 @@ namespace TaintedGrailModdingSDK
         QString JoinValues(const AZStd::vector<AZStd::string>& values)
         {
             QStringList result;
-            result.reserve(static_cast<qsizetype>(values.size()));
+            result.reserve(static_cast<int>(values.size()));
             for (const AZStd::string& value : values)
             {
                 result.push_back(ToQString(value));
