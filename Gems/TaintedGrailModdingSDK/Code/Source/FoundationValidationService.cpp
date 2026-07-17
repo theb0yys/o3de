@@ -338,50 +338,182 @@ namespace TaintedGrailModdingSDK
                 "warning",
                 "catalog",
                 "catalog:workspace",
-                "The catalog contains no reviewed or research-stage game-knowledge records."));
+                "The canonical catalog contains no reviewed game-knowledge records."));
         }
 
         for (const CatalogRecord& record : catalog.GetRecords())
         {
+            const AZStd::string subject = record.m_subjectRef.empty() ? record.m_recordId : record.m_subjectRef;
+
             if (record.m_identityKind == "native" && record.m_nativeRefExact.empty())
             {
-                AZStd::string blockerId = "catalog.native-ref.";
-                blockerId += record.m_recordId;
                 blockers.push_back(MakeBlocker(
-                    AZStd::move(blockerId),
+                    "catalog.native-ref." + record.m_recordId,
                     "error",
                     record.m_domain,
-                    record.m_subjectRef,
+                    subject,
                     "A native record must preserve its exact game-facing reference."));
+            }
+            if (record.IsSynthetic() && record.m_ownerPackId.empty())
+            {
+                blockers.push_back(MakeBlocker(
+                    "catalog.owner." + record.m_recordId,
+                    "error",
+                    "catalog-identity",
+                    subject,
+                    "A synthetic record must identify its owning pack."));
+            }
+            else if (record.IsSynthetic())
+            {
+                bool ownerExists = false;
+                for (const PackManifest& pack : packs)
+                {
+                    if (pack.m_packId == record.m_ownerPackId)
+                    {
+                        ownerExists = true;
+                        break;
+                    }
+                }
+                if (!ownerExists)
+                {
+                    blockers.push_back(MakeBlocker(
+                        "catalog.owner-missing." + record.m_recordId,
+                        "error",
+                        "catalog-identity",
+                        subject,
+                        "The synthetic record's owning pack is not loaded in the active workspace."));
+                }
             }
 
             if (record.m_evidenceIds.empty())
             {
-                AZStd::string blockerId = "catalog.evidence.";
-                blockerId += record.m_recordId;
                 blockers.push_back(MakeBlocker(
-                    AZStd::move(blockerId),
-                    "warning",
-                    record.m_domain,
-                    record.m_subjectRef,
-                    "The record has no linked evidence and remains research-only."));
-            }
-
-            for (const AZStd::string& missingRef : record.m_missingRefs)
-            {
-                AZStd::string blockerId = "catalog.missing-ref.";
-                blockerId += record.m_recordId;
-                blockerId += ".";
-                blockerId += missingRef;
-                AZStd::string reason = "Required reference is unresolved: ";
-                reason += missingRef;
-                blockers.push_back(MakeBlocker(
-                    AZStd::move(blockerId),
+                    "catalog.evidence." + record.m_recordId,
                     "error",
                     record.m_domain,
-                    record.m_subjectRef,
-                    AZStd::move(reason),
+                    subject,
+                    "A canonical record requires at least one linked evidence record.",
+                    { "catalog_use", "validation", "runtime_handoff" }));
+            }
+            for (const AZStd::string& evidenceId : record.m_evidenceIds)
+            {
+                if (!sourceRegistry.FindEvidence(evidenceId))
+                {
+                    blockers.push_back(MakeBlocker(
+                        "catalog.evidence-missing." + record.m_recordId + "." + evidenceId,
+                        "error",
+                        record.m_domain,
+                        subject,
+                        "Linked evidence is missing from the active evidence registry: " + evidenceId,
+                        { "catalog_use", "validation", "runtime_handoff" }));
+                }
+            }
+
+            if (record.m_validationState.empty() || record.m_validationState == "unvalidated")
+            {
+                blockers.push_back(MakeBlocker(
+                    "catalog.unvalidated." + record.m_recordId,
+                    "warning",
+                    "catalog-validation",
+                    subject,
+                    "The record is reviewed but has not passed a usage-specific validation.",
+                    { "validated_runtime_use" }));
+            }
+            if (!record.m_allowedUsages.empty() && record.m_validationState != "validated")
+            {
+                blockers.push_back(MakeBlocker(
+                    "catalog.permission-before-validation." + record.m_recordId,
+                    "error",
+                    "catalog-permission",
+                    subject,
+                    "The record declares allowed usages before reaching validated state.",
                     record.m_allowedUsages));
+            }
+
+            for (const AZStd::string& conflictRef : record.m_conflictRefs)
+            {
+                blockers.push_back(MakeBlocker(
+                    "catalog.conflict." + record.m_recordId + "." + conflictRef,
+                    "error",
+                    "catalog-conflict",
+                    subject,
+                    "Catalog conflict remains unresolved: " + conflictRef,
+                    record.m_allowedUsages));
+            }
+            for (const AZStd::string& missingRef : record.m_missingRefs)
+            {
+                blockers.push_back(MakeBlocker(
+                    "catalog.missing-ref." + record.m_recordId + "." + missingRef,
+                    "error",
+                    record.m_domain,
+                    subject,
+                    "Required reference is unresolved: " + missingRef,
+                    record.m_allowedUsages));
+            }
+            if (!record.m_supersededByRecordId.empty() && !catalog.FindByRecordId(record.m_supersededByRecordId))
+            {
+                blockers.push_back(MakeBlocker(
+                    "catalog.supersession-target." + record.m_recordId,
+                    "error",
+                    "catalog-versioning",
+                    subject,
+                    "The record references a missing superseding catalog record."));
+            }
+        }
+
+        for (const CatalogRelationship& relationship : catalog.GetRelationships())
+        {
+            const AZStd::string relationshipSubject = relationship.m_relationshipId.empty()
+                ? AZStd::string("relationship:unknown")
+                : relationship.m_relationshipId;
+            for (const AZStd::string& evidenceId : relationship.m_evidenceIds)
+            {
+                if (!sourceRegistry.FindEvidence(evidenceId))
+                {
+                    blockers.push_back(MakeBlocker(
+                        "catalog.relationship-evidence." + relationshipSubject + "." + evidenceId,
+                        "error",
+                        "catalog-relationship",
+                        relationshipSubject,
+                        "Relationship evidence is missing from the active registry: " + evidenceId,
+                        { "relationship_use" }));
+                }
+            }
+            if (relationship.m_validationState.empty() || relationship.m_validationState == "unvalidated")
+            {
+                blockers.push_back(MakeBlocker(
+                    "catalog.relationship-unvalidated." + relationshipSubject,
+                    "warning",
+                    "catalog-relationship",
+                    relationshipSubject,
+                    "The relationship has not passed validation."));
+            }
+        }
+
+        for (const CatalogValidationEvent& validation : catalog.GetValidationHistory())
+        {
+            if (activeProfile
+                && (validation.m_profileId != activeProfile->m_profileId
+                    || validation.m_gameVersion != activeProfile->m_gameVersion))
+            {
+                blockers.push_back(MakeBlocker(
+                    "catalog.validation-profile." + validation.m_validationId,
+                    "error",
+                    "catalog-validation",
+                    validation.m_recordId,
+                    "Validation history is bound to a different game profile or version."));
+            }
+            for (const AZStd::string& evidenceId : validation.m_evidenceIds)
+            {
+                if (!sourceRegistry.FindEvidence(evidenceId))
+                {
+                    blockers.push_back(MakeBlocker(
+                        "catalog.validation-evidence." + validation.m_validationId + "." + evidenceId,
+                        "error",
+                        "catalog-validation",
+                        validation.m_recordId,
+                        "Validation history references missing evidence: " + evidenceId));
+                }
             }
         }
 
