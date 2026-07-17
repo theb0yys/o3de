@@ -31,9 +31,11 @@ ly_add_source_properties(
             O3DE_GEM_VERSION=${gem_version}
 )
 
+# Tool Gems are resolved for both Editor/Project Manager tools and builder hosts.
 ly_create_alias(NAME ${gem_name}.Tools NAMESPACE Gem TARGETS Gem::${gem_name}.Editor)
+ly_create_alias(NAME ${gem_name}.Builders NAMESPACE Gem TARGETS Gem::${gem_name}.Editor)
 
 o3de_add_variant_dependencies_for_gem_dependencies(
     GEM_NAME ${gem_name}
-    VARIANTS Tools
+    VARIANTS Tools Builders
 )
