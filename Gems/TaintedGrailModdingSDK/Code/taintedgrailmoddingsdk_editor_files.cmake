@@ -10,6 +10,7 @@ set(FILES
     Source/CatalogDatabase.h
     Source/FoundationModels.cpp
     Source/FoundationModels.h
+    Source/FoundationNotificationBus.h
     Source/FoundationService.cpp
     Source/FoundationService.h
     Source/FoundationStatusWidget.cpp
@@ -21,4 +22,6 @@ set(FILES
     Source/TaintedGrailModdingSDKEditorModule.cpp
     Source/TaintedGrailModdingSDKSystemComponent.cpp
     Source/TaintedGrailModdingSDKSystemComponent.h
+    Source/WorkspacePersistenceService.cpp
+    Source/WorkspacePersistenceService.h
 )
