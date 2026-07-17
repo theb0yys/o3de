@@ -20,7 +20,6 @@ on:
       - ".github/workflows/tainted-grail-sdk-foundation.yml"
   push:
     branches:
-      - foa-development
       - main
     paths:
       - "Gems/TaintedGrailModdingSDK/**"
