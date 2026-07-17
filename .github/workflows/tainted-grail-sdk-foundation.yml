@@ -1,0 +1,37 @@
+name: Tainted Grail SDK Foundation
+
+on:
+  pull_request:
+    paths:
+      - "Gems/TaintedGrailModdingSDK/**"
+      - "engine.json"
+      - ".github/workflows/tainted-grail-sdk-foundation.yml"
+  push:
+    branches:
+      - development
+    paths:
+      - "Gems/TaintedGrailModdingSDK/**"
+      - "engine.json"
+      - ".github/workflows/tainted-grail-sdk-foundation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-foundation:
+    name: Validate editor-only foundation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate foundation contracts
+        run: python Gems/TaintedGrailModdingSDK/Tools/validate_foundation.py
