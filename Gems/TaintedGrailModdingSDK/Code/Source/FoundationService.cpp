@@ -525,6 +525,14 @@ namespace TaintedGrailModdingSDK
             m_sourceRegistry,
             m_importIssues,
             m_catalog);
+        AZStd::vector<BlockerRecord> governanceBlockers = m_governanceBlockerService.Evaluate(
+            m_workspace,
+            m_sourceRegistry,
+            m_catalog);
+        m_snapshot.m_blockers.insert(
+            m_snapshot.m_blockers.end(),
+            governanceBlockers.begin(),
+            governanceBlockers.end());
         m_snapshot.m_openBlockerCount = static_cast<AZ::u64>(m_snapshot.m_blockers.size());
 
         if (const GameProfile* profile = m_workspace.FindActiveGameProfile())
