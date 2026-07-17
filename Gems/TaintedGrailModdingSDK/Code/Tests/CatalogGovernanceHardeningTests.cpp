@@ -197,7 +197,12 @@ namespace TaintedGrailModdingSDK
         ASSERT_TRUE(catalog.AddGovernanceEvent(existing, &error));
 
         const CatalogGovernanceService service;
-        EXPECT_FALSE(service.ApplyDecision(MakeMaturityRequest(), workspace, registry, catalog).IsSuccess());
+        EXPECT_FALSE(service.ApplyDecision(
+            MakeMaturityRequest(),
+            workspace,
+            registry,
+            catalog,
+            existing.m_eventId).IsSuccess());
         EXPECT_EQ(catalog.FindByRecordId("record.test")->m_researchStage, "S5");
         ASSERT_EQ(catalog.GetGovernanceHistory().size(), 1);
         EXPECT_EQ(catalog.GetGovernanceHistory().front().m_eventId, existing.m_eventId);
@@ -210,12 +215,16 @@ namespace TaintedGrailModdingSDK
         CatalogDatabase catalog;
         AZStd::string error;
         ASSERT_TRUE(catalog.InsertNew(MakeRecord(), &error));
-        ASSERT_TRUE(catalog.AddValidationEvent(
-            MakeValidationEvent("validation.record.record.test.2"),
-            &error));
+        const AZStd::string duplicateId = "validation.record.record.test.2";
+        ASSERT_TRUE(catalog.AddValidationEvent(MakeValidationEvent(duplicateId), &error));
 
         const CatalogGovernanceService service;
-        EXPECT_FALSE(service.ApplyValidation(MakeValidationRequest(), workspace, registry, catalog).IsSuccess());
+        EXPECT_FALSE(service.ApplyValidation(
+            MakeValidationRequest(),
+            workspace,
+            registry,
+            catalog,
+            duplicateId).IsSuccess());
         EXPECT_EQ(catalog.FindByRecordId("record.test")->m_validationState, "unvalidated");
         EXPECT_EQ(catalog.GetValidationHistory().size(), 1);
     }
