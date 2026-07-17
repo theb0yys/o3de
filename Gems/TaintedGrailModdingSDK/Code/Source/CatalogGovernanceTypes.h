@@ -31,6 +31,7 @@ namespace TaintedGrailModdingSDK
 
     enum class ResearchStage
     {
+        Unset,
         Unknown,
         S0,
         S1,
@@ -50,6 +51,7 @@ namespace TaintedGrailModdingSDK
 
     enum class ConfidenceLevel
     {
+        Unset,
         Unknown,
         Unrated,
         Hypothesis,
@@ -61,6 +63,7 @@ namespace TaintedGrailModdingSDK
 
     enum class OperationalRisk
     {
+        Unset,
         Unknown,
         Low,
         Medium,
@@ -70,6 +73,7 @@ namespace TaintedGrailModdingSDK
 
     enum class ValidationState
     {
+        Unset,
         Unvalidated,
         Pending,
         Validated,
@@ -80,6 +84,7 @@ namespace TaintedGrailModdingSDK
 
     enum class StalenessState
     {
+        Unset,
         Unknown,
         Current,
         PotentiallyStale,
@@ -97,11 +102,11 @@ namespace TaintedGrailModdingSDK
     {
         CatalogSubjectKind m_subjectKind = CatalogSubjectKind::Record;
         AZStd::string m_subjectId;
-        ResearchStage m_researchStage = ResearchStage::Unknown;
-        ConfidenceLevel m_confidence = ConfidenceLevel::Unknown;
-        OperationalRisk m_operationalRisk = OperationalRisk::Unknown;
-        ValidationState m_validationState = ValidationState::Unvalidated;
-        StalenessState m_stalenessState = StalenessState::Unknown;
+        ResearchStage m_researchStage = ResearchStage::Unset;
+        ConfidenceLevel m_confidence = ConfidenceLevel::Unset;
+        OperationalRisk m_operationalRisk = OperationalRisk::Unset;
+        ValidationState m_validationState = ValidationState::Unset;
+        StalenessState m_stalenessState = StalenessState::Unset;
         AZStd::vector<AZStd::string> m_allowedUsages;
         AZStd::vector<AZStd::string> m_forbiddenUsages;
         AZStd::vector<AZStd::string> m_missingRefs;
