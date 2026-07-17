@@ -82,9 +82,11 @@ def main() -> int:
             "PermissionRequiresCurrentStateAndValidatedProof",
             "StaleDecisionRevokesAllowedUsage",
             "SupersessionRevokesUsageAndRecordsReplacement",
+            "RelationshipValidationAndPermissionUseSameProofGates",
             'm_axis = "permission"',
             'm_axis = "staleness"',
             'm_axis = "supersession"',
+            'm_subjectKind = "relationship"',
         ):
             require_contains(governance_tests, fragment, governance_tests_path)
     except (OSError, RuntimeError) as exc:
