@@ -10,6 +10,7 @@
 #include "FoundationModels.h"
 
 #include <AzCore/Outcome/Outcome.h>
+#include <AzCore/std/utility/move.h>
 
 namespace TaintedGrailModdingSDK
 {
