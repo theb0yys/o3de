@@ -8,6 +8,8 @@
 #pragma once
 
 #include "CatalogDatabase.h"
+#include "CatalogPersistenceService.h"
+#include "CatalogPromotionService.h"
 #include "FoundationValidationService.h"
 #include "PackPersistenceService.h"
 #include "SourceEvidencePersistenceService.h"
@@ -45,9 +47,17 @@ namespace TaintedGrailModdingSDK
         bool ReloadSourceEvidence(AZStd::string* error = nullptr);
         AZStd::vector<SourceImporterContract> GetSourceImporterContracts() const;
 
+        bool PromoteEvidenceToCatalog(
+            const CatalogPromotionRequest& request,
+            AZStd::string* error = nullptr);
+        bool UpsertCatalogRecord(const CatalogRecord& record, AZStd::string* error = nullptr);
+        bool UpsertCatalogRelationship(const CatalogRelationship& relationship, AZStd::string* error = nullptr);
+        bool AddCatalogValidationEvent(const CatalogValidationEvent& validation, AZStd::string* error = nullptr);
+        bool SaveCatalog(AZStd::string* error = nullptr);
+        bool ReloadCatalog(AZStd::string* error = nullptr);
+
         bool RegisterSource(const SourceRecord& source, AZStd::string* error = nullptr);
         bool RegisterEvidence(const EvidenceRecord& evidence, AZStd::string* error = nullptr);
-        bool UpsertCatalogRecord(const CatalogRecord& record, AZStd::string* error = nullptr);
 
         const WorkspaceModel& GetWorkspace() const;
         const AZStd::string& GetWorkspaceFilePath() const;
@@ -57,6 +67,7 @@ namespace TaintedGrailModdingSDK
         const SourceEvidenceRegistry& GetSourceRegistry() const;
         const AZStd::vector<ImportIssue>& GetImportIssues() const;
         const CatalogDatabase& GetCatalog() const;
+        const AZStd::string& GetCatalogFilePath() const;
         const FoundationSnapshot& GetSnapshot() const;
 
         void RefreshSnapshot();
@@ -64,6 +75,7 @@ namespace TaintedGrailModdingSDK
     private:
         FoundationService() = default;
 
+        bool PersistCatalogCandidate(const CatalogDatabase& candidate, AZStd::string* error);
         PackManifest* FindPackById(const AZStd::string& packId);
         const PackManifest* FindPackById(const AZStd::string& packId) const;
         static ImportIssue MakeRegistryIssue(
@@ -80,11 +92,14 @@ namespace TaintedGrailModdingSDK
         SourceEvidenceRegistry m_sourceRegistry;
         AZStd::vector<ImportIssue> m_importIssues;
         CatalogDatabase m_catalog;
+        AZStd::string m_catalogFilePath;
         FoundationValidationService m_validationService;
         WorkspacePersistenceService m_workspacePersistence;
         PackPersistenceService m_packPersistence;
         SourceImportService m_sourceImportService;
         SourceEvidencePersistenceService m_sourceEvidencePersistence;
+        CatalogPersistenceService m_catalogPersistence;
+        CatalogPromotionService m_catalogPromotion;
         FoundationSnapshot m_snapshot;
         bool m_initialized = false;
     };
