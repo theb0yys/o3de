@@ -2,7 +2,7 @@
 
 An O3DE-based, evidence-governed authoring environment for creating, validating, packaging, and eventually deploying mods for **Tainted Grail: The Fall of Avalon**.
 
-> **Project status: pre-alpha.** The editor foundation is under active development. It is not yet a complete mod-production toolchain and must not be treated as a safe runtime executor.
+> **Project status: pre-alpha.** The editor foundation and first specialised domain tool are under active development. The project is not yet a complete mod-production toolchain and must not be treated as a safe runtime executor.
 
 This repository is a fork of Open 3D Engine. O3DE supplies the editor host, UI framework, build system, asset tooling, reflection, automation, and extensibility. Tainted Grail remains a separate Unity runtime target.
 
@@ -31,6 +31,7 @@ They may:
 - query and inspect game knowledge;
 - validate references and relationships;
 - record reviewed governance decisions and usage constraints;
+- author typed domain data on canonical records;
 - produce blockers, permissions, plans, and handoff documents;
 - build editor-owned packages and reports.
 
@@ -40,8 +41,9 @@ They must not directly:
 - patch the game with Harmony;
 - load BepInEx plugins into the game;
 - spawn actors or encounters;
-- grant items or recipes;
-- mutate quests, saves, vendors, loot, or world state;
+- grant items or learn recipes;
+- append recipes or register custom templates;
+- mutate quests, saves, vendors, loot, rewards, or world state;
 - claim runtime safety without the required evidence, validation, and reviewed permission decision.
 
 Native execution belongs to separate adapters with their own compatibility, persistence, cleanup, and rollback gates.
@@ -58,7 +60,7 @@ Configures and reports:
 - exact FoA game profile;
 - Mono or IL2CPP target;
 - Unity and BepInEx versions;
-- pack, source, evidence, catalog, governance, and blocker totals;
+- pack, source, evidence, catalog, governance, economy, and blocker totals;
 - catalog coverage and validation blockers.
 
 Workspace documents use the `*.tgworkspace.json` suffix.
@@ -98,7 +100,7 @@ Provides:
 
 - exact native-reference and GUID search;
 - search by record ID, subject, alias, domain, kind, pack, confidence, risk, validation, staleness, permission, evidence, blocker state, and supersession;
-- inspection of identity, pack ownership, evidence, relationships, validation history, conflicts, missing refs, prohibitions, and blockers;
+- inspection of identity, pack ownership, evidence, relationships, validation and governance history, conflicts, missing refs, prohibitions, and blockers;
 - evidence-backed promotion into reviewed-but-unvalidated canonical records;
 - durable `Catalog/catalog.tgcatalog.json` persistence bound to the active workspace and exact game profile.
 
@@ -117,6 +119,19 @@ Provides reviewed authoring of independent states for both records and relations
 - supersession.
 
 Validation does not grant permission. An allowed usage requires a separate permission decision backed by a successful validation event for the same catalog subject. Marking a subject stale or superseded automatically removes allowed usages.
+
+### Tainted Grail Item and Recipe Editor
+
+The first specialised domain tool authors typed economy data on existing canonical records:
+
+- item categories, values, stack, weight, quality, rarity, durability, quest/unique flags, localisation, icon, and asset references;
+- recipe type, tab, station records, unlock data, duplicate key, persistence description, and hidden state;
+- typed ingredient joins with quantity, substitutions, consumption, conditions, and evidence;
+- typed outputs and by-products with quantity, chance, conditions, and evidence;
+- first-class acquisition relationships such as `sold_by`, `dropped_by`, `found_at`, `rewarded_by`, `learned_from`, `granted_by`, and `crafted_at`;
+- read-only action-lane matrices derived from Catalog Governance.
+
+An item identity remains separate from a recipe identity. The tool does not create canonical identities or execute any displayed action lane.
 
 ## Development roadmap
 
@@ -138,6 +153,7 @@ Start with the [TG SDK documentation hub](docs/tainted-grail-sdk/README.md).
 - [User guide](docs/tainted-grail-sdk/USER_GUIDE.md)
 - [Catalog guide](docs/tainted-grail-sdk/CATALOG_GUIDE.md)
 - [Governance engine guide](docs/tainted-grail-sdk/GOVERNANCE_ENGINE_GUIDE.md)
+- [Item and Recipe Editor guide](docs/tainted-grail-sdk/ITEM_RECIPE_EDITOR_GUIDE.md)
 - [Architecture](docs/tainted-grail-sdk/ARCHITECTURE.md)
 - [Development guide](docs/tainted-grail-sdk/DEVELOPMENT_GUIDE.md)
 - [Code quality standard](docs/tainted-grail-sdk/CODE_QUALITY.md)
@@ -157,7 +173,7 @@ Start with the [TG SDK documentation hub](docs/tainted-grail-sdk/README.md).
 
 ```text
 Gems/TaintedGrailModdingSDK/       TG editor/SDK Gem
-Gems/TaintedGrailModdingSDK/Code/  C++ editor models, services, and tools
+Gems/TaintedGrailModdingSDK/Code/  C++ editor models, services, tests, and tools
 Gems/TaintedGrailModdingSDK/Tools/ Repository contract validation
 docs/tainted-grail-sdk/            Public user and contributor documentation
 .github/                            Issue forms, pull-request template, ownership
@@ -177,7 +193,7 @@ python Gems/TaintedGrailModdingSDK/Tools/validate_foundation.py
 python Gems/TaintedGrailModdingSDK/Tools/validate_catalog_tests.py
 ```
 
-A complete contribution must also pass the repository validation workflow and the applicable O3DE host build jobs.
+A complete contribution must also pass the catalog/governance/economy unit tests, repository validation workflow, and applicable O3DE host build jobs.
 
 ## Branch and review model
 
