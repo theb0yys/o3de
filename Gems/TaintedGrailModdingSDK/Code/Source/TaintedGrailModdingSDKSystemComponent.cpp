@@ -11,6 +11,7 @@
 #include "FoundationService.h"
 #include "FoundationStatusWidget.h"
 #include "PackManagerWidget.h"
+#include "SourceEvidenceIntakeWidget.h"
 
 #include <AzCore/Debug/Trace.h>
 #include <AzCore/Math/Crc.h>
@@ -23,6 +24,7 @@ namespace TaintedGrailModdingSDK
     {
         constexpr const char* FoundationStatusViewPaneName = "Tainted Grail SDK Status";
         constexpr const char* PackManagerViewPaneName = "Tainted Grail Pack Manager";
+        constexpr const char* SourceIntakeViewPaneName = "Tainted Grail Source Intake";
     }
 
     void TaintedGrailModdingSDKSystemComponent::Reflect(AZ::ReflectContext* context)
@@ -30,8 +32,12 @@ namespace TaintedGrailModdingSDK
         GameProfile::Reflect(context);
         WorkspaceModel::Reflect(context);
         PackManifest::Reflect(context);
+        SourceImporterContract::Reflect(context);
         SourceRecord::Reflect(context);
         EvidenceRecord::Reflect(context);
+        ImportIssue::Reflect(context);
+        SourceDocument::Reflect(context);
+        EvidenceDocument::Reflect(context);
         CatalogRecord::Reflect(context);
         BlockerRecord::Reflect(context);
         DomainCoverage::Reflect(context);
@@ -40,7 +46,7 @@ namespace TaintedGrailModdingSDK
         if (auto* serializeContext = azrtti_cast<AZ::SerializeContext*>(context))
         {
             serializeContext->Class<TaintedGrailModdingSDKSystemComponent, AZ::Component>()
-                ->Version(3);
+                ->Version(4);
         }
     }
 
@@ -72,6 +78,7 @@ namespace TaintedGrailModdingSDK
         {
             AzToolsFramework::UnregisterViewPane(FoundationStatusViewPaneName);
             AzToolsFramework::UnregisterViewPane(PackManagerViewPaneName);
+            AzToolsFramework::UnregisterViewPane(SourceIntakeViewPaneName);
             m_viewRegistered = false;
         }
 
@@ -110,6 +117,18 @@ namespace TaintedGrailModdingSDK
             PackManagerViewPaneName,
             "Tainted Grail SDK",
             packOptions);
+
+        AzToolsFramework::ViewPaneOptions intakeOptions;
+        intakeOptions.paneRect = QRect(140, 140, 1000, 900);
+        intakeOptions.preferedDockingArea = Qt::BottomDockWidgetArea;
+        intakeOptions.isDeletable = true;
+        intakeOptions.isPreview = true;
+        intakeOptions.saveKeyName = QStringLiteral("TaintedGrailModdingSDK.SourceIntake");
+
+        AzToolsFramework::RegisterViewPane<SourceEvidenceIntakeWidget>(
+            SourceIntakeViewPaneName,
+            "Tainted Grail SDK",
+            intakeOptions);
 
         m_viewRegistered = true;
     }
