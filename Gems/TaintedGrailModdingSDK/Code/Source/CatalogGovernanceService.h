@@ -8,34 +8,67 @@
 #pragma once
 
 #include "CatalogDatabase.h"
+#include "CatalogGovernanceTypes.h"
 #include "SourceEvidenceRegistry.h"
 
 #include <AzCore/Outcome/Outcome.h>
-#include <AzCore/std/algorithm.h>
 
 #include <cstddef>
 
 namespace TaintedGrailModdingSDK
 {
+    struct CatalogGovernanceApplyResult
+    {
+        CatalogDatabase m_catalog;
+        CatalogGovernanceEvent m_event;
+    };
+
+    struct CatalogValidationApplyResult
+    {
+        CatalogDatabase m_catalog;
+        CatalogValidationEvent m_event;
+    };
+
     class CatalogGovernanceService
     {
     public:
-        AZ::Outcome<CatalogGovernanceEvent, AZStd::string> ApplyDecision(
+        AZ::Outcome<CatalogGovernanceApplyResult, AZStd::string> ApplyDecision(
             const CatalogGovernanceRequest& request,
             const WorkspaceModel& workspace,
             const SourceEvidenceRegistry& sourceRegistry,
-            CatalogDatabase& catalog) const;
+            const CatalogDatabase& catalog) const;
 
-        AZ::Outcome<CatalogValidationEvent, AZStd::string> ApplyValidation(
+        AZ::Outcome<CatalogValidationApplyResult, AZStd::string> ApplyValidation(
             const CatalogValidationRequest& request,
             const WorkspaceModel& workspace,
             const SourceEvidenceRegistry& sourceRegistry,
-            CatalogDatabase& catalog) const;
+            const CatalogDatabase& catalog) const;
 
     private:
+        static AZ::Outcome<GovernedSubjectState, AZStd::string> ReadSubjectState(
+            CatalogSubjectKind subjectKind,
+            const AZStd::string& subjectId,
+            const CatalogDatabase& catalog);
+
+        static bool WriteSubjectState(
+            const GovernedSubjectState& state,
+            CatalogDatabase& catalog,
+            AZStd::string& error);
+
+        static AZ::Outcome<CatalogGovernanceEvent, AZStd::string> ApplyTypedTransition(
+            const CatalogGovernanceRequest& request,
+            GovernanceAxis axis,
+            GovernedSubjectState& state,
+            const CatalogDatabase& catalog,
+            const AZStd::string& decidedAt);
+
+        static void ApplyValidationState(
+            ValidationState validationState,
+            GovernedSubjectState& state);
+
         static bool ValidateEvidence(
             const AZStd::vector<AZStd::string>& evidenceIds,
-            const AZStd::string& subjectKind,
+            CatalogSubjectKind subjectKind,
             const AZStd::string& subjectId,
             const WorkspaceModel& workspace,
             const SourceEvidenceRegistry& sourceRegistry,
@@ -44,12 +77,13 @@ namespace TaintedGrailModdingSDK
 
         static bool ValidatePermissionBasis(
             const CatalogGovernanceRequest& request,
+            CatalogSubjectKind subjectKind,
             const CatalogDatabase& catalog,
             AZStd::string& error);
 
         static AZStd::string BuildEventId(
             const char* prefix,
-            const AZStd::string& subjectKind,
+            CatalogSubjectKind subjectKind,
             const AZStd::string& subjectId,
             size_t sequence);
     };
