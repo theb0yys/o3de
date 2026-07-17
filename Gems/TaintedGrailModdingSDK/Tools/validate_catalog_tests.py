@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 #
 
-"""Validate that catalog and governance tests remain registered and cover safety rules."""
+"""Validate catalog, governance, and economy test registration and safety coverage."""
 
 from __future__ import annotations
 
@@ -31,11 +31,18 @@ def main() -> int:
     manifest_path = code_root / "taintedgrailmoddingsdk_catalog_tests_files.cmake"
     database_tests_path = code_root / "Tests" / "CatalogDatabaseTests.cpp"
     governance_tests_path = code_root / "Tests" / "CatalogGovernanceServiceTests.cpp"
+    economy_tests_path = code_root / "Tests" / "EconomyAuthoringTests.cpp"
 
     try:
-        for path in (cmake_path, manifest_path, database_tests_path, governance_tests_path):
+        for path in (
+            cmake_path,
+            manifest_path,
+            database_tests_path,
+            governance_tests_path,
+            economy_tests_path,
+        ):
             if not path.is_file():
-                fail(f"Required catalog/governance test file is missing: {path}")
+                fail(f"Required catalog/governance/economy test file is missing: {path}")
 
         cmake = cmake_path.read_text(encoding="utf-8")
         for fragment in (
@@ -56,12 +63,17 @@ def main() -> int:
             "Source/CatalogDatabase.h",
             "Source/CatalogGovernanceService.cpp",
             "Source/CatalogGovernanceService.h",
+            "Source/EconomyAuthoringService.cpp",
+            "Source/EconomyAuthoringService.h",
+            "Source/EconomyModels.cpp",
+            "Source/EconomyModels.h",
             "Source/FoundationModels.cpp",
             "Source/FoundationModels.h",
             "Source/SourceEvidenceRegistry.cpp",
             "Source/SourceEvidenceRegistry.h",
             "Tests/CatalogDatabaseTests.cpp",
             "Tests/CatalogGovernanceServiceTests.cpp",
+            "Tests/EconomyAuthoringTests.cpp",
         }
         if entries != expected:
             fail(f"Catalog test manifest mismatch: expected {sorted(expected)}, found {sorted(entries)}")
@@ -89,11 +101,25 @@ def main() -> int:
             'm_subjectKind = "relationship"',
         ):
             require_contains(governance_tests, fragment, governance_tests_path)
+
+        economy_tests = economy_tests_path.read_text(encoding="utf-8")
+        for fragment in (
+            "ItemProfileRequiresCanonicalEconomyItem",
+            "RecipeStationsRequireCanonicalStationRecords",
+            "IngredientAndOutputJoinsValidateIdentityQuantityAndChance",
+            "EconomyDataRoundTripsThroughCanonicalDocument",
+            "AcquisitionRelationshipStartsUnvalidatedAndForbidden",
+            "ActionLaneMatrixReflectsGovernedAllowedAndForbiddenState",
+            'm_persistenceMode = "native_template"',
+            'm_relationshipKind = "sold_by"',
+            '"no_unvalidated_runtime_use"',
+        ):
+            require_contains(economy_tests, fragment, economy_tests_path)
     except (OSError, RuntimeError) as exc:
-        print(f"Tainted Grail catalog/governance test validation failed: {exc}", file=sys.stderr)
+        print(f"Tainted Grail catalog/governance/economy test validation failed: {exc}", file=sys.stderr)
         return 1
 
-    print("Tainted Grail catalog and governance test contract passed.")
+    print("Tainted Grail catalog, governance, and economy test contract passed.")
     return 0
 
 

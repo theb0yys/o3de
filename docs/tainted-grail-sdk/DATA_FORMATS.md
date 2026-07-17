@@ -4,18 +4,19 @@
 
 TG SDK durable documents are UTF-8 JSON produced through O3DE serialization.
 
-Rules:
+All durable formats follow these rules:
 
-- top-level durable documents use an explicit schema version;
+- top-level documents use an explicit schema version when the format defines one;
 - field names are case-sensitive;
 - stable IDs and exact native references are not display labels;
 - unknown schema versions are rejected unless a migration exists;
 - secrets and credentials are prohibited;
 - private absolute paths should not be distributed publicly;
 - runtime permission is never implied by the existence of a document;
-- examples must not include copyrighted game content.
+- imported evidence, reviewed records, validation, and permission remain separate;
+- examples must not contain copyrighted game assets or proprietary source code.
 
-The examples below are illustrative. O3DE serialization may omit fields that equal default values.
+O3DE serialization may omit fields equal to default values. Missing optional fields therefore use the model defaults described below.
 
 ## Workspace document
 
@@ -56,7 +57,7 @@ Purpose: editor-owned workspace and exact game-profile configuration.
 }
 ```
 
-A configured profile requires `ProfileId`, installation, exact game version, branch, runtime target, and managed-assemblies path. `RuntimeTarget` must be `Mono` or `IL2CPP`.
+A configured profile requires profile ID, installation, exact game version, branch, runtime target, and managed-assembly path. `RuntimeTarget` is `Mono` or `IL2CPP`. Mono profiles also require the BepInEx version and plugin path for downstream build/deployment planning.
 
 ## Pack manifest
 
@@ -94,14 +95,13 @@ Required location: inside the active workspace root.
 }
 ```
 
-Identity rules:
+Rules:
 
 - `PackId` is lowercase and namespaced;
 - `OwnerId` is explicit;
 - `Version` uses semantic versioning;
-- `RuntimeActionsEnabled` must be `false` in editor-owned documents.
-
-Save-impact values are `none`, `compatible`, `migration`, `destructive`, and `unknown`.
+- `RuntimeActionsEnabled` must be `false` in editor-owned manifests;
+- save impact is `none`, `compatible`, `migration`, `destructive`, or `unknown`.
 
 ## Source document
 
@@ -111,7 +111,7 @@ Path:
 Sources/<source-id>/source.tgsource.json
 ```
 
-Purpose: immutable description of an imported artifact and its provenance.
+Purpose: immutable provenance for an imported artifact.
 
 ```json
 {
@@ -121,7 +121,7 @@ Purpose: immutable description of an imported artifact and its provenance.
     "Title": "Template diagnostic export",
     "SourceKind": "template-diagnostics",
     "Locator": "/path/to/input.json",
-    "Fingerprint": "sha256:...",
+    "Fingerprint": "sha256:<64-hex-digits>",
     "ProfileId": "foa.mono.current",
     "GameVersion": "exact-version",
     "Branch": "mono",
@@ -141,7 +141,7 @@ Purpose: immutable description of an imported artifact and its provenance.
 }
 ```
 
-`Fingerprint` uses `sha256:<64-hex-digits>`. A profile/fingerprint pair cannot be registered twice. Import status describes processing, not factual validity or runtime permission.
+A profile/fingerprint pair cannot be registered twice. Import status describes processing only, not factual validity or runtime permission.
 
 ## Evidence document
 
@@ -155,7 +155,7 @@ Sources/<source-id>/evidence.tgevidence.json
 {
   "SchemaVersion": 1,
   "SourceId": "source.profile.fingerprint",
-  "SourceFingerprint": "sha256:...",
+  "SourceFingerprint": "sha256:<64-hex-digits>",
   "ProfileId": "foa.mono.current",
   "GameVersion": "exact-version",
   "Branch": "mono",
@@ -163,7 +163,7 @@ Sources/<source-id>/evidence.tgevidence.json
     {
       "EvidenceId": "evidence.fingerprint.1",
       "SourceId": "source.profile.fingerprint",
-      "SourceFingerprint": "sha256:...",
+      "SourceFingerprint": "sha256:<64-hex-digits>",
       "ProfileId": "foa.mono.current",
       "GameVersion": "exact-version",
       "Branch": "mono",
@@ -180,13 +180,41 @@ Sources/<source-id>/evidence.tgevidence.json
 }
 ```
 
-The evidence document and child records must match the source ID, fingerprint, profile, version, and branch.
+The evidence document and every child record must match the source ID, fingerprint, profile, game version, and branch.
 
 ## Structured intake shapes
 
-Structured JSON accepts a root array, an `evidence` array, or one evidence-shaped object. Required fields are `subject_ref` and `claim`; optional fields are `evidence_id`, `kind`, `confidence`, and `locator`.
+Structured JSON accepts:
 
-Structured CSV requires `subject_ref,claim`. Accepted aliases include `subject`, `id`, and `evidence_kind`. Generic artifact intake registers provenance without inferring evidence.
+- a root array of evidence-shaped objects;
+- an object containing an `evidence` array;
+- one evidence-shaped root object.
+
+Required JSON fields are `subject_ref` and `claim`. Optional fields are `evidence_id`, `kind`, `confidence`, and `locator`.
+
+Structured CSV requires:
+
+```text
+subject_ref,claim
+```
+
+Optional columns are `evidence_id`, `kind`, `confidence`, and `locator`. Generic artifact intake creates provenance and a manual-extraction issue but does not infer evidence.
+
+## Import issue
+
+```json
+{
+  "IssueId": "issue.source-id.1",
+  "Severity": "error",
+  "Code": "schema.evidence-required-fields",
+  "Message": "Evidence entries require subject_ref and claim.",
+  "Locator": "/path/to/input.json",
+  "RecordPath": "$.evidence[0]",
+  "Line": 0
+}
+```
+
+Severity is currently `warning` or `error`. Codes are stable machine-readable identifiers.
 
 ## Canonical catalog document
 
@@ -195,6 +223,8 @@ Path:
 ```text
 Catalog/catalog.tgcatalog.json
 ```
+
+The document is bound to one workspace and exact game profile:
 
 ```json
 {
@@ -206,13 +236,17 @@ Catalog/catalog.tgcatalog.json
   "Records": [],
   "Relationships": [],
   "ValidationHistory": [],
-  "GovernanceHistory": []
+  "GovernanceHistory": [],
+  "EconomyItems": [],
+  "EconomyRecipes": [],
+  "RecipeIngredients": [],
+  "RecipeOutputs": []
 }
 ```
 
-Reload rejects mismatched workspace ID, profile ID, game version, or branch.
+The four economy arrays are optional schema-1 extensions. Older schema-1 documents without them load as empty economy collections.
 
-`GovernanceHistory` is optional when reading older schema-1 documents. New governance decisions append entries to it.
+Reload rejects a mismatched workspace ID, profile ID, game version, or branch.
 
 ## Catalog record
 
@@ -245,37 +279,28 @@ Reload rejects mismatched workspace ID, profile ID, game version, or branch.
 }
 ```
 
-Required canonical fields:
-
-- `RecordId`;
-- `Domain`;
-- `RecordKind`;
-- `SubjectRef`;
-- `IdentityKind`;
-- at least one `EvidenceId`.
+Required fields are record ID, domain, record kind, subject reference, identity kind, and at least one evidence ID.
 
 Identity rules:
 
-- `native` requires `NativeRefExact` and no custom owner claim;
-- `synthetic` requires an existing `OwnerPackId` and no borrowed native ref;
+- `native` requires an exact native ref and no custom owner claim;
+- `synthetic` requires an owning pack and no borrowed native ref;
 - `composite` and `source_scoped` require explicit reviewed meaning and evidence.
 
-The database rejects duplicate record IDs and duplicate non-empty exact native references. Display names may repeat and are never identity keys.
-
-Promotion creates `unvalidated`, staleness-`unknown` records and cannot populate `AllowedUsages`.
+Duplicate record IDs and duplicate non-empty exact native references are rejected. Display names may repeat and are never identity keys.
 
 ## Catalog relationship
 
 ```json
 {
-  "RelationshipId": "relationship.example.contains",
-  "FromRecordId": "record.parent",
-  "ToRecordId": "record.child",
+  "RelationshipId": "relationship.item.vendor",
+  "FromRecordId": "native.item.example",
+  "ToRecordId": "vendor.example",
   "TargetSubjectRef": "",
-  "RelationshipKind": "contains",
+  "RelationshipKind": "sold_by",
   "EvidenceIds": ["evidence.fingerprint.2"],
-  "ResearchStage": "S4",
-  "Confidence": "documented",
+  "ResearchStage": "S2",
+  "Confidence": "inferred",
   "OperationalRisk": "unknown",
   "ValidationState": "unvalidated",
   "StalenessState": "unknown",
@@ -290,58 +315,16 @@ Promotion creates `unvalidated`, staleness-`unknown` records and cannot populate
 }
 ```
 
-A relationship requires a stable ID, existing source record, relationship kind, target record or unresolved target subject, and evidence. Relationships carry the same independent governance axes as records.
+A relationship requires a stable ID, existing source record, kind, exactly one target record or target subject reference, and evidence.
 
-## State vocabularies
-
-### Maturity/research stage
-
-Preferred values: `S0` through `S8`. Legacy descriptive values remain readable for compatibility.
-
-### Confidence
-
-- `unknown`;
-- `unrated`;
-- `hypothesis`;
-- `inferred`;
-- `documented`;
-- `runtime_observed`;
-- `validated`.
-
-### Operational risk
-
-- `unknown`;
-- `low`;
-- `medium`;
-- `high`;
-- `critical`.
-
-### Validation state
-
-- `unvalidated`;
-- `pending`;
-- `validated`;
-- `failed`;
-- `stale`;
-- `blocked`.
-
-### Staleness state
-
-- `unknown`;
-- `current`;
-- `potentially_stale`;
-- `stale`.
-
-Allowed usages require `ValidationState: validated`, `StalenessState: current`, no missing/conflict refs, and no supersession.
-
-## Catalog validation event
+## Validation history
 
 ```json
 {
-  "ValidationId": "validation.record.native-item-example.1",
+  "ValidationId": "validation.record.example.1",
   "SubjectKind": "record",
   "SubjectId": "native.item.example",
-  "RecordId": "native.item.example",
+  "RecordId": "",
   "State": "validated",
   "Method": "runtime-observation",
   "Validator": "validator-id",
@@ -354,63 +337,156 @@ Allowed usages require `ValidationState: validated`, `StalenessState: current`, 
 }
 ```
 
-`SubjectKind` is `record` or `relationship`. `SubjectId` is the corresponding stable ID. `RecordId` remains for backward compatibility with older record-only events.
+`SubjectKind` is `record` or `relationship`. `RecordId` remains only for legacy schema-1 record validation entries. New entries use `SubjectKind` and `SubjectId`.
 
-New validation events require state, method, named validator, exact profile/version/branch binding, and evidence IDs. History is retained separately from current state.
+Validation history is append-only. A validation result does not grant permission.
 
-## Catalog governance event
+## Governance history
 
 ```json
 {
-  "EventId": "governance.record.native-item-example.1",
+  "EventId": "governance.record.example.permission.1",
   "SubjectKind": "record",
   "SubjectId": "native.item.example",
   "Axis": "permission",
   "PreviousValue": "unset",
   "NewValue": "allow",
-  "Usage": "display_only",
+  "Usage": "existing_item_grant",
   "EvidenceIds": ["evidence.fingerprint.3"],
-  "ValidationIds": ["validation.record.native-item-example.1"],
+  "ValidationIds": ["validation.record.example.1"],
   "Reviewer": "reviewer-id",
   "DecidedAt": "2026-07-17T13:05:00.000Z",
-  "Notes": "Approved only for display in authoring tools."
+  "Notes": "Narrow existing-item lane only."
 }
 ```
 
-Governance event axes currently include:
+Governance events preserve reviewed maturity, confidence, risk, staleness, permission, prohibition, and supersession decisions. An allowed usage requires validated proof for the same subject.
 
-- `maturity`;
-- `confidence`;
-- `operational_risk`;
-- `staleness`;
-- `permission`;
-- `supersession`.
+## Economy item profile
 
-Permission outcomes are `allow`, `forbid`, and `clear`. `allow` requires validation proof IDs with at least one `validated` event for the same subject.
+Array: `EconomyItems`
 
-Governance history is append-only through normal editor workflows. Current record or relationship fields store the latest state; history explains how the state was reached.
+```json
+{
+  "RecordId": "native.item.example",
+  "Category": "material",
+  "Subtype": "crafting-component",
+  "StackLimit": 20,
+  "Weight": 0.1,
+  "BaseValue": 12.0,
+  "Rarity": "common",
+  "Quality": "standard",
+  "Durability": 0.0,
+  "QuestItem": false,
+  "UniqueItem": false,
+  "HiddenItem": false,
+  "LocalisationNameRef": "loc.item.example.name",
+  "LocalisationDescriptionRef": "loc.item.example.description",
+  "IconRef": "icon:item:example",
+  "AssetRef": "asset:item:example",
+  "Tags": ["material"],
+  "EvidenceIds": ["evidence.item.profile"]
+}
+```
 
-## Fail-closed transition rules
+Rules:
 
-- validation never creates an allowed usage;
-- non-validated states remove allowed usages;
-- stale or potentially stale subjects lose allowed usages;
-- superseded subjects lose allowed usages and become stale;
-- returning to `current` does not restore old permissions;
-- the same usage cannot be both allowed and forbidden;
-- permission proof must belong to the same subject;
-- relationship governance evidence must already be linked to the relationship.
+- `RecordId` references an existing canonical `economy/item` record;
+- evidence exists and matches the canonical item subject;
+- weight, base value, and durability are non-negative;
+- quest and unique flags feed economy blockers and do not grant permission.
+
+## Economy recipe profile
+
+Array: `EconomyRecipes`
+
+```json
+{
+  "RecordId": "native.recipe.example",
+  "RecipeType": "handcrafting",
+  "RecipeTab": "general",
+  "StationRecordIds": ["economy.station.handcrafting"],
+  "UnlockMode": "learned",
+  "UnlockSubjectRefs": ["subject:book:example"],
+  "DuplicateKey": "native.recipe.example",
+  "PersistenceMode": "native_template",
+  "HiddenRecipe": false,
+  "EvidenceIds": ["evidence.recipe.profile"]
+}
+```
+
+Supported persistence descriptions are `unknown`, `native_template`, `runtime_append`, and `custom_template`.
+
+Rules:
+
+- `RecordId` references an existing canonical `economy/recipe` record;
+- station IDs reference canonical economy station, crafting-station, or interaction-target records;
+- native recipes cannot use `custom_template`;
+- synthetic recipes cannot claim `native_template`;
+- recipe type, duplicate key, persistence mode, and evidence are required.
+
+Persistence mode describes research and planning only. It does not permit runtime append or registration.
+
+## Recipe ingredient join
+
+Array: `RecipeIngredients`
+
+```json
+{
+  "LinkId": "ingredient.recipe.example.1",
+  "RecipeRecordId": "native.recipe.example",
+  "ItemRecordId": "native.item.example",
+  "ItemSubjectRef": "",
+  "Quantity": 2,
+  "AlternativeGroup": "",
+  "Consumed": true,
+  "Conditions": [],
+  "EvidenceIds": ["evidence.recipe.ingredient.1"]
+}
+```
+
+Rules:
+
+- recipe ID references an existing typed recipe profile;
+- exactly one item record ID or unresolved item subject reference is present;
+- resolved item IDs reference canonical `economy/item` records;
+- quantity is positive;
+- evidence exists and belongs to the recipe, resolved item, or explicit unresolved subject.
+
+## Recipe output join
+
+Array: `RecipeOutputs`
+
+```json
+{
+  "LinkId": "output.recipe.example.1",
+  "RecipeRecordId": "native.recipe.example",
+  "ItemRecordId": "native.item.example",
+  "ItemSubjectRef": "",
+  "Quantity": 1,
+  "Chance": 1.0,
+  "ByProduct": false,
+  "Conditions": [],
+  "EvidenceIds": ["evidence.recipe.output.1"]
+}
+```
+
+Rules:
+
+- recipe ID references an existing typed recipe profile;
+- exactly one item record ID or unresolved item subject reference is present;
+- quantity is positive;
+- chance is greater than `0` and no greater than `1`;
+- evidence exists and belongs to the recipe, output item, or explicit unresolved subject.
 
 ## Compatibility and migration
 
 Backward-compatible examples:
 
 - adding an optional field with a safe default;
-- adding `GovernanceHistory` to schema 1;
-- adding subject-scoped validation fields while retaining legacy `RecordId`;
-- adding a new issue or blocker code;
-- adding a query filter;
-- adding an importer that does not reinterpret existing documents.
+- adding an optional typed-domain array;
+- adding a query filter, blocker code, or importer;
+- adding a new relationship or permission vocabulary without reinterpreting old values.
 
 Breaking examples:
 
@@ -418,9 +494,14 @@ Breaking examples:
 - renaming or removing a field;
 - changing a field type;
 - changing fingerprint or profile-binding scope;
-- changing exact-ref uniqueness;
-- changing pack ownership requirements;
-- changing a state value's meaning;
+- changing exact-ref uniqueness or pack ownership;
+- changing quantity, chance, or join identity semantics;
 - merging previously distinct record kinds.
 
-Breaking changes require a schema increment, migration or explicit unsupported-version error, old/new fixtures, tests, changelog and guide updates, release notes, and rollback guidance.
+Breaking changes require:
+
+- schema version increment;
+- migration tool or explicit unsupported-version error;
+- old/new fixtures and tests;
+- changelog and user-guide updates;
+- release notes and rollback guidance.
