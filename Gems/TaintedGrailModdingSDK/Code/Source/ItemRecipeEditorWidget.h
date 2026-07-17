@@ -10,6 +10,8 @@
 #include "EconomyAuthoringService.h"
 #include "FoundationNotificationBus.h"
 
+#include <AzCore/std/algorithm.h>
+
 #include <QWidget>
 
 class QCheckBox;
@@ -18,6 +20,7 @@ class QDoubleSpinBox;
 class QLabel;
 class QLineEdit;
 class QSpinBox;
+class QString;
 class QTableWidget;
 class QTabWidget;
 
