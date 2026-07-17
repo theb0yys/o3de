@@ -9,6 +9,8 @@
 
 #include "FoundationModels.h"
 
+#include <AzCore/std/utility/move.h>
+
 namespace TaintedGrailModdingSDK
 {
     class CatalogDatabase
