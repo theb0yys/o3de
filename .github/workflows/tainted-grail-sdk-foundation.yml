@@ -65,6 +65,9 @@ jobs:
       - name: Validate foundation and governance contracts
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_foundation.py
 
+      - name: Validate governance hardening contract
+        run: python Gems/TaintedGrailModdingSDK/Tools/validate_governance_hardening.py
+
       - name: Validate catalog test contract
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_catalog_tests.py
 
