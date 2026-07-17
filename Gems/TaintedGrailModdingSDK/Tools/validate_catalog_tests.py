@@ -32,6 +32,7 @@ def main() -> int:
     database_tests_path = code_root / "Tests" / "CatalogDatabaseTests.cpp"
     governance_tests_path = code_root / "Tests" / "CatalogGovernanceServiceTests.cpp"
     hardening_tests_path = code_root / "Tests" / "CatalogGovernanceHardeningTests.cpp"
+    types_tests_path = code_root / "Tests" / "CatalogGovernanceTypesTests.cpp"
     economy_tests_path = code_root / "Tests" / "EconomyAuthoringTests.cpp"
 
     try:
@@ -41,6 +42,7 @@ def main() -> int:
             database_tests_path,
             governance_tests_path,
             hardening_tests_path,
+            types_tests_path,
             economy_tests_path,
         ):
             if not path.is_file():
@@ -80,6 +82,7 @@ def main() -> int:
             "Tests/CatalogDatabaseTests.cpp",
             "Tests/CatalogGovernanceHardeningTests.cpp",
             "Tests/CatalogGovernanceServiceTests.cpp",
+            "Tests/CatalogGovernanceTypesTests.cpp",
             "Tests/EconomyAuthoringTests.cpp",
         }
         if entries != expected:
@@ -127,6 +130,17 @@ def main() -> int:
         ):
             require_contains(hardening_tests, fragment, hardening_tests_path)
 
+        types_tests = types_tests_path.read_text(encoding="utf-8")
+        for fragment in (
+            "KnownValuesRoundTripThroughTypedBoundary",
+            "TypographicalValuesFailAtBoundary",
+            "LegacySchemaValuesRemainRepresentable",
+            'ParseValidationState("validted")',
+            'ParseGovernanceAxis("operational-risk")',
+            'ParseConfidenceLevel("unrated")',
+        ):
+            require_contains(types_tests, fragment, types_tests_path)
+
         economy_tests = economy_tests_path.read_text(encoding="utf-8")
         for fragment in (
             "ItemProfileRequiresCanonicalEconomyItem",
@@ -144,7 +158,7 @@ def main() -> int:
         print(f"Tainted Grail catalog/governance/economy test validation failed: {exc}", file=sys.stderr)
         return 1
 
-    print("Tainted Grail catalog, governance hardening, and economy test contract passed.")
+    print("Tainted Grail catalog, typed governance hardening, and economy test contract passed.")
     return 0
 
 
