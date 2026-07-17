@@ -7,6 +7,8 @@
 
 #include "CatalogGovernanceTypes.h"
 
+#include <AzCore/std/utility/move.h>
+
 namespace TaintedGrailModdingSDK
 {
     namespace
