@@ -45,6 +45,12 @@ namespace TaintedGrailModdingSDK
             }
             return false;
         }
+
+        bool IsKnownAxis(const AZStd::string& axis)
+        {
+            return axis == "maturity" || axis == "confidence" || axis == "operational_risk"
+                || axis == "staleness" || axis == "permission" || axis == "supersession";
+        }
     } // namespace
 
     AZStd::vector<BlockerRecord> CatalogGovernanceBlockerService::Evaluate(
@@ -103,13 +109,14 @@ namespace TaintedGrailModdingSDK
             for (const AZStd::string& usage : record.m_allowedUsages)
             {
                 const CatalogGovernanceEvent* event = FindLatestPermissionEvent(catalog, "record", record.m_recordId, usage);
-                if (!event || event->m_newValue != "allow" || !HasValidatedBasis(catalog, *event))
+                if (!event || event->m_newValue != "allow" || event->m_evidenceIds.empty()
+                    || !HasValidatedBasis(catalog, *event))
                 {
                     blockers.push_back(MakeBlocker(
                         "governance.permission-proof." + record.m_recordId + "." + usage,
                         "error",
                         subject,
-                        "Allowed usage has no current reviewed permission event backed by validated proof: " + usage,
+                        "Allowed usage has no current reviewed permission event backed by evidence and validated proof: " + usage,
                         { usage }));
                 }
             }
@@ -171,13 +178,14 @@ namespace TaintedGrailModdingSDK
             for (const AZStd::string& usage : relationship.m_allowedUsages)
             {
                 const CatalogGovernanceEvent* event = FindLatestPermissionEvent(catalog, "relationship", subject, usage);
-                if (!event || event->m_newValue != "allow" || !HasValidatedBasis(catalog, *event))
+                if (!event || event->m_newValue != "allow" || event->m_evidenceIds.empty()
+                    || !HasValidatedBasis(catalog, *event))
                 {
                     blockers.push_back(MakeBlocker(
                         "governance.relationship-permission-proof." + subject + "." + usage,
                         "error",
                         subject,
-                        "Allowed relationship usage has no reviewed validated proof: " + usage,
+                        "Allowed relationship usage has no reviewed evidence-backed validated proof: " + usage,
                         { usage }));
                 }
             }
@@ -227,6 +235,14 @@ namespace TaintedGrailModdingSDK
 
         for (const CatalogGovernanceEvent& event : catalog.GetGovernanceHistory())
         {
+            if (!IsKnownAxis(event.m_axis))
+            {
+                blockers.push_back(MakeBlocker(
+                    "governance.event-axis." + event.m_eventId,
+                    "error",
+                    event.m_subjectId,
+                    "Governance history contains an unsupported axis: " + event.m_axis));
+            }
             if (event.m_reviewer.empty())
             {
                 blockers.push_back(MakeBlocker(
@@ -234,6 +250,15 @@ namespace TaintedGrailModdingSDK
                     "error",
                     event.m_subjectId,
                     "Governance history has no named reviewer."));
+            }
+            const bool evidenceOptional = event.m_axis == "permission" && event.m_newValue == "clear";
+            if (event.m_evidenceIds.empty() && !evidenceOptional)
+            {
+                blockers.push_back(MakeBlocker(
+                    "governance.event-evidence-empty." + event.m_eventId,
+                    "error",
+                    event.m_subjectId,
+                    "Governance history has no evidence IDs."));
             }
             for (const AZStd::string& evidenceId : event.m_evidenceIds)
             {
