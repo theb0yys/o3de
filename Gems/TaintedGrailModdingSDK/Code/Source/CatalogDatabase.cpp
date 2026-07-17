@@ -93,6 +93,19 @@ namespace TaintedGrailModdingSDK
             }
             return false;
         }
+
+        bool IsEconomyRecord(const CatalogRecord* record, const char* kind)
+        {
+            return record && record->m_domain == "economy" && record->m_recordKind == kind;
+        }
+
+        bool IsStationRecord(const CatalogRecord* record)
+        {
+            return record && record->m_domain == "economy"
+                && (record->m_recordKind == "station"
+                    || record->m_recordKind == "crafting_station"
+                    || record->m_recordKind == "interaction_target");
+        }
     } // namespace
 
     bool CatalogDatabase::InsertNew(const CatalogRecord& record, AZStd::string* error)
@@ -109,7 +122,6 @@ namespace TaintedGrailModdingSDK
         {
             return false;
         }
-
         m_records.push_back(record);
         return true;
     }
@@ -121,7 +133,6 @@ namespace TaintedGrailModdingSDK
         {
             return false;
         }
-
         if (replacing)
         {
             *replacing = record;
@@ -139,7 +150,6 @@ namespace TaintedGrailModdingSDK
         {
             return false;
         }
-
         if (CatalogRelationship* existing = FindMutableRelationshipById(relationship.m_relationshipId))
         {
             *existing = relationship;
@@ -230,6 +240,78 @@ namespace TaintedGrailModdingSDK
         return true;
     }
 
+    bool CatalogDatabase::UpsertEconomyItem(const EconomyItemProfile& profile, AZStd::string* error)
+    {
+        if (!ValidateEconomyItem(profile, error))
+        {
+            return false;
+        }
+        for (EconomyItemProfile& existing : m_economyItems)
+        {
+            if (existing.m_recordId == profile.m_recordId)
+            {
+                existing = profile;
+                return true;
+            }
+        }
+        m_economyItems.push_back(profile);
+        return true;
+    }
+
+    bool CatalogDatabase::UpsertEconomyRecipe(const EconomyRecipeProfile& profile, AZStd::string* error)
+    {
+        if (!ValidateEconomyRecipe(profile, error))
+        {
+            return false;
+        }
+        for (EconomyRecipeProfile& existing : m_economyRecipes)
+        {
+            if (existing.m_recordId == profile.m_recordId)
+            {
+                existing = profile;
+                return true;
+            }
+        }
+        m_economyRecipes.push_back(profile);
+        return true;
+    }
+
+    bool CatalogDatabase::UpsertRecipeIngredient(const EconomyRecipeIngredient& ingredient, AZStd::string* error)
+    {
+        if (!ValidateRecipeIngredient(ingredient, error))
+        {
+            return false;
+        }
+        for (EconomyRecipeIngredient& existing : m_recipeIngredients)
+        {
+            if (existing.m_linkId == ingredient.m_linkId)
+            {
+                existing = ingredient;
+                return true;
+            }
+        }
+        m_recipeIngredients.push_back(ingredient);
+        return true;
+    }
+
+    bool CatalogDatabase::UpsertRecipeOutput(const EconomyRecipeOutput& output, AZStd::string* error)
+    {
+        if (!ValidateRecipeOutput(output, error))
+        {
+            return false;
+        }
+        for (EconomyRecipeOutput& existing : m_recipeOutputs)
+        {
+            if (existing.m_linkId == output.m_linkId)
+            {
+                existing = output;
+                return true;
+            }
+        }
+        m_recipeOutputs.push_back(output);
+        return true;
+    }
+
     bool CatalogDatabase::ReplaceFromDocument(const CatalogDocument& document, AZStd::string* error)
     {
         if (!document.UsesSupportedSchema())
@@ -270,6 +352,34 @@ namespace TaintedGrailModdingSDK
                 return false;
             }
         }
+        for (const EconomyItemProfile& profile : document.m_economyItems)
+        {
+            if (!candidate.UpsertEconomyItem(profile, error))
+            {
+                return false;
+            }
+        }
+        for (const EconomyRecipeProfile& profile : document.m_economyRecipes)
+        {
+            if (!candidate.UpsertEconomyRecipe(profile, error))
+            {
+                return false;
+            }
+        }
+        for (const EconomyRecipeIngredient& ingredient : document.m_recipeIngredients)
+        {
+            if (!candidate.UpsertRecipeIngredient(ingredient, error))
+            {
+                return false;
+            }
+        }
+        for (const EconomyRecipeOutput& output : document.m_recipeOutputs)
+        {
+            if (!candidate.UpsertRecipeOutput(output, error))
+            {
+                return false;
+            }
+        }
 
         *this = AZStd::move(candidate);
         return true;
@@ -281,6 +391,10 @@ namespace TaintedGrailModdingSDK
         m_relationships.clear();
         m_validationHistory.clear();
         m_governanceHistory.clear();
+        m_economyItems.clear();
+        m_economyRecipes.clear();
+        m_recipeIngredients.clear();
+        m_recipeOutputs.clear();
     }
 
     CatalogRecord* CatalogDatabase::FindMutableRecordById(const AZStd::string& recordId)
@@ -350,6 +464,30 @@ namespace TaintedGrailModdingSDK
             if (validation.m_validationId == validationId)
             {
                 return &validation;
+            }
+        }
+        return nullptr;
+    }
+
+    const EconomyItemProfile* CatalogDatabase::FindEconomyItem(const AZStd::string& recordId) const
+    {
+        for (const EconomyItemProfile& profile : m_economyItems)
+        {
+            if (profile.m_recordId == recordId)
+            {
+                return &profile;
+            }
+        }
+        return nullptr;
+    }
+
+    const EconomyRecipeProfile* CatalogDatabase::FindEconomyRecipe(const AZStd::string& recordId) const
+    {
+        for (const EconomyRecipeProfile& profile : m_economyRecipes)
+        {
+            if (profile.m_recordId == recordId)
+            {
+                return &profile;
             }
         }
         return nullptr;
@@ -446,7 +584,6 @@ namespace TaintedGrailModdingSDK
                     continue;
                 }
             }
-
             matches.push_back(record);
         }
 
@@ -525,6 +662,42 @@ namespace TaintedGrailModdingSDK
         return matches;
     }
 
+    AZStd::vector<EconomyRecipeIngredient> CatalogDatabase::FindIngredientsForRecipe(
+        const AZStd::string& recipeRecordId) const
+    {
+        AZStd::vector<EconomyRecipeIngredient> matches;
+        for (const EconomyRecipeIngredient& ingredient : m_recipeIngredients)
+        {
+            if (ingredient.m_recipeRecordId == recipeRecordId)
+            {
+                matches.push_back(ingredient);
+            }
+        }
+        AZStd::sort(matches.begin(), matches.end(), [](const EconomyRecipeIngredient& left, const EconomyRecipeIngredient& right)
+        {
+            return left.m_linkId < right.m_linkId;
+        });
+        return matches;
+    }
+
+    AZStd::vector<EconomyRecipeOutput> CatalogDatabase::FindOutputsForRecipe(
+        const AZStd::string& recipeRecordId) const
+    {
+        AZStd::vector<EconomyRecipeOutput> matches;
+        for (const EconomyRecipeOutput& output : m_recipeOutputs)
+        {
+            if (output.m_recipeRecordId == recipeRecordId)
+            {
+                matches.push_back(output);
+            }
+        }
+        AZStd::sort(matches.begin(), matches.end(), [](const EconomyRecipeOutput& left, const EconomyRecipeOutput& right)
+        {
+            return left.m_linkId < right.m_linkId;
+        });
+        return matches;
+    }
+
     AZStd::vector<DomainCoverage> CatalogDatabase::BuildCoverage() const
     {
         AZStd::vector<DomainCoverage> coverage;
@@ -546,7 +719,6 @@ namespace TaintedGrailModdingSDK
                 coverage.push_back(newCoverage);
                 domainCoverage = &coverage.back();
             }
-
             ++domainCoverage->m_recordCount;
             if (record.IsBlocked())
             {
@@ -573,6 +745,10 @@ namespace TaintedGrailModdingSDK
         document.m_relationships = m_relationships;
         document.m_validationHistory = m_validationHistory;
         document.m_governanceHistory = m_governanceHistory;
+        document.m_economyItems = m_economyItems;
+        document.m_economyRecipes = m_economyRecipes;
+        document.m_recipeIngredients = m_recipeIngredients;
+        document.m_recipeOutputs = m_recipeOutputs;
         return document;
     }
 
@@ -594,6 +770,26 @@ namespace TaintedGrailModdingSDK
     const AZStd::vector<CatalogGovernanceEvent>& CatalogDatabase::GetGovernanceHistory() const
     {
         return m_governanceHistory;
+    }
+
+    const AZStd::vector<EconomyItemProfile>& CatalogDatabase::GetEconomyItems() const
+    {
+        return m_economyItems;
+    }
+
+    const AZStd::vector<EconomyRecipeProfile>& CatalogDatabase::GetEconomyRecipes() const
+    {
+        return m_economyRecipes;
+    }
+
+    const AZStd::vector<EconomyRecipeIngredient>& CatalogDatabase::GetRecipeIngredients() const
+    {
+        return m_recipeIngredients;
+    }
+
+    const AZStd::vector<EconomyRecipeOutput>& CatalogDatabase::GetRecipeOutputs() const
+    {
+        return m_recipeOutputs;
     }
 
     bool CatalogDatabase::ValidateRecord(
@@ -810,6 +1006,197 @@ namespace TaintedGrailModdingSDK
             if (error)
             {
                 *error = "Governance history references an unknown catalog subject.";
+            }
+            return false;
+        }
+        return true;
+    }
+
+    bool CatalogDatabase::ValidateEconomyItem(const EconomyItemProfile& profile, AZStd::string* error) const
+    {
+        if (!IsEconomyRecord(FindByRecordId(profile.m_recordId), "item"))
+        {
+            if (error)
+            {
+                *error = "Economy item profiles require an existing canonical economy/item record.";
+            }
+            return false;
+        }
+        if (profile.m_evidenceIds.empty())
+        {
+            if (error)
+            {
+                *error = "Economy item profiles require evidence IDs.";
+            }
+            return false;
+        }
+        if (profile.m_weight < 0.0 || profile.m_baseValue < 0.0 || profile.m_durability < 0.0)
+        {
+            if (error)
+            {
+                *error = "Item weight, base value, and durability cannot be negative.";
+            }
+            return false;
+        }
+        return true;
+    }
+
+    bool CatalogDatabase::ValidateEconomyRecipe(const EconomyRecipeProfile& profile, AZStd::string* error) const
+    {
+        const CatalogRecord* recipeRecord = FindByRecordId(profile.m_recordId);
+        if (!IsEconomyRecord(recipeRecord, "recipe"))
+        {
+            if (error)
+            {
+                *error = "Economy recipe profiles require an existing canonical economy/recipe record.";
+            }
+            return false;
+        }
+        if (profile.m_recipeType.empty() || profile.m_duplicateKey.empty() || profile.m_persistenceMode.empty())
+        {
+            if (error)
+            {
+                *error = "Recipe type, duplicate key, and persistence mode are required.";
+            }
+            return false;
+        }
+        if (profile.m_persistenceMode != "unknown" && profile.m_persistenceMode != "native_template"
+            && profile.m_persistenceMode != "runtime_append" && profile.m_persistenceMode != "custom_template")
+        {
+            if (error)
+            {
+                *error = "Recipe persistence mode must be unknown, native_template, runtime_append, or custom_template.";
+            }
+            return false;
+        }
+        if (recipeRecord->m_identityKind == "native" && profile.m_persistenceMode == "custom_template")
+        {
+            if (error)
+            {
+                *error = "Native recipe records cannot use custom_template persistence mode.";
+            }
+            return false;
+        }
+        if (recipeRecord->m_identityKind == "synthetic" && profile.m_persistenceMode == "native_template")
+        {
+            if (error)
+            {
+                *error = "Synthetic recipe records cannot claim native_template persistence.";
+            }
+            return false;
+        }
+        for (const AZStd::string& stationRecordId : profile.m_stationRecordIds)
+        {
+            if (!IsStationRecord(FindByRecordId(stationRecordId)))
+            {
+                if (error)
+                {
+                    *error = "Recipe station IDs must reference canonical economy station records.";
+                }
+                return false;
+            }
+        }
+        if (profile.m_evidenceIds.empty())
+        {
+            if (error)
+            {
+                *error = "Economy recipe profiles require evidence IDs.";
+            }
+            return false;
+        }
+        return true;
+    }
+
+    bool CatalogDatabase::ValidateRecipeIngredient(
+        const EconomyRecipeIngredient& ingredient,
+        AZStd::string* error) const
+    {
+        if (ingredient.m_linkId.empty() || ingredient.m_recipeRecordId.empty())
+        {
+            if (error)
+            {
+                *error = "Recipe ingredients require link ID and recipe record ID.";
+            }
+            return false;
+        }
+        if (!FindEconomyRecipe(ingredient.m_recipeRecordId))
+        {
+            if (error)
+            {
+                *error = "Recipe ingredients require an existing typed recipe profile.";
+            }
+            return false;
+        }
+        const bool hasItemRecord = !ingredient.m_itemRecordId.empty();
+        const bool hasSubjectRef = !ingredient.m_itemSubjectRef.empty();
+        if (hasItemRecord == hasSubjectRef)
+        {
+            if (error)
+            {
+                *error = "Recipe ingredients require exactly one item record ID or unresolved item subject ref.";
+            }
+            return false;
+        }
+        if (hasItemRecord && !IsEconomyRecord(FindByRecordId(ingredient.m_itemRecordId), "item"))
+        {
+            if (error)
+            {
+                *error = "Recipe ingredient item IDs must reference canonical economy/item records.";
+            }
+            return false;
+        }
+        if (ingredient.m_quantity == 0 || ingredient.m_evidenceIds.empty())
+        {
+            if (error)
+            {
+                *error = "Recipe ingredients require positive quantity and evidence IDs.";
+            }
+            return false;
+        }
+        return true;
+    }
+
+    bool CatalogDatabase::ValidateRecipeOutput(const EconomyRecipeOutput& output, AZStd::string* error) const
+    {
+        if (output.m_linkId.empty() || output.m_recipeRecordId.empty())
+        {
+            if (error)
+            {
+                *error = "Recipe outputs require link ID and recipe record ID.";
+            }
+            return false;
+        }
+        if (!FindEconomyRecipe(output.m_recipeRecordId))
+        {
+            if (error)
+            {
+                *error = "Recipe outputs require an existing typed recipe profile.";
+            }
+            return false;
+        }
+        const bool hasItemRecord = !output.m_itemRecordId.empty();
+        const bool hasSubjectRef = !output.m_itemSubjectRef.empty();
+        if (hasItemRecord == hasSubjectRef)
+        {
+            if (error)
+            {
+                *error = "Recipe outputs require exactly one item record ID or unresolved item subject ref.";
+            }
+            return false;
+        }
+        if (hasItemRecord && !IsEconomyRecord(FindByRecordId(output.m_itemRecordId), "item"))
+        {
+            if (error)
+            {
+                *error = "Recipe output item IDs must reference canonical economy/item records.";
+            }
+            return false;
+        }
+        if (output.m_quantity == 0 || output.m_chance <= 0.0 || output.m_chance > 1.0 || output.m_evidenceIds.empty())
+        {
+            if (error)
+            {
+                *error = "Recipe outputs require positive quantity, chance in (0, 1], and evidence IDs.";
             }
             return false;
         }
