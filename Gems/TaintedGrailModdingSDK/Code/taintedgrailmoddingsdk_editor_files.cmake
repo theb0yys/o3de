@@ -10,6 +10,8 @@ set(FILES
     Source/CatalogBrowserWidget.h
     Source/CatalogDatabase.cpp
     Source/CatalogDatabase.h
+    Source/CatalogGovernanceBlockerService.cpp
+    Source/CatalogGovernanceBlockerService.h
     Source/CatalogGovernanceService.cpp
     Source/CatalogGovernanceService.h
     Source/CatalogGovernanceWidget.cpp
