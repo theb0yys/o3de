@@ -12,6 +12,7 @@
 #include "SourceEvidenceRegistry.h"
 
 #include <AzCore/Outcome/Outcome.h>
+#include <AzCore/std/string/string_view.h>
 
 #include <cstddef>
 
