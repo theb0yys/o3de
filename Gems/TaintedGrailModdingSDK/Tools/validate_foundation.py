@@ -8,9 +8,9 @@
 
 """Validate the Tainted Grail Modding SDK editor foundation without building O3DE.
 
-The check verifies repository structure, durable workspace and pack management,
-source/evidence intake, and the editor-only product boundary. It does not replace
-an O3DE configure or compile.
+The check verifies repository structure, public-project governance, durable workspace
+and pack management, source/evidence intake, and the editor-only product boundary.
+It does not replace an O3DE configure or compile.
 """
 
 from __future__ import annotations
@@ -174,6 +174,60 @@ def validate_source_intake(gem_root: Path) -> None:
         fail("Source intake must persist documents before publishing the candidate registry")
 
 
+def validate_public_project(repo_root: Path) -> None:
+    required_files = {
+        "README.md",
+        "CONTRIBUTING.md",
+        "CODE_OF_CONDUCT.md",
+        "SECURITY.md",
+        "SUPPORT.md",
+        "GOVERNANCE.md",
+        "ROADMAP.md",
+        "CHANGELOG.md",
+        ".github/CODEOWNERS",
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        ".github/ISSUE_TEMPLATE/config.yml",
+        ".github/ISSUE_TEMPLATE/tg_sdk_bug.yml",
+        ".github/ISSUE_TEMPLATE/tg_sdk_feature.yml",
+        ".github/ISSUE_TEMPLATE/tg_sdk_research.yml",
+        "docs/tainted-grail-sdk/README.md",
+        "docs/tainted-grail-sdk/USER_GUIDE.md",
+        "docs/tainted-grail-sdk/ARCHITECTURE.md",
+        "docs/tainted-grail-sdk/DEVELOPMENT_GUIDE.md",
+        "docs/tainted-grail-sdk/CODE_QUALITY.md",
+        "docs/tainted-grail-sdk/REVIEW_AND_MERGE_POLICY.md",
+        "docs/tainted-grail-sdk/DATA_FORMATS.md",
+        "docs/tainted-grail-sdk/RELEASE_PROCESS.md",
+        "docs/tainted-grail-sdk/MAINTAINER_CHECKLIST.md",
+        "docs/tainted-grail-sdk/LEGAL_AND_CONTENT_POLICY.md",
+        "docs/tainted-grail-sdk/PRIVACY.md",
+        "docs/tainted-grail-sdk/ACCESSIBILITY.md",
+        "docs/tainted-grail-sdk/GLOSSARY.md",
+    }
+    for relative_path in sorted(required_files):
+        if not (repo_root / relative_path).is_file():
+            fail(f"Required public-project document is missing: {relative_path}")
+
+    required_fragments = {
+        "README.md": "Direct development on `main` is prohibited",
+        "CONTRIBUTING.md": "Pre-commit self-review",
+        "SECURITY.md": "Report a vulnerability",
+        "GOVERNANCE.md": "Evidence, claims, reviewed records, validation, and permission remain separate",
+        "docs/tainted-grail-sdk/CODE_QUALITY.md": "Display names are not identities",
+        "docs/tainted-grail-sdk/REVIEW_AND_MERGE_POLICY.md": "Pending is not passing",
+        "docs/tainted-grail-sdk/DATA_FORMATS.md": "RuntimeActionsEnabled",
+        ".github/PULL_REQUEST_TEMPLATE.md": "Author self-review",
+        ".github/ISSUE_TEMPLATE/tg_sdk_feature.yml": "design review before implementation",
+        ".github/CODEOWNERS": "/Gems/TaintedGrailModdingSDK/ @theb0yys",
+    }
+    for relative_path, fragment in required_fragments.items():
+        path = repo_root / relative_path
+        require_contains(path.read_text(encoding="utf-8"), fragment, path)
+
+    issue_config = (repo_root / ".github/ISSUE_TEMPLATE/config.yml").read_text(encoding="utf-8")
+    require_contains(issue_config, "blank_issues_enabled: false", repo_root / ".github/ISSUE_TEMPLATE/config.yml")
+
+
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[3]
     gem_root = repo_root / GEM_PATH
@@ -184,15 +238,16 @@ def main() -> int:
         validate_source_manifest(gem_root)
         validate_editor_foundation(gem_root)
         validate_source_intake(gem_root)
+        validate_public_project(repo_root)
     except (OSError, RuntimeError) as exc:
         print(f"Tainted Grail SDK foundation validation failed: {exc}", file=sys.stderr)
         return 1
 
     print("Tainted Grail SDK foundation validation passed.")
     print(
-        "Validated: workspace and pack editing, source/evidence importer contracts, SHA-256 fingerprinting, "
-        "exact profile binding, durable documents, schema/import reporting, catalog/query service, blockers, "
-        "editor docks, automatic refresh, and editor-only boundary."
+        "Validated: public documentation and governance, workspace and pack editing, source/evidence importer "
+        "contracts, SHA-256 fingerprinting, exact profile binding, durable documents, schema/import reporting, "
+        "catalog/query service, blockers, editor docks, automatic refresh, and editor-only boundary."
     )
     return 0
 
