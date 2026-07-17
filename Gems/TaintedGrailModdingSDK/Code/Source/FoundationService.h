@@ -50,7 +50,6 @@ namespace TaintedGrailModdingSDK
         bool PromoteEvidenceToCatalog(
             const CatalogPromotionRequest& request,
             AZStd::string* error = nullptr);
-        bool UpsertCatalogRecord(const CatalogRecord& record, AZStd::string* error = nullptr);
         bool UpsertCatalogRelationship(const CatalogRelationship& relationship, AZStd::string* error = nullptr);
         bool AddCatalogValidationEvent(const CatalogValidationEvent& validation, AZStd::string* error = nullptr);
         bool SaveCatalog(AZStd::string* error = nullptr);
@@ -75,6 +74,8 @@ namespace TaintedGrailModdingSDK
     private:
         FoundationService() = default;
 
+        // Internal compatibility path only. Public/editor record creation must use governed promotion.
+        bool UpsertCatalogRecord(const CatalogRecord& record, AZStd::string* error = nullptr);
         bool PersistCatalogCandidate(const CatalogDatabase& candidate, AZStd::string* error);
         PackManifest* FindPackById(const AZStd::string& packId);
         const PackManifest* FindPackById(const AZStd::string& packId) const;
