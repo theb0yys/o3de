@@ -13,6 +13,8 @@
 #include <AzCore/Outcome/Outcome.h>
 #include <AzCore/std/algorithm.h>
 
+#include <QByteArray>
+
 namespace TaintedGrailModdingSDK
 {
     class CatalogPromotionService
