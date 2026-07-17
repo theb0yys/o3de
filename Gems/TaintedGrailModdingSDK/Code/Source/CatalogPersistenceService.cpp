@@ -31,6 +31,85 @@ namespace TaintedGrailModdingSDK
             return QString::fromUtf8(value.c_str());
         }
 
+        const CatalogRecord* FindRecord(const CatalogDocument& document, const AZStd::string& recordId)
+        {
+            for (const CatalogRecord& record : document.m_records)
+            {
+                if (record.m_recordId == recordId)
+                {
+                    return &record;
+                }
+            }
+            return nullptr;
+        }
+
+        const CatalogRelationship* FindRelationship(
+            const CatalogDocument& document,
+            const AZStd::string& relationshipId)
+        {
+            for (const CatalogRelationship& relationship : document.m_relationships)
+            {
+                if (relationship.m_relationshipId == relationshipId)
+                {
+                    return &relationship;
+                }
+            }
+            return nullptr;
+        }
+
+        void NormalizeLegacyValidationHistory(CatalogDocument& document)
+        {
+            for (CatalogValidationEvent& validation : document.m_validationHistory)
+            {
+                const bool missingValidator = validation.m_validator.empty();
+                const bool missingEvidence = validation.m_evidenceIds.empty();
+
+                if (validation.m_subjectKind.empty())
+                {
+                    validation.m_subjectKind = "record";
+                }
+                if (validation.m_subjectId.empty() && !validation.m_recordId.empty())
+                {
+                    validation.m_subjectId = validation.m_recordId;
+                }
+                if (validation.m_subjectKind == "record" && validation.m_recordId.empty())
+                {
+                    validation.m_recordId = validation.m_subjectId;
+                }
+                if (missingValidator)
+                {
+                    validation.m_validator = "legacy-unattributed";
+                }
+                if (missingEvidence)
+                {
+                    if (validation.m_subjectKind == "record")
+                    {
+                        if (const CatalogRecord* record = FindRecord(document, validation.m_subjectId))
+                        {
+                            validation.m_evidenceIds = record->m_evidenceIds;
+                        }
+                    }
+                    else if (validation.m_subjectKind == "relationship")
+                    {
+                        if (const CatalogRelationship* relationship = FindRelationship(document, validation.m_subjectId))
+                        {
+                            validation.m_evidenceIds = relationship->m_evidenceIds;
+                        }
+                    }
+                }
+                if (missingValidator || missingEvidence)
+                {
+                    validation.m_state = "blocked";
+                    if (!validation.m_notes.empty())
+                    {
+                        validation.m_notes += " ";
+                    }
+                    validation.m_notes +=
+                        "Compatibility normalization: legacy validation proof was incomplete; fresh validation is required.";
+                }
+            }
+        }
+
         AZ::Outcome<void, AZStd::string> ValidatePersistedIdentity(const CatalogDocument& document)
         {
             for (const CatalogRecord& record : document.m_records)
@@ -141,6 +220,8 @@ namespace TaintedGrailModdingSDK
         {
             return AZ::Failure(AZStd::string(identityResult.GetError()));
         }
+
+        NormalizeLegacyValidationHistory(document);
         return AZ::Success(AZStd::move(document));
     }
 } // namespace TaintedGrailModdingSDK
