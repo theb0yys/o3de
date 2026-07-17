@@ -26,48 +26,25 @@ namespace TaintedGrailModdingSDK
 
     AZ::Outcome<CatalogSubjectKind, AZStd::string> ParseCatalogSubjectKind(const AZStd::string& value)
     {
-        if (value == "record")
-        {
-            return AZ::Success(CatalogSubjectKind::Record);
-        }
-        if (value == "relationship")
-        {
-            return AZ::Success(CatalogSubjectKind::Relationship);
-        }
+        if (value == "record") return AZ::Success(CatalogSubjectKind::Record);
+        if (value == "relationship") return AZ::Success(CatalogSubjectKind::Relationship);
         return UnknownValue<CatalogSubjectKind>("catalog subject kind", value);
     }
 
     AZ::Outcome<GovernanceAxis, AZStd::string> ParseGovernanceAxis(const AZStd::string& value)
     {
-        if (value == "maturity")
-        {
-            return AZ::Success(GovernanceAxis::Maturity);
-        }
-        if (value == "confidence")
-        {
-            return AZ::Success(GovernanceAxis::Confidence);
-        }
-        if (value == "operational_risk")
-        {
-            return AZ::Success(GovernanceAxis::OperationalRisk);
-        }
-        if (value == "staleness")
-        {
-            return AZ::Success(GovernanceAxis::Staleness);
-        }
-        if (value == "permission")
-        {
-            return AZ::Success(GovernanceAxis::Permission);
-        }
-        if (value == "supersession")
-        {
-            return AZ::Success(GovernanceAxis::Supersession);
-        }
+        if (value == "maturity") return AZ::Success(GovernanceAxis::Maturity);
+        if (value == "confidence") return AZ::Success(GovernanceAxis::Confidence);
+        if (value == "operational_risk") return AZ::Success(GovernanceAxis::OperationalRisk);
+        if (value == "staleness") return AZ::Success(GovernanceAxis::Staleness);
+        if (value == "permission") return AZ::Success(GovernanceAxis::Permission);
+        if (value == "supersession") return AZ::Success(GovernanceAxis::Supersession);
         return UnknownValue<GovernanceAxis>("governance axis", value);
     }
 
     AZ::Outcome<ResearchStage, AZStd::string> ParseResearchStage(const AZStd::string& value)
     {
+        if (value == "unknown") return AZ::Success(ResearchStage::Unknown);
         if (value == "S0") return AZ::Success(ResearchStage::S0);
         if (value == "S1") return AZ::Success(ResearchStage::S1);
         if (value == "S2") return AZ::Success(ResearchStage::S2);
@@ -88,6 +65,7 @@ namespace TaintedGrailModdingSDK
     AZ::Outcome<ConfidenceLevel, AZStd::string> ParseConfidenceLevel(const AZStd::string& value)
     {
         if (value == "unknown") return AZ::Success(ConfidenceLevel::Unknown);
+        if (value == "unrated") return AZ::Success(ConfidenceLevel::Unrated);
         if (value == "hypothesis") return AZ::Success(ConfidenceLevel::Hypothesis);
         if (value == "inferred") return AZ::Success(ConfidenceLevel::Inferred);
         if (value == "documented") return AZ::Success(ConfidenceLevel::Documented);
@@ -157,6 +135,7 @@ namespace TaintedGrailModdingSDK
     {
         switch (value)
         {
+        case ResearchStage::Unknown: return "unknown";
         case ResearchStage::S0: return "S0";
         case ResearchStage::S1: return "S1";
         case ResearchStage::S2: return "S2";
@@ -180,6 +159,7 @@ namespace TaintedGrailModdingSDK
         switch (value)
         {
         case ConfidenceLevel::Unknown: return "unknown";
+        case ConfidenceLevel::Unrated: return "unrated";
         case ConfidenceLevel::Hypothesis: return "hypothesis";
         case ConfidenceLevel::Inferred: return "inferred";
         case ConfidenceLevel::Documented: return "documented";
