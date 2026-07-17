@@ -7,6 +7,8 @@
 
 #include "FoundationService.h"
 
+#include "FoundationNotificationBus.h"
+
 #include <AzCore/std/utility/move.h>
 
 namespace TaintedGrailModdingSDK
@@ -88,6 +90,7 @@ namespace TaintedGrailModdingSDK
             m_catalog.Clear();
             m_catalogFilePath.clear();
             RefreshSnapshot();
+            AppendGovernanceBlockersToSnapshot();
             return true;
         }
         if (!m_catalogPersistence.Exists(m_workspace.m_rootPath))
@@ -95,6 +98,7 @@ namespace TaintedGrailModdingSDK
             m_catalog.Clear();
             m_catalogFilePath.clear();
             RefreshSnapshot();
+            AppendGovernanceBlockersToSnapshot();
             return true;
         }
 
@@ -145,6 +149,7 @@ namespace TaintedGrailModdingSDK
         m_catalog = AZStd::move(candidate);
         m_catalogFilePath = m_catalogPersistence.GetCatalogPath(m_workspace.m_rootPath);
         RefreshSnapshot();
+        AppendGovernanceBlockersToSnapshot();
         return true;
     }
 
@@ -191,6 +196,21 @@ namespace TaintedGrailModdingSDK
         m_catalog = candidate;
         m_catalogFilePath = saveResult.TakeValue();
         RefreshSnapshot();
+        AppendGovernanceBlockersToSnapshot();
         return true;
+    }
+
+    void FoundationService::AppendGovernanceBlockersToSnapshot()
+    {
+        AZStd::vector<BlockerRecord> governanceBlockers = m_governanceBlockerService.Evaluate(
+            m_workspace,
+            m_sourceRegistry,
+            m_catalog);
+        m_snapshot.m_blockers.insert(
+            m_snapshot.m_blockers.end(),
+            governanceBlockers.begin(),
+            governanceBlockers.end());
+        m_snapshot.m_openBlockerCount = static_cast<AZ::u64>(m_snapshot.m_blockers.size());
+        FoundationNotificationBus::Broadcast(&FoundationNotifications::OnFoundationChanged);
     }
 } // namespace TaintedGrailModdingSDK
