@@ -8,20 +8,22 @@ Accepted correction contract for Slice 5. This slice decomposes the existing edi
 
 ### `TaintedGrailModdingSDK.Core.Static`
 
-Owns shared domain state and pure services:
+Owns shared domain state and services that are already free of Qt and host-tool dependencies:
 
 - workspace, pack, source, evidence, catalog, governance, and economy models;
-- catalog database and transaction logic;
-- governance, promotion, validation, blocker, and economy authoring services;
+- catalog database and publish-after-save transaction logic;
+- governance types and governance blocker evaluation;
+- foundation validation and economy blocker evaluation;
 - the source/evidence registry.
 
 Core depends publicly on `AZ::AzCore`. Core must not depend on Framework, Editor, Qt, AzToolsFramework, runtime adapters, deployment, or game APIs.
 
 ### `TaintedGrailModdingSDK.Framework.Static`
 
-Owns editor-side orchestration and persistence:
+Owns editor-side orchestration, persistence, and services that currently require host-tool or Qt facilities:
 
 - `FoundationService` composition and domain command implementations;
+- governance decision, evidence promotion, and economy authoring services that use Qt-backed timestamps or normalisation;
 - workspace candidate loading and atomic publication support;
 - workspace schema, canonical path, pack, catalog, source/evidence, and workspace persistence;
 - source import and the Foundation notification contract.
@@ -63,6 +65,8 @@ The test arrow means the test target links Framework; it does not reverse the pr
 ## Source-location policy
 
 This correction changes build ownership, not include paths or public C++ namespaces. Existing files remain under `Code/Source` so the split does not create an unrelated filesystem migration. The CMake manifests are the authoritative ownership map.
+
+Qt-dependent services are deliberately Framework-owned in this slice rather than being labelled Core while retaining hidden Qt coupling. Moving one of those services into Core later requires first removing its Qt and host-tool dependencies under a separate reviewed change.
 
 ## Enforcement
 
