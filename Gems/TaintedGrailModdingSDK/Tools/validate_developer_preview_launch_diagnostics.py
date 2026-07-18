@@ -72,37 +72,53 @@ def main() -> int:
         require_absent(
             launch_path,
             launch,
-            ("shell=True", "os.system(", "Popen(", "--editor-arg", "FoA.exe"),
+            (
+                "shell=True",
+                "os.system(",
+                "Popen(",
+                "--editor-arg",
+                "FoA.exe",
+            ),
         )
 
-        diagnostics = require_file(diagnostics_path) + "\n" + require_file(diagnostics_support_path)
+        diagnostics_main = require_file(diagnostics_path)
+        diagnostics_support = require_file(diagnostics_support_path)
+        diagnostics = diagnostics_main + "\n" + diagnostics_support
         for fragment in (
-            'BUNDLE_ID="tg-sdk-developer-preview-0-diagnostics"',
-            'MANIFEST_NAME="diagnostics-manifest.json"',
-            "redact_argument_list",
-            "redact_text",
-            "assert_redacted_text",
-            "workspace_inventory",
-            "read_log_excerpt",
-            "collect_tool_summary",
-            "parse_cmake_cache",
-            "build_manifest",
-            "allowed_bundle_path",
-            "verify_bundle",
-            "source_artifact_contents_included",
-            '"uploaded":False',
-            '"review_required_before_sharing":True',
-            "Review every generated file before sharing",
-            "Nothing was uploaded",
-            "MAX_LOG_BYTES_HARD",
-            "MAX_BUNDLE_FILE_BYTES",
-        ):
+                'BUNDLE_ID="tg-sdk-developer-preview-0-diagnostics"',
+                'MANIFEST_NAME="diagnostics-manifest.json"',
+                "redact_argument_list",
+                "redact_text",
+                "assert_redacted_text",
+                "workspace_inventory",
+                "read_log_excerpt",
+                "collect_tool_summary",
+                "parse_cmake_cache",
+                "build_manifest",
+                "allowed_bundle_path",
+                "verify_bundle",
+                "source_artifact_contents_included",
+                '"uploaded":False',
+                '"review_required_before_sharing":True',
+                "Review every generated file before sharing",
+                "Nothing was uploaded",
+                "MAX_LOG_BYTES_HARD",
+                "MAX_BUNDLE_FILE_BYTES",
+            ):
             if fragment not in diagnostics:
                 fail(f"Missing required fragment {fragment!r} in diagnostics command/support")
         require_absent(
             diagnostics_path,
             diagnostics,
-            ("requests.", "urllib.request", "socket.", "upload_file", "shutil.make_archive", "os.environ.items", "shell=True"),
+            (
+                "requests.",
+                "urllib.request",
+                "socket.",
+                "upload_file",
+                "shutil.make_archive",
+                "os.environ.items",
+                "shell=True",
+            ),
         )
 
         require_fragments(
@@ -144,7 +160,13 @@ def main() -> int:
         )
         require_fragments(
             troubleshooting_path,
-            ("Tools → Tainted Grail SDK", "Editor.log", "diagnostics-manifest.json", "Nothing is uploaded automatically", "redaction"),
+            (
+                "Tools → Tainted Grail SDK",
+                "Editor.log",
+                "diagnostics-manifest.json",
+                "Nothing is uploaded automatically",
+                "redaction",
+            ),
         )
         require_fragments(
             workflow_path,
