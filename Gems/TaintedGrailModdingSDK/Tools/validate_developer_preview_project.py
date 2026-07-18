@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 #
 
-"""Validate the dedicated Developer Preview O3DE project and clickable entry."""
+"""Validate the dedicated Developer Preview project and trusted clickable entry."""
 
 from __future__ import annotations
 
@@ -41,7 +41,9 @@ def load_json_object(path: Path, label: str) -> dict[str, Any]:
     try:
         document = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise PreviewProjectContractError(f"{label} is not valid UTF-8 JSON: {path}: {exc}") from exc
+        raise PreviewProjectContractError(
+            f"{label} is not valid UTF-8 JSON: {path}: {exc}"
+        ) from exc
     if not isinstance(document, dict):
         raise PreviewProjectContractError(f"{label} must be a JSON object: {path}")
     return document
@@ -50,7 +52,9 @@ def load_json_object(path: Path, label: str) -> dict[str, Any]:
 def require_string_list(document: dict[str, Any], key: str, label: str) -> list[str]:
     value = document.get(key)
     if not isinstance(value, list) or any(not isinstance(entry, str) for entry in value):
-        raise PreviewProjectContractError(f"{label} must contain a string array named {key!r}.")
+        raise PreviewProjectContractError(
+            f"{label} must contain a string array named {key!r}."
+        )
     return value
 
 
@@ -58,11 +62,17 @@ def validate_png(path: Path) -> None:
     if not path.is_file():
         raise PreviewProjectContractError(f"Project preview icon is missing: {path}")
     header = path.read_bytes()[:24]
-    if len(header) != 24 or header[:8] != b"\x89PNG\r\n\x1a\n" or header[12:16] != b"IHDR":
+    if (
+        len(header) != 24
+        or header[:8] != b"\x89PNG\r\n\x1a\n"
+        or header[12:16] != b"IHDR"
+    ):
         raise PreviewProjectContractError(f"Project preview icon is not a valid PNG: {path}")
     width, height = struct.unpack(">II", header[16:24])
     if width < 128 or height < 128:
-        raise PreviewProjectContractError(f"Project preview icon must be at least 128x128: {path}")
+        raise PreviewProjectContractError(
+            f"Project preview icon must be at least 128x128: {path}"
+        )
 
 
 def validate_ico(path: Path) -> None:
@@ -71,8 +81,7 @@ def validate_ico(path: Path) -> None:
     header = path.read_bytes()[:6]
     if len(header) != 6 or header[:4] != b"\x00\x00\x01\x00":
         raise PreviewProjectContractError(f"Windows shortcut icon is not a valid ICO: {path}")
-    image_count = int.from_bytes(header[4:6], "little")
-    if image_count < 1:
+    if int.from_bytes(header[4:6], "little") < 1:
         raise PreviewProjectContractError(f"Windows shortcut icon has no image entries: {path}")
 
 
@@ -91,13 +100,21 @@ def require_fragments(path: Path, fragments: tuple[str, ...], label: str) -> str
 def validate_preview_project(repo_root: Path) -> None:
     engine = load_json_object(repo_root / "engine.json", "engine manifest")
     projects = require_string_list(engine, "projects", "engine manifest")
-    external_subdirectories = require_string_list(engine, "external_subdirectories", "engine manifest")
+    external_subdirectories = require_string_list(
+        engine,
+        "external_subdirectories",
+        "engine manifest",
+    )
 
     project_key = PREVIEW_PROJECT_PATH.as_posix()
     if projects.count(project_key) != 1:
-        raise PreviewProjectContractError(f"engine.json must register {project_key!r} exactly once.")
+        raise PreviewProjectContractError(
+            f"engine.json must register {project_key!r} exactly once."
+        )
     if external_subdirectories.count(TG_GEM_PATH) != 1:
-        raise PreviewProjectContractError(f"engine.json must register {TG_GEM_PATH!r} exactly once.")
+        raise PreviewProjectContractError(
+            f"engine.json must register {TG_GEM_PATH!r} exactly once."
+        )
 
     project_root = repo_root / PREVIEW_PROJECT_PATH
     project_path = project_root / "project.json"
@@ -112,11 +129,15 @@ def validate_preview_project(repo_root: Path) -> None:
     }
     for key, expected in expected_fields.items():
         if project.get(key) != expected:
-            raise PreviewProjectContractError(f"{project_path} must keep {key}={expected!r}.")
+            raise PreviewProjectContractError(
+                f"{project_path} must keep {key}={expected!r}."
+            )
 
     gem_names = require_string_list(project, "gem_names", "Developer Preview project manifest")
     if gem_names.count(TG_GEM_NAME) != 1:
-        raise PreviewProjectContractError(f"{project_path} must enable {TG_GEM_NAME!r} exactly once.")
+        raise PreviewProjectContractError(
+            f"{project_path} must enable {TG_GEM_NAME!r} exactly once."
+        )
 
     for required in ("CMakeLists.txt", "cmake/EngineFinder.cmake"):
         path = project_root / required
@@ -129,7 +150,11 @@ def validate_preview_project(repo_root: Path) -> None:
         repo_root / AUTOMATED_TESTING_PATH / "project.json",
         "AutomatedTesting project manifest",
     )
-    automated_gems = require_string_list(automated, "gem_names", "AutomatedTesting project manifest")
+    automated_gems = require_string_list(
+        automated,
+        "gem_names",
+        "AutomatedTesting project manifest",
+    )
     if TG_GEM_NAME in automated_gems:
         raise PreviewProjectContractError(
             "AutomatedTesting must not host the TG editor after the dedicated project is registered."
@@ -142,6 +167,8 @@ def validate_preview_project(repo_root: Path) -> None:
             "TaintedGrailModdingEditor",
             "developer_preview_entry.py create",
             "developer_preview_entry.py verify",
+            "validate_path_policy.py",
+            "repository-owned path policy",
             "Tainted Grail Modding Editor.lnk",
             "Tools → Tainted Grail SDK",
             "TaintedGrailModdingEditor/user/log/Editor.log",
@@ -150,12 +177,11 @@ def validate_preview_project(repo_root: Path) -> None:
     )
     if "developer_preview_shortcut.py create" in quickstart:
         raise PreviewProjectContractError(
-            "The quickstart must use the hardened developer_preview_entry.py command."
+            "The quickstart must use the trusted developer_preview_entry.py command."
         )
 
-    opener_path = repo_root / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_open.py"
     opener = require_fragments(
-        opener_path,
+        repo_root / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_open.py",
         (
             'PREVIEW_PROJECT = Path("TaintedGrailModdingEditor")',
             "validate_preview_project",
@@ -163,63 +189,77 @@ def validate_preview_project(repo_root: Path) -> None:
         ),
         "project opener",
     )
-
-    shortcut_path = repo_root / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_shortcut.py"
+    policy = require_fragments(
+        repo_root / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_path_policy.py",
+        (
+            "APPROVED_BUILD_DIRECTORY",
+            "resolve_source_built_entry",
+            "resolve_diagnostic_entry",
+            "validate_source_editor_binary",
+            "developer_preview.validate_build_directory",
+            "Diagnostic overrides must not replace",
+        ),
+        "canonical path and executable policy",
+    )
     shortcut = require_fragments(
-        shortcut_path,
+        repo_root / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_shortcut.py",
         (
             "WScript.Shell",
             "TG_SHORTCUT_OUTPUT",
-            "TaintedGrailModdingEditor.ico",
-            "'--project-path \"'",
-            "developer_preview_launch.resolve_editor_executable",
+            "developer_preview_path_policy",
+            "resolve_source_built_entry",
+            "resolve_diagnostic_entry",
+            "diagnostic_override",
+            '"trust_mode": paths.trust_mode',
             "validate_preview_project",
         ),
         "low-level shortcut generator",
     )
-
-    entry_path = repo_root / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py"
     entry = require_fragments(
-        entry_path,
+        repo_root / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py",
         (
             "developer_preview_shortcut.verify_shortcut",
             "developer_preview_shortcut.create_shortcut",
+            "resolve_source_built_entry",
+            "_require_manifest_matches_policy",
+            "Diagnostic override shortcuts are not verified source-built entries",
+            "allow_diagnostic_override",
             "inspect_shortcut",
-            "verify_entry",
-            "if output.exists() and replace",
             "WScript.Shell",
         ),
-        "hardened clickable entry",
+        "trusted clickable entry",
     )
+    if "expected_target = Path(target_value)" in entry:
+        raise PreviewProjectContractError(
+            "Source-built shortcut trust must not be derived from the sidecar manifest."
+        )
 
     for prohibited in (
         "shell=True",
         "AutomatedTesting/user/log",
         'PREVIEW_PROJECT = Path("AutomatedTesting")',
     ):
-        if prohibited in shortcut or prohibited in entry or prohibited in opener:
+        if prohibited in shortcut or prohibited in entry or prohibited in opener or prohibited in policy:
             raise PreviewProjectContractError(
                 f"Dedicated entry tooling still contains prohibited fragment {prohibited!r}."
             )
 
-    launcher_path = repo_root / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_launch.py"
     require_fragments(
-        launcher_path,
+        repo_root / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_launch.py",
         ('"--project"', '"--project-path"', "validate_project_path"),
         "project launcher",
     )
 
 
 def main() -> int:
-    repo_root = repository_root_from_script()
     try:
-        validate_preview_project(repo_root)
+        validate_preview_project(repository_root_from_script())
     except (OSError, PreviewProjectContractError) as exc:
         print(f"Developer Preview project contract validation failed: {exc}", file=sys.stderr)
         return 1
     print(
-        "Developer Preview project contract passed: dedicated "
-        "TaintedGrailModdingEditor project, icons, opener, and hardened clickable entry are complete."
+        "Developer Preview project contract passed: dedicated project, repository-derived "
+        "path policy, and trusted source-built clickable entry are complete."
     )
     return 0
 

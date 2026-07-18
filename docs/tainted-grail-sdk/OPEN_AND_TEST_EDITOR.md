@@ -26,14 +26,15 @@ git lfs install
 git lfs pull
 ```
 
-Confirm the dedicated project contract:
+Confirm the dedicated project and canonical path-policy contracts:
 
 ```powershell
 python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_project.py
+python Gems/TaintedGrailModdingSDK/Tools/validate_path_policy.py
 ```
 
-The command must report that the dedicated project, icons, opener, and hardened
-clickable-entry contract are complete.
+The commands must report that the dedicated project, icons, opener, persistence
+boundaries, and repository-derived clickable-entry trust contract are complete.
 
 ## 2. Check prerequisites
 
@@ -53,6 +54,11 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview.py configure `
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview.py build `
   --build-dir build/tg-sdk-developer-preview-0-windows-profile
 ```
+
+The supported clickable entry accepts only that exact configured build
+directory. Its `CMakeCache.txt` must identify the current repository as
+`CMAKE_HOME_DIRECTORY`, and the target must have a valid x64 PE32+ Windows GUI
+executable header.
 
 The actual O3DE Editor executable is expected at:
 
@@ -75,9 +81,13 @@ build/Tainted Grail Modding Editor.lnk
 build/Tainted Grail Modding Editor.shortcut.json
 ```
 
-The command checks the generated file hash and inspects the real Windows
-shortcut through `WScript.Shell`. It confirms the target, project argument,
-working directory, icon, and description before reporting success.
+The trusted target, project, working directory, and icon are derived from the
+repository and approved build policy. The sidecar records the generated file
+size and SHA-256; it is not the root of trust.
+
+The command inspects the real Windows shortcut through `WScript.Shell`. It
+confirms the target, project argument, working directory, icon, and description
+before reporting success.
 
 The shortcut has the project-owned icon and launches the source-built
 `Editor.exe` with:
@@ -88,7 +98,7 @@ The shortcut has the project-owned icon and launches the source-built
 
 Double-click **Tainted Grail Modding Editor.lnk**.
 
-To inspect the shortcut plan without writing files:
+To inspect the trusted shortcut plan without writing files:
 
 ```powershell
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py create `
@@ -102,11 +112,11 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py create `
   --replace
 ```
 
-Replacement is allowed only when the existing `.lnk` and sidecar manifest pass
-both hash and semantic verification. An unrelated or modified shortcut is not
+Replacement is allowed only when the existing `.lnk` and sidecar pass complete
+repository-derived verification. An unrelated or modified shortcut is not
 deleted.
 
-Verify the clickable entry again at any time:
+Verify the source-built clickable entry again at any time:
 
 ```powershell
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py verify
@@ -114,6 +124,27 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py verify
 
 `developer_preview_shortcut.py` is the lower-level generator used by the
 hardened command. It is not the supported user entry point.
+
+### Deliberate diagnostic override
+
+An external `Editor.exe` is not a verified source-built entry. For a deliberate
+diagnostic-only link, provide all three explicit controls:
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py create `
+  --editor C:\diagnostics\Editor.exe `
+  --diagnostic-override `
+  --output build\diagnostic-entries\External Editor.lnk
+```
+
+Normal verification rejects that link. To inspect it deliberately without
+promoting it to a verified entry:
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py verify `
+  --shortcut build\diagnostic-entries\External Editor.lnk `
+  --allow-diagnostic-override
+```
 
 ## 5. Command-line fallback
 

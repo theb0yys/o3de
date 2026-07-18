@@ -6,15 +6,26 @@ on:
       - "TaintedGrailModdingEditor/**"
       - "AutomatedTesting/project.json"
       - "engine.json"
+      - "Gems/TaintedGrailModdingSDK/Code/Source/FoundationPersistenceBoundary.*"
+      - "Gems/TaintedGrailModdingSDK/Code/Source/FoundationService.h"
+      - "Gems/TaintedGrailModdingSDK/Code/Source/FoundationServiceConstruction.cpp"
+      - "Gems/TaintedGrailModdingSDK/Code/Source/PathPolicyService.*"
+      - "Gems/TaintedGrailModdingSDK/Code/Tests/PathPolicyServiceTests.cpp"
+      - "Gems/TaintedGrailModdingSDK/Code/CMakeLists.txt"
+      - "Gems/TaintedGrailModdingSDK/Code/taintedgrailmoddingsdk_path_policy_*_files.cmake"
       - "Gems/TaintedGrailModdingSDK/Tools/developer_preview_open.py"
+      - "Gems/TaintedGrailModdingSDK/Tools/developer_preview_path_policy.py"
       - "Gems/TaintedGrailModdingSDK/Tools/developer_preview_shortcut.py"
       - "Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py"
       - "Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_project.py"
+      - "Gems/TaintedGrailModdingSDK/Tools/validate_path_policy.py"
       - "Gems/TaintedGrailModdingSDK/Tools/tests/test_developer_preview_open.py"
       - "Gems/TaintedGrailModdingSDK/Tools/tests/test_developer_preview_project.py"
+      - "Gems/TaintedGrailModdingSDK/Tools/tests/test_developer_preview_path_policy.py"
       - "Gems/TaintedGrailModdingSDK/Tools/tests/test_developer_preview_shortcut.py"
       - "Gems/TaintedGrailModdingSDK/Tools/tests/test_developer_preview_entry.py"
       - "docs/tainted-grail-sdk/OPEN_AND_TEST_EDITOR.md"
+      - "docs/tainted-grail-sdk/PATH_POLICY.md"
       - ".github/workflows/tainted-grail-editor-entry.yml"
   push:
     branches:
@@ -23,15 +34,26 @@ on:
       - "TaintedGrailModdingEditor/**"
       - "AutomatedTesting/project.json"
       - "engine.json"
+      - "Gems/TaintedGrailModdingSDK/Code/Source/FoundationPersistenceBoundary.*"
+      - "Gems/TaintedGrailModdingSDK/Code/Source/FoundationService.h"
+      - "Gems/TaintedGrailModdingSDK/Code/Source/FoundationServiceConstruction.cpp"
+      - "Gems/TaintedGrailModdingSDK/Code/Source/PathPolicyService.*"
+      - "Gems/TaintedGrailModdingSDK/Code/Tests/PathPolicyServiceTests.cpp"
+      - "Gems/TaintedGrailModdingSDK/Code/CMakeLists.txt"
+      - "Gems/TaintedGrailModdingSDK/Code/taintedgrailmoddingsdk_path_policy_*_files.cmake"
       - "Gems/TaintedGrailModdingSDK/Tools/developer_preview_open.py"
+      - "Gems/TaintedGrailModdingSDK/Tools/developer_preview_path_policy.py"
       - "Gems/TaintedGrailModdingSDK/Tools/developer_preview_shortcut.py"
       - "Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py"
       - "Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_project.py"
+      - "Gems/TaintedGrailModdingSDK/Tools/validate_path_policy.py"
       - "Gems/TaintedGrailModdingSDK/Tools/tests/test_developer_preview_open.py"
       - "Gems/TaintedGrailModdingSDK/Tools/tests/test_developer_preview_project.py"
+      - "Gems/TaintedGrailModdingSDK/Tools/tests/test_developer_preview_path_policy.py"
       - "Gems/TaintedGrailModdingSDK/Tools/tests/test_developer_preview_shortcut.py"
       - "Gems/TaintedGrailModdingSDK/Tools/tests/test_developer_preview_entry.py"
       - "docs/tainted-grail-sdk/OPEN_AND_TEST_EDITOR.md"
+      - "docs/tainted-grail-sdk/PATH_POLICY.md"
       - ".github/workflows/tainted-grail-editor-entry.yml"
   workflow_dispatch:
 
@@ -40,7 +62,7 @@ permissions:
 
 jobs:
   validate-entry:
-    name: Validate dedicated project and clickable entry
+    name: Validate dedicated project and trusted clickable entry
     runs-on: windows-latest
     timeout-minutes: 10
 
@@ -65,13 +87,19 @@ jobs:
           -s Gems/TaintedGrailModdingSDK/Tools/tests
           -p "test_developer_preview_open.py" -v
 
+      - name: Test canonical path policy
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_developer_preview_path_policy.py" -v
+
       - name: Test low-level Windows shortcut generator
         run: >-
           python -m unittest discover
           -s Gems/TaintedGrailModdingSDK/Tools/tests
           -p "test_developer_preview_shortcut.py" -v
 
-      - name: Test hardened clickable entry
+      - name: Test trusted clickable entry
         run: >-
           python -m unittest discover
           -s Gems/TaintedGrailModdingSDK/Tools/tests
@@ -80,24 +108,30 @@ jobs:
       - name: Validate dedicated project and clickable entry
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_project.py
 
-      - name: Dry-run hardened clickable entry generation
+      - name: Validate canonical path and executable policy
+        run: python Gems/TaintedGrailModdingSDK/Tools/validate_path_policy.py
+
+      - name: Dry-run trusted clickable entry generation
         run: >-
           python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py create
           --build-dir build/tg-sdk-developer-preview-0-windows-profile
           --dry-run
 
-      - name: Create, verify, and inspect a real Windows shortcut
+      - name: Create, inspect, and label a diagnostic-only Windows shortcut
         shell: pwsh
         run: |
           $editor = Join-Path $env:RUNNER_TEMP "Editor.exe"
-          $shortcut = Join-Path $env:RUNNER_TEMP "Tainted Grail Modding Editor.lnk"
+          $shortcut = Join-Path $env:GITHUB_WORKSPACE `
+            "build/diagnostic-entries/CI Diagnostic Editor.lnk"
           New-Item -ItemType File -Path $editor -Force | Out-Null
 
           python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py create `
             --editor $editor `
+            --diagnostic-override `
             --output $shortcut
           python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py verify `
-            --shortcut $shortcut
+            --shortcut $shortcut `
+            --allow-diagnostic-override
 
           $shell = New-Object -ComObject WScript.Shell
           $link = $shell.CreateShortcut($shortcut)
@@ -111,6 +145,8 @@ jobs:
           if ($link.Arguments -ne $expectedArguments) {
             throw "Shortcut argument mismatch: $($link.Arguments)"
           }
-          if (-not $link.IconLocation.StartsWith($expectedIcon, [StringComparison]::OrdinalIgnoreCase)) {
+          if (-not $link.IconLocation.StartsWith(
+              $expectedIcon,
+              [StringComparison]::OrdinalIgnoreCase)) {
             throw "Shortcut icon mismatch: $($link.IconLocation)"
           }

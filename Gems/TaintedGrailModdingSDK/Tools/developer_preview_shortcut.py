@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 #
 
-"""Create and verify a clickable Windows shortcut for the dedicated TG editor."""
+"""Create and hash a Windows shortcut under the canonical TG SDK path policy."""
 
 from __future__ import annotations
 
@@ -26,16 +26,16 @@ TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-import developer_preview_launch
+import developer_preview_path_policy
 import validate_developer_preview_project
 
 SCHEMA_VERSION = 1
 SHORTCUT_NAME = "Tainted Grail Modding Editor.lnk"
 MANIFEST_NAME = "Tainted Grail Modding Editor.shortcut.json"
-PREVIEW_PROJECT = Path("TaintedGrailModdingEditor")
-ICON_PATH = PREVIEW_PROJECT / "TaintedGrailModdingEditor.ico"
-DEFAULT_BUILD_DIRECTORY = Path("build/tg-sdk-developer-preview-0-windows-profile")
-DEFAULT_OUTPUT = Path("build") / SHORTCUT_NAME
+PREVIEW_PROJECT = developer_preview_path_policy.PREVIEW_PROJECT
+ICON_PATH = developer_preview_path_policy.PREVIEW_ICON
+DEFAULT_BUILD_DIRECTORY = developer_preview_path_policy.APPROVED_BUILD_DIRECTORY
+DEFAULT_OUTPUT = developer_preview_path_policy.DEFAULT_SHORTCUT_OUTPUT
 
 PowerShellRunner = Callable[[Sequence[str], Mapping[str, str]], tuple[int, str]]
 
@@ -53,7 +53,7 @@ $shortcut.Save()
 
 
 class ShortcutError(RuntimeError):
-    """Raised when a shortcut cannot be created or verified safely."""
+    """Raised when a shortcut cannot be created or hash-verified safely."""
 
 
 def repository_root_from_script() -> Path:
@@ -61,10 +61,7 @@ def repository_root_from_script() -> Path:
 
 
 def resolve_path(value: Path, base: Path) -> Path:
-    path = value.expanduser()
-    if not path.is_absolute():
-        path = base / path
-    return path.resolve(strict=False)
+    return developer_preview_path_policy.canonical_path(value, base)
 
 
 def require_windows_x64() -> None:
@@ -131,7 +128,7 @@ def atomic_write_json(path: Path, payload: dict[str, object]) -> None:
 
 
 def manifest_path_for(shortcut: Path) -> Path:
-    return shortcut.with_name(MANIFEST_NAME)
+    return shortcut.with_name(f"{shortcut.stem}.shortcut.json")
 
 
 def create_shortcut(
@@ -142,46 +139,57 @@ def create_shortcut(
     output: Path,
     replace: bool,
     dry_run: bool,
+    diagnostic_override: bool = False,
     runner: PowerShellRunner = default_runner,
 ) -> dict[str, object]:
     validate_developer_preview_project.validate_preview_project(repo_root)
-    project = (repo_root / PREVIEW_PROJECT).resolve(strict=False)
-    icon = (repo_root / ICON_PATH).resolve(strict=False)
-    if not icon.is_file():
-        raise ShortcutError(f"Shortcut icon is missing: {icon}")
-
-    output = output.resolve(strict=False)
+    try:
+        if explicit_editor is not None:
+            if not diagnostic_override:
+                raise ShortcutError(
+                    "An explicit --editor is a diagnostic override; pass --diagnostic-override "
+                    "and choose a diagnostic output path."
+                )
+            paths = developer_preview_path_policy.resolve_diagnostic_entry(
+                repo_root,
+                explicit_editor,
+            )
+        else:
+            if diagnostic_override:
+                raise ShortcutError("--diagnostic-override requires an explicit --editor.")
+            paths = developer_preview_path_policy.resolve_source_built_entry(
+                repo_root,
+                build_dir,
+                require_editor=not dry_run,
+                require_configured=not dry_run,
+            )
+        output = developer_preview_path_policy.resolve_shortcut_output(
+            repo_root,
+            output,
+            diagnostic_override=diagnostic_override,
+        )
+    except developer_preview_path_policy.PathPolicyError as exc:
+        raise ShortcutError(str(exc)) from exc
     validate_output_path(output)
-
-    if explicit_editor is not None:
-        editor, _ = developer_preview_launch.resolve_editor_executable(
-            repo_root,
-            explicit_editor=explicit_editor,
-            build_dir=None,
-        )
-    elif dry_run:
-        editor = developer_preview_launch.editor_candidates(build_dir)[0]
-    else:
-        editor, _ = developer_preview_launch.resolve_editor_executable(
-            repo_root,
-            explicit_editor=None,
-            build_dir=build_dir,
-        )
 
     payload: dict[str, object] = {
         "schema_version": SCHEMA_VERSION,
         "status": "planned" if dry_run else "created",
+        "trust_mode": paths.trust_mode,
         "shortcut": str(output),
-        "target": str(editor),
-        "arguments": ["--project-path", str(project)],
-        "working_directory": str(editor.parent),
-        "icon": str(icon),
+        "target": str(paths.editor),
+        "arguments": ["--project-path", str(paths.project)],
+        "working_directory": str(paths.working_directory),
+        "icon": str(paths.icon),
     }
+    if paths.build_directory is not None:
+        payload["approved_build_directory"] = str(paths.build_directory)
 
     print(f"Shortcut: {output}")
-    print(f"Target: {editor}")
-    print(f'Arguments: --project-path "{project}"')
-    print(f"Icon: {icon}")
+    print(f"Trust mode: {paths.trust_mode}")
+    print(f"Target: {paths.editor}")
+    print(f'Arguments: --project-path "{paths.project}"')
+    print(f"Icon: {paths.icon}")
 
     if dry_run:
         return payload
@@ -198,10 +206,10 @@ def create_shortcut(
     environment.update(
         {
             "TG_SHORTCUT_OUTPUT": str(output),
-            "TG_EDITOR_EXE": str(editor),
-            "TG_PROJECT_PATH": str(project),
-            "TG_EDITOR_WORKING_DIRECTORY": str(editor.parent),
-            "TG_SHORTCUT_ICON": str(icon),
+            "TG_EDITOR_EXE": str(paths.editor),
+            "TG_PROJECT_PATH": str(paths.project),
+            "TG_EDITOR_WORKING_DIRECTORY": str(paths.working_directory),
+            "TG_SHORTCUT_ICON": str(paths.icon),
         }
     )
     command = (
@@ -245,15 +253,20 @@ def verify_shortcut(shortcut: Path) -> dict[str, object]:
         raise ShortcutError(f"Shortcut manifest is invalid: {manifest}: {exc}") from exc
     if not isinstance(payload, dict):
         raise ShortcutError("Shortcut manifest must be a JSON object.")
+    if payload.get("schema_version") != SCHEMA_VERSION:
+        raise ShortcutError("Shortcut manifest schema version is unsupported.")
+    if payload.get("trust_mode") not in {
+        developer_preview_path_policy.TRUST_MODE_SOURCE_BUILD,
+        developer_preview_path_policy.TRUST_MODE_DIAGNOSTIC_OVERRIDE,
+    }:
+        raise ShortcutError("Shortcut manifest trust mode is invalid.")
     if payload.get("shortcut") != str(shortcut):
         raise ShortcutError("Shortcut manifest path does not match the selected shortcut.")
-    expected_size = payload.get("size_bytes")
-    expected_hash = payload.get("sha256")
-    if expected_size != shortcut.stat().st_size:
+    if payload.get("size_bytes") != shortcut.stat().st_size:
         raise ShortcutError("Shortcut size does not match its manifest.")
-    if expected_hash != sha256_file(shortcut):
+    if payload.get("sha256") != sha256_file(shortcut):
         raise ShortcutError("Shortcut SHA-256 does not match its manifest.")
-    print(f"Verified clickable shortcut: {shortcut}")
+    print(f"Verified clickable shortcut hash: {shortcut}")
     return payload
 
 
@@ -266,6 +279,11 @@ def build_parser() -> argparse.ArgumentParser:
     source = create.add_mutually_exclusive_group()
     source.add_argument("--editor", type=Path)
     source.add_argument("--build-dir", type=Path, default=DEFAULT_BUILD_DIRECTORY)
+    create.add_argument(
+        "--diagnostic-override",
+        action="store_true",
+        help="Label an explicit external Editor.exe as diagnostic-only, never verified release entry.",
+    )
     create.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     create.add_argument("--replace", action="store_true")
     create.add_argument("--dry-run", action="store_true")
@@ -286,16 +304,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             verify_shortcut(resolve_path(args.shortcut, repo_root))
             return 0
 
-        build_dir = resolve_path(args.build_dir, repo_root)
-        explicit_editor = resolve_path(args.editor, repo_root) if args.editor else None
-        output = resolve_path(args.output, repo_root)
         create_shortcut(
             repo_root=repo_root,
-            build_dir=build_dir,
-            explicit_editor=explicit_editor,
-            output=output,
+            build_dir=resolve_path(args.build_dir, repo_root),
+            explicit_editor=resolve_path(args.editor, repo_root) if args.editor else None,
+            output=resolve_path(args.output, repo_root),
             replace=args.replace,
             dry_run=args.dry_run,
+            diagnostic_override=args.diagnostic_override,
         )
         return 0
     except (

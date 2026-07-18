@@ -414,7 +414,6 @@ namespace TaintedGrailModdingSDK
 
         const QString packDirectory = QDir(ToQString(workspace.m_rootPath)).filePath(
             QStringLiteral("Packs/%1").arg(ToQString(pack->m_packId)));
-        QDir().mkpath(packDirectory);
         QString filePath = QFileDialog::getSaveFileName(
             this,
             tr("Save TG Pack Manifest"),
@@ -434,7 +433,6 @@ namespace TaintedGrailModdingSDK
             return false;
         }
 
-        QDir().mkpath(QFileInfo(filePath).absolutePath());
         AZStd::string error;
         if (!FoundationService::Get().SaveActivePack(ToAzString(filePath), &error))
         {

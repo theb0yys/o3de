@@ -14,12 +14,11 @@
 #include "CatalogPromotionService.h"
 #include "CatalogTransactionService.h"
 #include "EconomyBlockerService.h"
+#include "FoundationPersistenceBoundary.h"
 #include "FoundationValidationService.h"
-#include "PackPersistenceService.h"
 #include "SourceEvidencePersistenceService.h"
 #include "SourceEvidenceRegistry.h"
 #include "SourceImportService.h"
-#include "WorkspacePersistenceService.h"
 
 namespace TaintedGrailModdingSDK
 {
@@ -60,12 +59,24 @@ namespace TaintedGrailModdingSDK
         bool ApplyCatalogValidationDecision(
             const CatalogValidationRequest& request,
             AZStd::string* error = nullptr);
-        bool UpsertCatalogRelationship(const CatalogRelationship& relationship, AZStd::string* error = nullptr);
-        bool AddCatalogValidationEvent(const CatalogValidationEvent& validation, AZStd::string* error = nullptr);
-        bool UpsertEconomyItemProfile(const EconomyItemProfile& profile, AZStd::string* error = nullptr);
-        bool UpsertEconomyRecipeProfile(const EconomyRecipeProfile& profile, AZStd::string* error = nullptr);
-        bool UpsertEconomyRecipeIngredient(const EconomyRecipeIngredient& ingredient, AZStd::string* error = nullptr);
-        bool UpsertEconomyRecipeOutput(const EconomyRecipeOutput& output, AZStd::string* error = nullptr);
+        bool UpsertCatalogRelationship(
+            const CatalogRelationship& relationship,
+            AZStd::string* error = nullptr);
+        bool AddCatalogValidationEvent(
+            const CatalogValidationEvent& validation,
+            AZStd::string* error = nullptr);
+        bool UpsertEconomyItemProfile(
+            const EconomyItemProfile& profile,
+            AZStd::string* error = nullptr);
+        bool UpsertEconomyRecipeProfile(
+            const EconomyRecipeProfile& profile,
+            AZStd::string* error = nullptr);
+        bool UpsertEconomyRecipeIngredient(
+            const EconomyRecipeIngredient& ingredient,
+            AZStd::string* error = nullptr);
+        bool UpsertEconomyRecipeOutput(
+            const EconomyRecipeOutput& output,
+            AZStd::string* error = nullptr);
         bool SaveCatalog(AZStd::string* error = nullptr);
         bool ReloadCatalog(AZStd::string* error = nullptr);
 
@@ -86,7 +97,7 @@ namespace TaintedGrailModdingSDK
         void RefreshSnapshot();
 
     private:
-        FoundationService() = default;
+        FoundationService();
 
         // Internal compatibility path only. Public/editor record creation must use governed promotion.
         bool UpsertCatalogRecord(const CatalogRecord& record, AZStd::string* error = nullptr);
@@ -111,8 +122,9 @@ namespace TaintedGrailModdingSDK
         FoundationValidationService m_validationService;
         CatalogGovernanceBlockerService m_governanceBlockerService;
         EconomyBlockerService m_economyBlockerService;
-        WorkspacePersistenceService m_workspacePersistence;
-        PackPersistenceService m_packPersistence;
+        PathPolicyService m_pathPolicy;
+        FoundationWorkspacePersistenceBoundary m_workspacePersistence;
+        FoundationPackPersistenceBoundary m_packPersistence;
         SourceImportService m_sourceImportService;
         SourceEvidencePersistenceService m_sourceEvidencePersistence;
         CatalogPersistenceService m_catalogPersistence;
