@@ -1,14 +1,12 @@
 # Developer Preview 0
 
-Status: third implementation slice — command layer, deterministic synthetic fixture, and service-level persistence smoke available; launch wrapper, diagnostics bundle, manual UI evidence, and distributable artifact are not implemented yet.
+Status: fourth implementation slice — command layer, deterministic synthetic fixture, service-level persistence smoke, Windows x64 Editor launch wrapper, and redacted local diagnostics available; manual UI evidence and a distributable artifact are not implemented yet.
 
 ## Purpose
 
 Developer Preview 0 is the project’s source-built, pre-alpha usability milestone. Its first supported runnable target is **Windows x64 Profile**.
 
-This milestone is not a standalone installer or a production mod toolchain. The command layer and fixture tooling do not launch FoA, invoke BepInEx or Harmony, deploy files, modify saves, collect telemetry, or install prerequisites automatically.
-
-## Build and validation commands
+This milestone is not a standalone installer or a production mod toolchain. The preview commands do not launch FoA, invoke BepInEx or Harmony, deploy files, modify saves, collect telemetry, upload diagnostics, or install prerequisites automatically.
 
 Run all commands from the repository root. The default build directory is:
 
@@ -16,7 +14,7 @@ Run all commands from the repository root. The default build directory is:
 build/tg-sdk-developer-preview-0-windows-profile
 ```
 
-An explicit `--build-dir` may point elsewhere, but it must not be the repository root, contain the repository, live inside `.git`, or contain unrelated files without a matching O3DE `CMakeCache.txt`.
+## Build and validation commands
 
 ### 1. Check prerequisites
 
@@ -26,16 +24,7 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview.py prerequisites `
   --json-output build/tg-sdk-developer-preview-0-windows-profile/prerequisites.json
 ```
 
-Required checks cover:
-
-- Windows x64 host;
-- Python 3.10 or newer;
-- CMake 3.23 or newer;
-- Git and Git LFS;
-- Visual Studio 2022 or Build Tools with **Desktop development with C++**;
-- a valid O3DE repository root.
-
-The checker is read-only. It reports whether the build directory is configured and whether `bin/profile/Editor.exe` exists, but those are informational until the configure and build steps run.
+Required checks cover Windows x64, Python 3.10 or newer, CMake 3.23 or newer, Git, Git LFS, Visual Studio C++ tools, repository identity, build-directory state, and the expected Editor output.
 
 ### 2. Configure
 
@@ -73,77 +62,54 @@ The command stops on the first failure, preserves that command’s exit code, an
 <build-dir>/tg-sdk-developer-preview-validation.json
 ```
 
-The deterministic fixture also has local tests and contract validation:
+Run the launch and diagnostics script tests and contract validator directly when working on this slice:
 
 ```powershell
 python -m unittest discover `
   -s Gems/TaintedGrailModdingSDK/Tools/tests `
-  -p "test_developer_preview_fixture.py" `
+  -p "test_developer_preview_launch.py" `
   -v
 
-python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_fixture.py
-python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_smoke.py
+python -m unittest discover `
+  -s Gems/TaintedGrailModdingSDK/Tools/tests `
+  -p "test_developer_preview_diagnostics.py" `
+  -v
+
+python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_launch_diagnostics.py
 ```
 
-## Generate the deterministic synthetic fixture
+## Generate and verify the synthetic fixture
+
+Generate the project-owned fixture:
 
 ```powershell
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview_fixture.py generate `
   --output build/tg-sdk-developer-preview-0-fixture
 ```
 
-The generator creates a portable workspace tree containing only project-owned synthetic data. Every canonical ID uses `preview.*`; every subject uses `subject:preview:*`; synthetic records are owned by `preview.developer-preview-0`; native references remain empty.
-
-The fixture includes:
-
-- one workspace and placeholder game profile;
-- one runtime-disabled pack;
-- one structured source input, source document, and evidence document;
-- five canonical records: two items, one recipe, one station, and one learnability source;
-- resolved `crafted_at` and `learned_from` relationships;
-- one explicitly unresolved `learned_from` relationship;
-- validation and governance histories;
-- allowed, forbidden, blocked, stale, and unresolved states;
-- item and recipe profiles, one ingredient join, and one output join.
-
-Generation is byte-for-byte deterministic. The generator refuses to overwrite a non-empty directory. `--replace` works only when the existing directory first passes complete verification.
-
-## Verify the fixture and SHA-256 manifest
+Verify its exact file set and SHA-256 manifest:
 
 ```powershell
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview_fixture.py verify `
   --output build/tg-sdk-developer-preview-0-fixture
 ```
 
-`preview-fixture.manifest.json` records the relative path, byte size, and SHA-256 digest of every payload file. Verification fails closed for missing, extra, modified, traversing, symlinked, private-path, ownership, evidence, relationship, governance, economy, or binding defects.
+The fixture contains one portable workspace and profile, one runtime-disabled pack, source/evidence documents, five synthetic canonical records, resolved and unresolved relationships, validation and governance history, economy profiles and joins, and allowed, forbidden, blocked, stale, and unresolved states.
 
-The committed workspace, pack, source, evidence, and catalog fixture files remain canonical plain schema-1 JSON. The persistence services accept both these documented plain objects and existing O3DE `JsonSerialization` envelopes through the same reflected model types. Files saved by the current services use the O3DE envelope and are reopened through the same compatibility path.
+Every identity uses the reserved `preview.*` or `subject:preview:*` namespace. The fixture contains no proprietary game data, native FoA identifiers, private paths, credentials, saves, or extracted assets.
 
 ## Service-level persistence smoke
 
-The compiled `TaintedGrailModdingSDK.Catalog.Tests` target contains a service-level persistence smoke test using the committed fixture and the real editor persistence classes:
+The compiled `TaintedGrailModdingSDK.Catalog.Tests` target uses the real workspace, pack, source/evidence, catalog, registry, database, and economy services to prove:
 
-- `WorkspacePersistenceService`;
-- `PackPersistenceService`;
-- `SourceEvidencePersistenceService`;
-- `CatalogPersistenceService`;
-- `SourceEvidenceRegistry` and `CatalogDatabase`;
-- `EconomyAuthoringService::BuildRecipeStationEvidence`.
+1. the plain schema fixture loads;
+2. canonical state matches the reviewed expectations;
+3. every durable document saves to a temporary workspace;
+4. in-memory state is discarded as a close-equivalent step;
+5. the saved copy reopens through the same services;
+6. the canonical state remains equivalent.
 
-The smoke test:
-
-1. loads the plain schema fixture through those services;
-2. verifies expected workspace/profile, source/evidence, catalog, governance, economy, stale, blocked, and unresolved state;
-3. saves all durable documents to a temporary workspace;
-4. discards the in-memory state as a close-equivalent step;
-5. reopens the saved documents through the same services;
-6. compares canonical state before and after.
-
-The canonical state comparison covers workspace/profile data, pack data, source/evidence documents, catalog records and relationships, validation and governance history, item/recipe profiles, joins, permissions, and recipe station/learnability evidence rows.
-
-The smoke target also proves that reviewed, proof-backed allowed usages survive catalog loading while legacy unproven allowances and newly injected allowances without matching reviewed validation proof are cleared and marked `legacy_permission_review_required`.
-
-Run the compiled smoke with the other focused C++ tests:
+Run it with:
 
 ```powershell
 ctest --test-dir build/tg-sdk-developer-preview-0-windows-profile `
@@ -152,29 +118,124 @@ ctest --test-dir build/tg-sdk-developer-preview-0-windows-profile `
   -R "TaintedGrailModdingSDK\.Catalog\.Tests"
 ```
 
-This is service-level load, save, close-equivalent, and reopen proof. It does not replace the later manual Editor UI smoke pass or prove FoA runtime compatibility.
+This is service-level persistence proof. It does not replace the later manual Editor UI smoke pass or prove FoA runtime compatibility.
+
+## Launch the O3DE Editor
+
+Preview the resolved launch command without starting a process:
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_launch.py `
+  --build-dir build/tg-sdk-developer-preview-0-windows-profile `
+  --dry-run
+```
+
+Launch the source-built Editor and capture wrapper-owned stdout, stderr, and the process result:
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_launch.py `
+  --build-dir build/tg-sdk-developer-preview-0-windows-profile `
+  --log-dir build/tg-sdk-developer-preview-0-launch
+```
+
+To select an O3DE project explicitly, pass a directory containing `project.json`:
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_launch.py `
+  --build-dir build/tg-sdk-developer-preview-0-windows-profile `
+  --project C:\O3DE\Projects\MyProject `
+  --log-dir build/tg-sdk-developer-preview-0-launch
+```
+
+The wrapper uses O3DE’s documented `--project-path` switch. It accepts no arbitrary Editor passthrough arguments and does not launch FoA, BepInEx, Harmony, Avalon Core, deployment, or injection commands. It waits for the Editor process and returns the Editor’s exit code.
+
+An explicit `--editor C:\path\to\Editor.exe` can be used instead of `--build-dir`. The executable must be named `Editor.exe` and must already exist.
+
+The wrapper log directory contains:
+
+```text
+editor-launch.stdout.log
+editor-launch.stderr.log
+tg-sdk-developer-preview-launch.json
+```
+
+These are wrapper-owned captures. O3DE’s native Editor log remains in:
+
+- `<PROJECT_ROOT>/user/log/Editor.log` when `--project` is supplied;
+- `<ENGINE_ROOT>/user/log/Editor.log` when no project path is selected.
+
+After launch, open **Tools → Tainted Grail SDK**. If the panes are missing, see the [Developer Preview Troubleshooting Guide](DEVELOPER_PREVIEW_TROUBLESHOOTING.md).
+
+## Collect a redacted diagnostics directory
+
+Diagnostics collection is explicit, local-only, and reviewable. Choose an output directory outside the project or workspace being inventoried:
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_diagnostics.py collect `
+  --repo-root . `
+  --build-dir build/tg-sdk-developer-preview-0-windows-profile `
+  --project C:\O3DE\Projects\MyProject `
+  --workspace-root build/tg-sdk-developer-preview-0-fixture `
+  --validation-result build/tg-sdk-developer-preview-0-windows-profile/tg-sdk-developer-preview-validation.json `
+  --launch-result build/tg-sdk-developer-preview-0-launch/tg-sdk-developer-preview-launch.json `
+  --editor-log C:\O3DE\Projects\MyProject\user\log\Editor.log `
+  --output build/tg-sdk-developer-preview-0-diagnostics
+```
+
+Arguments are optional except `--output`. When `--project` is supplied and no `--editor-log` is specified, the collector uses the known project `user/log/Editor.log` location when present.
+
+The directory can contain only:
+
+```text
+README.txt
+diagnostics-summary.json
+system.txt
+build-summary.json
+validation-summary.json          optional
+launch-summary.json              optional
+workspace-inventory.json         optional
+logs/*.log                       optional redacted tail excerpts
+diagnostics-manifest.json
+```
+
+The collector includes tool versions, an allow-listed CMake summary, supplied validation and launch summaries, redacted Editor log excerpts, and workspace-relative durable-document paths, sizes, and SHA-256 hashes. It does not include source artifact contents, game files, saves, environment variables, credentials, unrestricted directory listings, or binary logs.
+
+Paths and secret-like values are redacted. Log excerpts are tail-limited. Output size and file names are allow-listed. Nothing is uploaded automatically. You must review every generated file before sharing it.
+
+Verify the bundle before sharing:
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_diagnostics.py verify `
+  --output build/tg-sdk-developer-preview-0-diagnostics
+```
+
+Verification fails for unexpected files, symlinks, path traversal, oversized files, invalid UTF-8, hash or size changes, remaining private absolute paths, or remaining secret-like material.
+
+`--replace` is accepted only when the existing output first passes complete verification. An unrelated or modified directory is never overwritten silently.
 
 ## Failure behavior
 
-The command layer, fixture tooling, and persistence compatibility path fail closed for:
+The preview tooling fails closed for:
 
-- unsupported hosts;
-- invalid repository or build roots;
+- unsupported launch hosts;
+- a missing or wrongly named Editor executable;
+- invalid repository, build, project, workspace, log, or output paths;
 - prerequisite, configure, build, validator, source-policy, or compiled-test failures;
-- unsafe fixture output or overwrite attempts;
-- malformed, tampered, mismatched, non-portable, or non-synthetic fixture data;
-- altered, partial, or halted plain-schema deserialization;
-- catalog permissions without current reviewed proof for the same subject.
+- unsafe fixture or diagnostics overwrite attempts;
+- malformed or tampered fixture documents;
+- persistence or canonical-state mismatches;
+- diagnostics path traversal, symlinks, oversized content, unexpected files, or redaction failures;
+- child-process launch errors.
 
-No command launches the game, performs deployment, mutates a save, installs a dependency silently, or uploads data.
+No command performs runtime deployment, game launch, save mutation, telemetry, automatic upload, or automatic dependency installation.
 
 ## Current limitations
 
-This third slice does not yet provide:
+This fourth slice does not yet provide:
 
-- an Editor launch wrapper;
-- redacted diagnostics collection;
-- manual UI smoke evidence;
+- completed Windows manual UI smoke evidence and screenshots;
 - a CI-produced runnable Windows archive or source-build support bundle.
 
-Those capabilities remain gated by the approved [Developer Preview 0 design](DEVELOPER_PREVIEW_0_DESIGN.md). Until they are complete and verified, the project remains a source-built pre-alpha editor and must not be presented as a finished Developer Preview release.
+The Editor launch wrapper proves a controlled source-built Editor process path, and diagnostics prove a redacted local support path. They do not prove every pane visually on a real Windows desktop or prove FoA runtime compatibility.
+
+Those remaining capabilities are gated by the approved [Developer Preview 0 design](DEVELOPER_PREVIEW_0_DESIGN.md). Until they are complete and verified, the project remains a source-built pre-alpha editor and must not be presented as a finished Developer Preview release.
