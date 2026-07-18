@@ -16,6 +16,10 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 - Dry-run CMake wrappers for the approved `windows-vs-unity` x64 configure path and Profile `Editor` plus `TaintedGrailModdingSDK.Catalog.Tests` build targets.
 - Machine-readable Developer Preview prerequisite and validation results with original child-process exit-code propagation.
 - Developer Preview command contract validator and unit coverage for argument construction, path safety, dry runs, deterministic validation order, JSON output, unsupported hosts, and failure propagation.
+- Deterministic Developer Preview 0 fixture generator containing only project-owned synthetic `preview.*` identities, portable paths, runtime-disabled pack data, source/evidence, catalog, governance, and economy documents.
+- Canonical `preview-fixture.manifest.json` output with relative paths, byte sizes, and SHA-256 digests for all fixture payloads.
+- Fixture verification for canonical JSON, exact file sets, hashes, path traversal, symlinks, private paths, source/evidence binding, catalog identity and ownership, relationship targets, governance proof links, and economy joins.
+- Seventeen fixture tests covering byte-for-byte determinism, safe replacement, tamper detection, manifest safety, bindings, reserved namespaces, and allowed, forbidden, blocked, stale, and unresolved example states.
 - Workspace and exact FoA game-profile management with durable `*.tgworkspace.json` documents.
 - Mod/content-pack project management with durable `*.tgpack.json` manifests.
 - Pack ownership, compatibility, dependency, save-impact, resource, build, and release declarations.
@@ -56,7 +60,7 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Changed
 
-- The focused TG SDK workflow now runs Developer Preview command unit tests and command-contract validation before the existing foundation, governance, catalog, and source-policy checks.
+- The focused TG SDK workflow now runs Developer Preview command tests, fixture tests, contract validators, and a clean generate→verify fixture cycle before the existing foundation, governance, catalog, and source-policy checks.
 - Catalog records now carry an explicit staleness state.
 - Catalog relationships now use the same independent maturity, confidence, risk, validation, staleness, permission, prohibition, conflict, missing-reference, and supersession model as records.
 - Record and relationship governance transitions now execute through one typed state machine instead of duplicated branches.
@@ -70,6 +74,8 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Security
 
+- Developer Preview fixture generation performs no network access or process launch and refuses silent overwrite of unrelated, partial, modified, or symlink-containing output directories.
+- Fixture verification rejects absolute/private paths, secret-like material, path traversal, borrowed native identities, ownership mismatches, unknown evidence, malformed relationships, and binding drift.
 - Developer Preview commands do not install dependencies silently, use shell command strings, launch FoA, invoke runtime adapters, deploy files, modify saves, or collect telemetry.
 - Preview build-directory validation rejects the repository root, directories containing the checkout, `.git` paths, unrelated non-empty directories, and CMake caches bound to another source tree.
 - Runtime execution remains disabled in editor-owned workspace, pack, source/evidence, catalog, validation, governance, and typed economy workflows.
@@ -90,7 +96,8 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Known limitations
 
-- Developer Preview 0 does not yet include the synthetic fixture, load/save/reopen smoke harness, launch wrapper, diagnostics bundle, manual UI evidence, or verified preview archive.
+- Developer Preview 0 does not yet include the load/save/reopen smoke harness, launch wrapper, diagnostics bundle, manual UI evidence, or verified preview archive.
+- The generated fixture does not itself prove Editor load/save/reopen behavior or runtime compatibility.
 - The Item and Recipe Editor does not yet generate adapter work orders.
 - The evidence view reports station visibility and recipe learnability research but does not append, learn, register, persist, clean up, roll back, or prove runtime behavior.
 - Runtime append, custom registration, vendor/loot mutation, reward mutation, persistence, cleanup, and rollback remain adapter-side research or implementation work.

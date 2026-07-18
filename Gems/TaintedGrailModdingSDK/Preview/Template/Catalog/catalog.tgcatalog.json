@@ -1,0 +1,598 @@
+{
+  "Branch": "preview",
+  "EconomyItems": [
+    {
+      "AssetRef": "preview.asset.component",
+      "BaseValue": 1.0,
+      "Category": "material",
+      "Durability": 0.0,
+      "EvidenceIds": [
+        "preview.evidence.item.component"
+      ],
+      "HiddenItem": false,
+      "IconRef": "preview.icon.component",
+      "LocalisationDescriptionRef": "preview.loc.component.description",
+      "LocalisationNameRef": "preview.loc.component.name",
+      "Quality": "standard",
+      "QuestItem": false,
+      "Rarity": "common",
+      "RecordId": "preview.item.component",
+      "StackLimit": 10,
+      "Subtype": "preview-component",
+      "Tags": [
+        "preview",
+        "component"
+      ],
+      "UniqueItem": false,
+      "Weight": 0.1
+    },
+    {
+      "AssetRef": "preview.asset.result",
+      "BaseValue": 2.0,
+      "Category": "crafted",
+      "Durability": 0.0,
+      "EvidenceIds": [
+        "preview.evidence.item.result"
+      ],
+      "HiddenItem": false,
+      "IconRef": "preview.icon.result",
+      "LocalisationDescriptionRef": "preview.loc.result.description",
+      "LocalisationNameRef": "preview.loc.result.name",
+      "Quality": "standard",
+      "QuestItem": false,
+      "Rarity": "common",
+      "RecordId": "preview.item.result",
+      "StackLimit": 10,
+      "Subtype": "preview-result",
+      "Tags": [
+        "preview",
+        "result"
+      ],
+      "UniqueItem": false,
+      "Weight": 0.2
+    }
+  ],
+  "EconomyRecipes": [
+    {
+      "DuplicateKey": "preview.recipe.synthesis",
+      "EvidenceIds": [
+        "preview.evidence.recipe.synthesis"
+      ],
+      "HiddenRecipe": false,
+      "PersistenceMode": "custom_template",
+      "RecipeTab": "preview",
+      "RecipeType": "synthesis",
+      "RecordId": "preview.recipe.synthesis",
+      "StationRecordIds": [
+        "preview.station.workbench"
+      ],
+      "UnlockMode": "learned",
+      "UnlockSubjectRefs": [
+        "subject:preview:learn-source:manual",
+        "subject:preview:learn-source:unresolved"
+      ]
+    }
+  ],
+  "GameVersion": "preview-build-0",
+  "GovernanceHistory": [
+    {
+      "Axis": "permission",
+      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "EventId": "preview.governance.item.component.permission",
+      "EvidenceIds": [
+        "preview.evidence.item.component"
+      ],
+      "NewValue": "allow",
+      "Notes": "Project-owned Developer Preview 0 fixture state.",
+      "PreviousValue": "unset",
+      "Reviewer": "preview.maintainer",
+      "SubjectId": "preview.item.component",
+      "SubjectKind": "record",
+      "Usage": "existing_item_consume",
+      "ValidationIds": [
+        "preview.validation.item.component"
+      ]
+    },
+    {
+      "Axis": "permission",
+      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "EventId": "preview.governance.item.result.permission",
+      "EvidenceIds": [
+        "preview.evidence.item.result"
+      ],
+      "NewValue": "forbid",
+      "Notes": "Project-owned Developer Preview 0 fixture state.",
+      "PreviousValue": "unset",
+      "Reviewer": "preview.maintainer",
+      "SubjectId": "preview.item.result",
+      "SubjectKind": "record",
+      "Usage": "existing_item_grant",
+      "ValidationIds": [
+        "preview.validation.item.result"
+      ]
+    },
+    {
+      "Axis": "permission",
+      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "EventId": "preview.governance.recipe.permission",
+      "EvidenceIds": [
+        "preview.evidence.recipe.synthesis"
+      ],
+      "NewValue": "allow",
+      "Notes": "Project-owned Developer Preview 0 fixture state.",
+      "PreviousValue": "unset",
+      "Reviewer": "preview.maintainer",
+      "SubjectId": "preview.recipe.synthesis",
+      "SubjectKind": "record",
+      "Usage": "existing_recipe_learn",
+      "ValidationIds": [
+        "preview.validation.recipe.synthesis"
+      ]
+    },
+    {
+      "Axis": "staleness",
+      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "EventId": "preview.governance.station.staleness",
+      "EvidenceIds": [
+        "preview.evidence.station.workbench"
+      ],
+      "NewValue": "stale",
+      "Notes": "Project-owned Developer Preview 0 fixture state.",
+      "PreviousValue": "current",
+      "Reviewer": "preview.maintainer",
+      "SubjectId": "preview.station.workbench",
+      "SubjectKind": "record",
+      "Usage": "",
+      "ValidationIds": [
+        "preview.validation.station.workbench"
+      ]
+    },
+    {
+      "Axis": "permission",
+      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "EventId": "preview.governance.station.permission",
+      "EvidenceIds": [
+        "preview.evidence.station.workbench"
+      ],
+      "NewValue": "forbid",
+      "Notes": "Project-owned Developer Preview 0 fixture state.",
+      "PreviousValue": "unset",
+      "Reviewer": "preview.maintainer",
+      "SubjectId": "preview.station.workbench",
+      "SubjectKind": "record",
+      "Usage": "runtime_station_use",
+      "ValidationIds": [
+        "preview.validation.station.workbench"
+      ]
+    },
+    {
+      "Axis": "permission",
+      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "EventId": "preview.governance.relationship.unresolved.permission",
+      "EvidenceIds": [
+        "preview.evidence.relationship.unresolved"
+      ],
+      "NewValue": "forbid",
+      "Notes": "Project-owned Developer Preview 0 fixture state.",
+      "PreviousValue": "unset",
+      "Reviewer": "preview.maintainer",
+      "SubjectId": "preview.relationship.recipe.learned-from-unresolved",
+      "SubjectKind": "relationship",
+      "Usage": "runtime_recipe_learn_source",
+      "ValidationIds": [
+        "preview.validation.relationship.unresolved"
+      ]
+    }
+  ],
+  "ProfileId": "preview.profile.windows-x64",
+  "RecipeIngredients": [
+    {
+      "AlternativeGroup": "",
+      "Conditions": [],
+      "Consumed": true,
+      "EvidenceIds": [
+        "preview.evidence.item.component"
+      ],
+      "ItemRecordId": "preview.item.component",
+      "ItemSubjectRef": "",
+      "LinkId": "preview.ingredient.synthesis.component",
+      "Quantity": 1,
+      "RecipeRecordId": "preview.recipe.synthesis"
+    }
+  ],
+  "RecipeOutputs": [
+    {
+      "ByProduct": false,
+      "Chance": 1.0,
+      "Conditions": [],
+      "EvidenceIds": [
+        "preview.evidence.item.result"
+      ],
+      "ItemRecordId": "preview.item.result",
+      "ItemSubjectRef": "",
+      "LinkId": "preview.output.synthesis.result",
+      "Quantity": 1,
+      "RecipeRecordId": "preview.recipe.synthesis"
+    }
+  ],
+  "Records": [
+    {
+      "Aliases": [],
+      "AllowedUsages": [
+        "existing_item_consume"
+      ],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "DisplayName": "Preview Component",
+      "Domain": "economy",
+      "EvidenceIds": [
+        "preview.evidence.item.component"
+      ],
+      "ForbiddenUsages": [],
+      "IdentityKind": "synthetic",
+      "MissingRefs": [],
+      "NativeRefExact": "",
+      "OperationalRisk": "low",
+      "OwnerPackId": "preview.developer-preview-0",
+      "RecordId": "preview.item.component",
+      "RecordKind": "item",
+      "ResearchStage": "S5",
+      "SourceScopedRefs": [],
+      "StalenessState": "current",
+      "SubjectRef": "subject:preview:item:component",
+      "SupersededByRecordId": "",
+      "Tags": [
+        "preview",
+        "synthetic"
+      ],
+      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "ValidationState": "validated"
+    },
+    {
+      "Aliases": [],
+      "AllowedUsages": [],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "DisplayName": "Preview Result",
+      "Domain": "economy",
+      "EvidenceIds": [
+        "preview.evidence.item.result"
+      ],
+      "ForbiddenUsages": [
+        "existing_item_grant"
+      ],
+      "IdentityKind": "synthetic",
+      "MissingRefs": [],
+      "NativeRefExact": "",
+      "OperationalRisk": "low",
+      "OwnerPackId": "preview.developer-preview-0",
+      "RecordId": "preview.item.result",
+      "RecordKind": "item",
+      "ResearchStage": "S5",
+      "SourceScopedRefs": [],
+      "StalenessState": "current",
+      "SubjectRef": "subject:preview:item:result",
+      "SupersededByRecordId": "",
+      "Tags": [
+        "preview",
+        "synthetic"
+      ],
+      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "ValidationState": "validated"
+    },
+    {
+      "Aliases": [],
+      "AllowedUsages": [],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "DisplayName": "Preview Manual",
+      "Domain": "economy",
+      "EvidenceIds": [
+        "preview.evidence.learn-source.manual"
+      ],
+      "ForbiddenUsages": [],
+      "IdentityKind": "synthetic",
+      "MissingRefs": [],
+      "NativeRefExact": "",
+      "OperationalRisk": "low",
+      "OwnerPackId": "preview.developer-preview-0",
+      "RecordId": "preview.learn-source.manual",
+      "RecordKind": "research_source",
+      "ResearchStage": "S5",
+      "SourceScopedRefs": [],
+      "StalenessState": "current",
+      "SubjectRef": "subject:preview:learn-source:manual",
+      "SupersededByRecordId": "",
+      "Tags": [
+        "preview",
+        "synthetic"
+      ],
+      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "ValidationState": "validated"
+    },
+    {
+      "Aliases": [],
+      "AllowedUsages": [
+        "existing_recipe_learn"
+      ],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "DisplayName": "Preview Synthesis",
+      "Domain": "economy",
+      "EvidenceIds": [
+        "preview.evidence.recipe.synthesis"
+      ],
+      "ForbiddenUsages": [],
+      "IdentityKind": "synthetic",
+      "MissingRefs": [],
+      "NativeRefExact": "",
+      "OperationalRisk": "low",
+      "OwnerPackId": "preview.developer-preview-0",
+      "RecordId": "preview.recipe.synthesis",
+      "RecordKind": "recipe",
+      "ResearchStage": "S5",
+      "SourceScopedRefs": [],
+      "StalenessState": "current",
+      "SubjectRef": "subject:preview:recipe:synthesis",
+      "SupersededByRecordId": "",
+      "Tags": [
+        "preview",
+        "synthetic"
+      ],
+      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "ValidationState": "validated"
+    },
+    {
+      "Aliases": [],
+      "AllowedUsages": [],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "DisplayName": "Preview Workbench",
+      "Domain": "economy",
+      "EvidenceIds": [
+        "preview.evidence.station.workbench"
+      ],
+      "ForbiddenUsages": [
+        "runtime_station_use"
+      ],
+      "IdentityKind": "synthetic",
+      "MissingRefs": [],
+      "NativeRefExact": "",
+      "OperationalRisk": "low",
+      "OwnerPackId": "preview.developer-preview-0",
+      "RecordId": "preview.station.workbench",
+      "RecordKind": "crafting_station",
+      "ResearchStage": "S5",
+      "SourceScopedRefs": [],
+      "StalenessState": "stale",
+      "SubjectRef": "subject:preview:station:workbench",
+      "SupersededByRecordId": "",
+      "Tags": [
+        "preview",
+        "synthetic"
+      ],
+      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "ValidationState": "validated"
+    }
+  ],
+  "Relationships": [
+    {
+      "AllowedUsages": [],
+      "Attributes": [],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "EvidenceIds": [
+        "preview.evidence.relationship.crafted-at"
+      ],
+      "ForbiddenUsages": [],
+      "FromRecordId": "preview.recipe.synthesis",
+      "MissingRefs": [],
+      "OperationalRisk": "low",
+      "RelationshipId": "preview.relationship.recipe.crafted-at",
+      "RelationshipKind": "crafted_at",
+      "ResearchStage": "S5",
+      "StalenessState": "current",
+      "SupersededByRelationshipId": "",
+      "TargetSubjectRef": "",
+      "ToRecordId": "preview.station.workbench",
+      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "ValidationState": "validated"
+    },
+    {
+      "AllowedUsages": [],
+      "Attributes": [],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "EvidenceIds": [
+        "preview.evidence.relationship.learned-from"
+      ],
+      "ForbiddenUsages": [],
+      "FromRecordId": "preview.recipe.synthesis",
+      "MissingRefs": [],
+      "OperationalRisk": "low",
+      "RelationshipId": "preview.relationship.recipe.learned-from",
+      "RelationshipKind": "learned_from",
+      "ResearchStage": "S5",
+      "StalenessState": "current",
+      "SupersededByRelationshipId": "",
+      "TargetSubjectRef": "",
+      "ToRecordId": "preview.learn-source.manual",
+      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "ValidationState": "validated"
+    },
+    {
+      "AllowedUsages": [],
+      "Attributes": [],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "EvidenceIds": [
+        "preview.evidence.relationship.unresolved"
+      ],
+      "ForbiddenUsages": [
+        "runtime_recipe_learn_source"
+      ],
+      "FromRecordId": "preview.recipe.synthesis",
+      "MissingRefs": [
+        "subject:preview:learn-source:unresolved"
+      ],
+      "OperationalRisk": "low",
+      "RelationshipId": "preview.relationship.recipe.learned-from-unresolved",
+      "RelationshipKind": "learned_from",
+      "ResearchStage": "S5",
+      "StalenessState": "unknown",
+      "SupersededByRelationshipId": "",
+      "TargetSubjectRef": "subject:preview:learn-source:unresolved",
+      "ToRecordId": "",
+      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "ValidationState": "blocked"
+    }
+  ],
+  "SchemaVersion": 1,
+  "ValidationHistory": [
+    {
+      "Branch": "preview",
+      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "EvidenceIds": [
+        "preview.evidence.item.component"
+      ],
+      "GameVersion": "preview-build-0",
+      "Method": "project-owned-fixture-verification",
+      "Notes": "Deterministic synthetic preview evidence only.",
+      "ProfileId": "preview.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.item.component",
+      "SubjectKind": "record",
+      "ValidationId": "preview.validation.item.component",
+      "Validator": "preview.fixture.generator"
+    },
+    {
+      "Branch": "preview",
+      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "EvidenceIds": [
+        "preview.evidence.item.result"
+      ],
+      "GameVersion": "preview-build-0",
+      "Method": "project-owned-fixture-verification",
+      "Notes": "Deterministic synthetic preview evidence only.",
+      "ProfileId": "preview.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.item.result",
+      "SubjectKind": "record",
+      "ValidationId": "preview.validation.item.result",
+      "Validator": "preview.fixture.generator"
+    },
+    {
+      "Branch": "preview",
+      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "EvidenceIds": [
+        "preview.evidence.recipe.synthesis"
+      ],
+      "GameVersion": "preview-build-0",
+      "Method": "project-owned-fixture-verification",
+      "Notes": "Deterministic synthetic preview evidence only.",
+      "ProfileId": "preview.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.recipe.synthesis",
+      "SubjectKind": "record",
+      "ValidationId": "preview.validation.recipe.synthesis",
+      "Validator": "preview.fixture.generator"
+    },
+    {
+      "Branch": "preview",
+      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "EvidenceIds": [
+        "preview.evidence.station.workbench"
+      ],
+      "GameVersion": "preview-build-0",
+      "Method": "project-owned-fixture-verification",
+      "Notes": "Deterministic synthetic preview evidence only.",
+      "ProfileId": "preview.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.station.workbench",
+      "SubjectKind": "record",
+      "ValidationId": "preview.validation.station.workbench",
+      "Validator": "preview.fixture.generator"
+    },
+    {
+      "Branch": "preview",
+      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "EvidenceIds": [
+        "preview.evidence.learn-source.manual"
+      ],
+      "GameVersion": "preview-build-0",
+      "Method": "project-owned-fixture-verification",
+      "Notes": "Deterministic synthetic preview evidence only.",
+      "ProfileId": "preview.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.learn-source.manual",
+      "SubjectKind": "record",
+      "ValidationId": "preview.validation.learn-source.manual",
+      "Validator": "preview.fixture.generator"
+    },
+    {
+      "Branch": "preview",
+      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "EvidenceIds": [
+        "preview.evidence.relationship.crafted-at"
+      ],
+      "GameVersion": "preview-build-0",
+      "Method": "project-owned-fixture-verification",
+      "Notes": "Deterministic synthetic preview evidence only.",
+      "ProfileId": "preview.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.relationship.recipe.crafted-at",
+      "SubjectKind": "relationship",
+      "ValidationId": "preview.validation.relationship.crafted-at",
+      "Validator": "preview.fixture.generator"
+    },
+    {
+      "Branch": "preview",
+      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "EvidenceIds": [
+        "preview.evidence.relationship.learned-from"
+      ],
+      "GameVersion": "preview-build-0",
+      "Method": "project-owned-fixture-verification",
+      "Notes": "Deterministic synthetic preview evidence only.",
+      "ProfileId": "preview.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.relationship.recipe.learned-from",
+      "SubjectKind": "relationship",
+      "ValidationId": "preview.validation.relationship.learned-from",
+      "Validator": "preview.fixture.generator"
+    },
+    {
+      "Branch": "preview",
+      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "EvidenceIds": [
+        "preview.evidence.relationship.unresolved"
+      ],
+      "GameVersion": "preview-build-0",
+      "Method": "project-owned-fixture-verification",
+      "Notes": "Deterministic synthetic preview evidence only.",
+      "ProfileId": "preview.profile.windows-x64",
+      "RecordId": "",
+      "State": "blocked",
+      "SubjectId": "preview.relationship.recipe.learned-from-unresolved",
+      "SubjectKind": "relationship",
+      "ValidationId": "preview.validation.relationship.unresolved",
+      "Validator": "preview.fixture.generator"
+    }
+  ],
+  "WorkspaceId": "preview.workspace"
+}

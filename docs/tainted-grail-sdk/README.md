@@ -6,7 +6,7 @@ This directory contains the public documentation for the TG SDK layer in this O3
 
 ### For users
 
-- [Developer Preview 0](DEVELOPER_PREVIEW_0.md) — Windows x64 prerequisite, configure, build, and full focused-validation commands plus current preview limitations.
+- [Developer Preview 0](DEVELOPER_PREVIEW_0.md) — Windows x64 prerequisite, configure, build, focused-validation, deterministic fixture, and current preview limitations.
 - [User Guide](USER_GUIDE.md) — build, open, configure, and use the foundation editor tools.
 - [Catalog Guide](CATALOG_GUIDE.md) — canonical search, record inspection, evidence promotion, relationships, validation, and blockers.
 - [Governance Engine Guide](GOVERNANCE_ENGINE_GUIDE.md) — independent maturity, confidence, risk, validation, staleness, permission, prohibition, and supersession decisions.
@@ -69,9 +69,10 @@ The project is pre-alpha. Current implemented editor workflows cover:
 - read-only item/recipe action-lane matrices backed by catalog governance;
 - read-only recipe station visibility and learnability evidence rows derived from exact identities, relationships, evidence, governance, and blockers;
 - foundation status, coverage, import issues, governance and economy blockers, and usage totals;
-- the first Developer Preview 0 command layer for Windows x64 prerequisite checks, O3DE configure/build wrapping, ordered focused validation, unit tests, and machine-readable results.
+- Developer Preview 0 Windows x64 prerequisite checks, O3DE configure/build wrapping, ordered focused validation, unit tests, and machine-readable results;
+- a deterministic project-owned synthetic preview fixture with a SHA-256 manifest, strict verification, and allowed/forbidden/blocked/stale/unresolved example states.
 
-The preview fixture, automated reload smoke harness, launch wrapper, diagnostics bundle, verified runnable archive, runtime adapters, production deployment, and the remaining specialised domain tools are not complete.
+The automated reload smoke harness, launch wrapper, diagnostics bundle, verified runnable archive, runtime adapters, production deployment, and the remaining specialised domain tools are not complete.
 
 ## Documentation contribution rules
 
