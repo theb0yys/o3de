@@ -10,6 +10,12 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 - O3DE `TaintedGrailModdingSDK` editor Gem and host-tool registration.
 - Foundation contract validator and focused GitHub Actions workflow.
+- Approved Developer Preview 0 design for a source-built Windows x64 usability milestone with deterministic fixtures, smoke verification, diagnostics, and a legally reviewed artifact path.
+- Developer Preview 0 prerequisite, configure, build, and ordered validation command layer for Windows x64 Profile.
+- Non-installing checks for Python, CMake, Git, Git LFS, Visual Studio C++ tools, repository identity, build-directory ownership, and expected Editor output.
+- Dry-run CMake wrappers for the approved `windows-vs-unity` x64 configure path and Profile `Editor` plus `TaintedGrailModdingSDK.Catalog.Tests` build targets.
+- Machine-readable Developer Preview prerequisite and validation results with original child-process exit-code propagation.
+- Developer Preview command contract validator and unit coverage for argument construction, path safety, dry runs, deterministic validation order, JSON output, unsupported hosts, and failure propagation.
 - Workspace and exact FoA game-profile management with durable `*.tgworkspace.json` documents.
 - Mod/content-pack project management with durable `*.tgpack.json` manifests.
 - Pack ownership, compatibility, dependency, save-impact, resource, build, and release declarations.
@@ -50,6 +56,7 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Changed
 
+- The focused TG SDK workflow now runs Developer Preview command unit tests and command-contract validation before the existing foundation, governance, catalog, and source-policy checks.
 - Catalog records now carry an explicit staleness state.
 - Catalog relationships now use the same independent maturity, confidence, risk, validation, staleness, permission, prohibition, conflict, missing-reference, and supersession model as records.
 - Record and relationship governance transitions now execute through one typed state machine instead of duplicated branches.
@@ -63,6 +70,8 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Security
 
+- Developer Preview commands do not install dependencies silently, use shell command strings, launch FoA, invoke runtime adapters, deploy files, modify saves, or collect telemetry.
+- Preview build-directory validation rejects the repository root, directories containing the checkout, `.git` paths, unrelated non-empty directories, and CMake caches bound to another source tree.
 - Runtime execution remains disabled in editor-owned workspace, pack, source/evidence, catalog, validation, governance, and typed economy workflows.
 - Source intake rejects missing or mismatched profile and fingerprint bindings.
 - Structured imports are size-limited and fail closed on malformed schemas.
@@ -81,6 +90,7 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Known limitations
 
+- Developer Preview 0 does not yet include the synthetic fixture, load/save/reopen smoke harness, launch wrapper, diagnostics bundle, manual UI evidence, or verified preview archive.
 - The Item and Recipe Editor does not yet generate adapter work orders.
 - The evidence view reports station visibility and recipe learnability research but does not append, learn, register, persist, clean up, roll back, or prove runtime behavior.
 - Runtime append, custom registration, vendor/loot mutation, reward mutation, persistence, cleanup, and rollback remain adapter-side research or implementation work.
