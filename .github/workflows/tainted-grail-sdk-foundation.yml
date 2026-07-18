@@ -61,6 +61,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Test Developer Preview 0 command layer
+        run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview.py" -v
+
+      - name: Validate Developer Preview 0 command contract
+        run: python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview.py
+
       - name: Validate foundation and governance contracts
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_foundation.py
 
