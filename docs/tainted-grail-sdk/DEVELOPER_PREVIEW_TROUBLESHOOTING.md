@@ -19,16 +19,33 @@ The launcher expects `Editor.exe` beneath `bin/profile` or `bin/Profile`.
 Create it after a successful build:
 
 ```powershell
-python Gems/TaintedGrailModdingSDK/Tools/developer_preview_shortcut.py create
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py create
 ```
 
 The output is:
 
 ```text
 build/Tainted Grail Modding Editor.lnk
+build/Tainted Grail Modding Editor.shortcut.json
 ```
 
-Use `--replace` only when deliberately replacing a previously generated link.
+The command creates the `.lnk`, verifies its size and SHA-256, and inspects the
+actual Windows shortcut target, project argument, working directory, icon, and
+description before reporting success.
+
+## Existing shortcut cannot be replaced
+
+Use `--replace` only for a shortcut that was previously created and still
+passes complete verification:
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py create `
+  --replace
+```
+
+An unrelated link, a missing sidecar manifest, a changed hash, or a semantic
+shortcut mismatch blocks replacement. Keep the existing file and investigate
+instead of deleting it automatically.
 
 ## The dedicated project contract fails
 
@@ -44,8 +61,9 @@ The contract requires:
 - the dedicated `project.json` enables `TaintedGrailModdingSDK` exactly once;
 - `AutomatedTesting/project.json` does not enable the TG SDK;
 - the PNG and ICO project-owned icons are valid;
-- the opener and shortcut generator select the dedicated project;
-- the quickstart documents the clickable entry.
+- the opener and low-level shortcut generator select the dedicated project;
+- the hardened clickable-entry wrapper performs pre-replacement and semantic verification;
+- the quickstart documents the hardened clickable entry.
 
 ## The Editor exits immediately
 
@@ -83,11 +101,19 @@ FoA runtime execution remains disabled.
 Run:
 
 ```powershell
-python Gems/TaintedGrailModdingSDK/Tools/developer_preview_shortcut.py verify
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py verify
 ```
 
-A size or SHA-256 mismatch means the `.lnk` changed after generation. Delete it
-and recreate it. Do not share or rely on a shortcut that fails verification.
+Verification can fail because:
+
+- the `.lnk` size or SHA-256 changed;
+- the manifest path or fields are malformed;
+- the target Editor, project, working directory, or icon no longer exists;
+- the real `.lnk` target, arguments, working directory, icon index, or description differs;
+- PowerShell or `WScript.Shell` cannot inspect the shortcut.
+
+Do not share, replace, or rely on a shortcut that fails verification. Correct
+the underlying build or path issue, then create a new entry deliberately.
 
 ## Native Editor logs and wrapper logs differ
 
