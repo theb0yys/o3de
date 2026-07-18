@@ -22,11 +22,11 @@ Accepted correction contract for Slices 3 and 4. It changes the editor-owned wor
 }
 ```
 
-A document without `SchemaVersion` is legacy schema 0. The loader migrates it only when every schema-1 invariant can be validated without guessing. Unsafe legacy documents fail with an explicit schema-0 migration error. Unknown versions are rejected.
+A document without `SchemaVersion` is legacy schema 0. The loader detects the schema before selecting either the legacy O3DE-envelope parser or the plain durable-document parser. It migrates schema 0 only when every schema-1 invariant can be validated without guessing. Unsafe or malformed legacy documents fail with an explicit schema-0 migration error. Explicit unknown versions are rejected even when a document also contains a legacy `Type` envelope marker.
 
 Every schema-1 workspace requires a lowercase namespaced stable `WorkspaceId`, non-empty workspace paths, at least one configured game profile, lowercase namespaced and unique `ProfileId` values, and an `ActiveGameProfileId` that binds to exactly one profile. `RuntimeTarget` is `Mono` or `IL2CPP`; Mono profiles also require the BepInEx version and plugin path.
 
-A relative workspace root is resolved from the canonical workspace-document directory. Output, staging, deployment, diagnostics and extracted-data paths remain inside that root. Managed assemblies and the Mono plugin path remain inside the canonical game installation path.
+A relative workspace root is resolved from the canonical workspace-document directory. Output, staging and deployment paths remain inside that root. For every configured profile, diagnostics and extracted-data paths remain inside the workspace root, managed assemblies remain inside the canonical game installation path, and Mono plugin paths remain inside that same installation path.
 
 ## Atomic transition
 
@@ -35,7 +35,7 @@ A relative workspace root is resolved from the canonical workspace-document dire
 Candidate construction executes in this order:
 
 1. load and migrate the workspace document;
-2. resolve and validate canonical workspace paths;
+2. resolve and validate canonical workspace paths for the workspace and every configured profile;
 3. validate the active profile binding;
 4. load source and evidence documents;
 5. reject error-severity import issues;
@@ -49,9 +49,11 @@ Candidate loading does not update the persistence boundary's published path. Pac
 
 ## Test evidence
 
-Direct `FoundationService` integration tests inject failures at workspace loading, active-profile validation, path validation, source loading, import issues, registry binding, catalog loading, catalog binding and catalog database validation. Every failure compares the complete old live-state signature before and after the attempted transition.
+Direct `FoundationService` integration tests inject failures at workspace loading, active-profile validation, path validation, source loading, import issues, registry binding, evidence binding, catalog loading, catalog binding and catalog database validation. Every failure compares the complete old live-state signature before and after the attempted transition.
 
-Workspace persistence tests cover schema-1 round trips, unknown-version rejection, unsafe schema-0 rejection, and migration plus round trip of the project-owned Developer Preview fixture.
+Workspace persistence tests cover schema-1 round trips, unknown-version rejection, unknown-version rejection through a legacy-envelope marker, malformed and unsafe schema-0 rejection, and migration plus round trip of the project-owned Developer Preview fixture.
+
+Path-policy tests cover valid multi-profile workspaces, workspace-root escape, managed-assembly and Mono-plugin escape from the installation root, and invalid paths on inactive configured profiles.
 
 ## Rollback
 
