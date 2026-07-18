@@ -8,6 +8,8 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Added
 
+- Internal `TaintedGrailModdingSDK.Core.Static` and `TaintedGrailModdingSDK.Framework.Static` targets with explicit Core → Framework → Editor dependency direction.
+- Core/Framework build-graph validation and unit tests for unique production-source ownership, test-only manifests, target dependencies, internal aliases, and Core isolation from Qt, AzToolsFramework, and Framework headers.
 - Durable workspace schema 1 with explicit legacy schema-0 migration, unknown-version rejection, stable workspace/profile identities, unique profile bindings, and project-owned fixture round-trip tests.
 - `FoundationWorkspaceLoadService` and `FoundationWorkspaceLoadCandidate` for all-or-nothing workspace, source/evidence, catalog, canonical-path, and active-profile transitions.
 - Direct `FoundationService` integration tests for workspace document, active-profile, path, source, import-issue, registry, catalog-load, catalog-binding, and catalog-validation failures.
@@ -80,6 +82,9 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Changed
 
+- Production implementation files are compiled exactly once by Core, Framework, or Editor; catalog and path-policy tests now link `Framework.Static` instead of recompiling private copies of production `.cpp` files.
+- The Editor Gem target now owns only Qt views, the Editor system component, and module composition; persistence, path policy, loading, and Foundation orchestration are owned by `Framework.Static`.
+- The focused TG SDK workflow now runs the Core/Framework validator and its focused unit tests before the existing Developer Preview and foundation contracts.
 - Workspace loading now builds and validates a complete candidate before publishing any workspace, canonical path, registry, import issue, catalog, catalog path, or snapshot state.
 - Workspace persistence now emits explicit schema-1 JSON; unversioned schema-0 documents are migrated only when every current invariant can be validated safely.
 - The focused TG SDK workflow runs the atomic workspace/schema contract validator in addition to Developer Preview, path-policy, governance, catalog, and source-policy checks.
@@ -102,6 +107,7 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Security
 
+- The Core/Framework split remains host-tool-only and exposes no internal static target through Tool or Builder aliases; it adds no runtime adapter, deployment, launch, injection, telemetry, or save behavior.
 - Failed workspace candidates cannot publish partial objects, change the live canonical workspace path, redirect pack containment, or replace the previous Foundation snapshot.
 - Workspace root, output, staging, deployment, diagnostics, extracted-data, managed-assembly, and Mono plugin paths are validated before publication and save.
 - Developer Preview fixture generation performs no network access or process launch and refuses silent overwrite of unrelated, partial, modified, or symlink-containing output directories.
@@ -118,36 +124,3 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 - Generated screenshots must remain beneath `build/` or outside the repository and are not release package contents.
 - Developer Preview commands do not install dependencies silently, use shell command strings, launch FoA, invoke runtime adapters, deploy files, modify saves, or collect telemetry.
 - Preview build-directory validation rejects the repository root, directories containing the checkout, `.git` paths, unrelated non-empty directories, and CMake caches bound to another source tree.
-- Runtime execution remains disabled in editor-owned workspace, pack, source/evidence, catalog, validation, governance, and typed economy workflows.
-- Source intake rejects missing or mismatched profile and fingerprint bindings.
-- Structured imports are size-limited and fail closed on malformed schemas.
-- Catalog promotion cannot grant allowed usages and adds `no_unvalidated_runtime_use`.
-- Validation never grants permission automatically.
-- Allowed usage requires a separate reviewed permission event backed by validated proof for the same subject.
-- Stale, failed, blocked, and superseded transitions remove existing allowed usages.
-- A failed governance-history append cannot leave changed state in a caller-owned catalog.
-- A failed catalog save cannot publish a candidate into the live editor state.
-- Item/recipe profile and join writes reject missing or unrelated evidence before persistence.
-- Native and synthetic item/recipe lanes are checked independently.
-- Quest-sensitive and unique item distribution lanes receive explicit blockers.
-- The Item and Recipe Editor exposes governance lanes and recipe station/learnability research as read-only status and cannot grant permission.
-- Missing, mismatched, unresolved, stale, blocked, conflicted, missing-reference, and superseded station/learnability inputs fail closed.
-- Public contribution rules require design review, pre-commit self-review, required CI, resolved review threads, and maintainer approval before merge.
-
-### Known limitations
-
-- The Windows manual UI checklist and evidence verifier are implemented, but the actual Windows screenshot pass remains pending.
-- Developer Preview 0 does not include a prebuilt or verified preview archive; the Editor must be built from source before the clickable `.lnk` is generated.
-- The service-level smoke and controlled Editor process path do not themselves prove every pane visually on a real Windows desktop or prove FoA runtime compatibility.
-- The UI evidence verifier checks metadata and file integrity but cannot inspect screenshot pixels; human privacy review remains mandatory.
-- The Item and Recipe Editor does not yet generate adapter work orders.
-- The evidence view reports station visibility and recipe learnability research but does not append, learn, register, persist, clean up, roll back, or prove runtime behavior.
-- Runtime append, custom registration, vendor/loot mutation, reward mutation, persistence, cleanup, and rollback remain adapter-side research or implementation work.
-- Permission usage names remain free-form pending typed adapter-capability contracts; the decision operation itself is strongly typed.
-- Remaining actor, spawn, world, faction, quest/state, asset, and localisation authoring tools are not implemented.
-- FoA runtime adapters and production deployment are not implemented.
-- The project has not published a supported binary release.
-
-## Release history
-
-No tagged public releases have been published yet.
