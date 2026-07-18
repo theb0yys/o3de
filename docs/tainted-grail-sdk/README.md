@@ -27,7 +27,7 @@ This directory contains the public documentation for the TG SDK layer in this O3
 - [Contributing](../../CONTRIBUTING.md) — contribution lifecycle and DCO requirements.
 - [Development Guide](DEVELOPMENT_GUIDE.md) — repository setup, build, validation, and implementation workflow.
 - [Developer Preview 0 Design](DEVELOPER_PREVIEW_0_DESIGN.md) — approved scope, acceptance criteria, safety boundary, and implementation sequence.
-- [Dedicated Editor Entry Architecture](DEDICATED_EDITOR_ENTRY.md) — product-host project, project-owned icons, generated Windows shortcut, and separation from engine testing projects.
+- [Dedicated Editor Entry Architecture](DEDICATED_EDITOR_ENTRY.md) — product-host project, project-owned icons, generated Windows shortcut, semantic verification, and separation from engine testing projects.
 - [Architecture](ARCHITECTURE.md) — layers, responsibilities, invariants, and data flow.
 - [Governance Reliability Baseline](GOVERNANCE_HARDENING.md) — typed transitions, shared record/relationship logic, intrinsic audit atomicity, publish-after-save persistence, and required failure tests.
 - [Code Quality](CODE_QUALITY.md) — mandatory C++, Qt, persistence, UI, testing, and evidence standards.
@@ -70,7 +70,8 @@ The project is pre-alpha. Current implemented editor workflows cover:
 - read-only action lanes and station/learnability evidence rows;
 - Developer Preview 0 prerequisite checks, configure/build wrapping, deterministic synthetic fixture, SHA-256 verification, and service-level load/save/reopen smoke coverage;
 - dedicated `TaintedGrailModdingEditor` O3DE project with `TaintedGrailModdingSDK` enabled and project-owned PNG/ICO assets;
-- generated `Tainted Grail Modding Editor.lnk` entry plus command-line opening through `developer_preview_open.py`;
+- generated `Tainted Grail Modding Editor.lnk` entry with hash, target, project-argument, working-directory, icon, and description verification;
+- command-line opening through `developer_preview_open.py`;
 - explicit local diagnostics collection with path/secret redaction, allow-listed files, log excerpts, workspace-relative hashes, manifest verification, and no automatic upload;
 - Windows manual UI checklist and screenshot-evidence tooling with exact-commit binding, PNG hashes, required coverage, and privacy/runtime attestations.
 
