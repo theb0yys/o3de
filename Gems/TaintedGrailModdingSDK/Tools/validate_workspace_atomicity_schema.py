@@ -34,11 +34,15 @@ def require_fragments(path: Path, fragments: tuple[str, ...]) -> str:
     return text
 
 
+def manifest_entries(path: Path) -> set[str]:
+    return set(re.findall(r"^\s+((?:Source|Tests)/[^\s\)]+)\s*$", require_file(path), re.MULTILINE))
+
+
 def validate_workspace_contract(repo_root: Path) -> None:
     gem_root = repo_root / "Gems/TaintedGrailModdingSDK"
-    source_root = gem_root / "Code/Source"
-    tests_root = gem_root / "Code/Tests"
     code_root = gem_root / "Code"
+    source_root = code_root / "Source"
+    tests_root = code_root / "Tests"
 
     schema_header = source_root / "WorkspaceSchemaService.h"
     schema_source = source_root / "WorkspaceSchemaService.cpp"
@@ -53,7 +57,7 @@ def validate_workspace_contract(repo_root: Path) -> None:
     integration_tests = tests_root / "FoundationServiceWorkspaceLoadTests.cpp"
     path_tests = tests_root / "PathPolicyServiceTests.cpp"
     schema_tests = tests_root / "WorkspaceSchemaServiceTests.cpp"
-    editor_manifest = code_root / "taintedgrailmoddingsdk_path_policy_editor_files.cmake"
+    framework_manifest = code_root / "taintedgrailmoddingsdk_framework_files.cmake"
     test_manifest = code_root / "taintedgrailmoddingsdk_path_policy_tests_files.cmake"
     cmake = code_root / "CMakeLists.txt"
     fixture = gem_root / "Preview/Template/preview.tgworkspace.json"
@@ -61,12 +65,7 @@ def validate_workspace_contract(repo_root: Path) -> None:
 
     require_fragments(
         schema_header,
-        (
-            "LegacySchemaVersion = 0",
-            "CurrentSchemaVersion = 1",
-            "MigrateAndValidate",
-            "Validate(const WorkspaceModel& workspace)",
-        ),
+        ("LegacySchemaVersion = 0", "CurrentSchemaVersion = 1", "MigrateAndValidate", "Validate(const WorkspaceModel& workspace)"),
     )
     require_fragments(
         schema_source,
@@ -92,9 +91,7 @@ def validate_workspace_contract(repo_root: Path) -> None:
         ),
     )
     if "SaveObjectToFile(workspace" in persistence_text:
-        raise WorkspaceContractError(
-            "Workspace persistence must emit the explicit durable schema-1 document."
-        )
+        raise WorkspaceContractError("Workspace persistence must emit the explicit durable schema-1 document.")
     detection_position = persistence_text.find("auto detected = DetectSchemaVersion(object)")
     envelope_position = persistence_text.find('if (object.contains(QStringLiteral("Type")))')
     if min(detection_position, envelope_position) < 0 or detection_position > envelope_position:
@@ -145,28 +142,15 @@ def validate_workspace_contract(repo_root: Path) -> None:
     )
     require_fragments(
         construction,
-        (
-            "LoadCandidate",
-            "ValidateWorkspacePaths",
-            "m_workspaceFilePath;",
-            "FoundationWorkspaceLoadService",
-        ),
+        ("LoadCandidate", "ValidateWorkspacePaths", "m_workspaceFilePath;", "FoundationWorkspaceLoadService"),
     )
     require_fragments(
         boundary,
-        (
-            "LoadCandidate",
-            "PublishResolvedPath",
-            "resolvedPath = resolved.TakeValue()",
-        ),
+        ("LoadCandidate", "PublishResolvedPath", "resolvedPath = resolved.TakeValue()"),
     )
     require_fragments(
         service_header,
-        (
-            "FoundationWorkspaceLoadService m_workspaceLoadService",
-            "AZStd::string m_workspaceRootPath",
-            "GetWorkspaceRootPath",
-        ),
+        ("FoundationWorkspaceLoadService m_workspaceLoadService", "AZStd::string m_workspaceRootPath", "GetWorkspaceRootPath"),
     )
 
     load_match = re.search(
@@ -235,28 +219,35 @@ def validate_workspace_contract(repo_root: Path) -> None:
         ),
     )
 
-    for manifest, fragments in (
-        (
-            editor_manifest,
-            (
-                "Source/FoundationWorkspaceLoadService.cpp",
-                "Source/PathPolicyWorkspaceValidation.cpp",
-                "Source/WorkspaceSchemaService.cpp",
-            ),
-        ),
-        (
-            test_manifest,
-            (
-                "Tests/FoundationServiceWorkspaceLoadTests.cpp",
-                "Tests/PathPolicyServiceTests.cpp",
-                "Tests/WorkspaceSchemaServiceTests.cpp",
-            ),
-        ),
-    ):
-        require_fragments(manifest, fragments)
+    framework_entries = manifest_entries(framework_manifest)
+    required_framework = {
+        "Source/FoundationWorkspaceLoadService.cpp",
+        "Source/PathPolicyWorkspaceValidation.cpp",
+        "Source/WorkspaceSchemaService.cpp",
+        "Source/WorkspacePersistenceService.cpp",
+        "Source/FoundationPersistenceBoundary.cpp",
+    }
+    if not required_framework.issubset(framework_entries):
+        raise WorkspaceContractError(
+            "Framework manifest is missing workspace ownership: "
+            + ", ".join(sorted(required_framework - framework_entries))
+        )
+
+    expected_tests = {
+        "Tests/FoundationServiceWorkspaceLoadTests.cpp",
+        "Tests/PathPolicyServiceTests.cpp",
+        "Tests/WorkspaceSchemaServiceTests.cpp",
+    }
+    test_entries = manifest_entries(test_manifest)
+    if test_entries != expected_tests:
+        raise WorkspaceContractError(
+            f"Workspace test manifest mismatch: expected {sorted(expected_tests)}, found {sorted(test_entries)}"
+        )
     require_fragments(
         cmake,
         (
+            "NAME ${gem_name}.Framework.Static STATIC",
+            "Gem::${gem_name}.Framework.Static",
             "Tests/WorkspaceSchemaServiceTests.cpp",
             "TG_SDK_PREVIEW_TEMPLATE_ROOT",
         ),
@@ -285,8 +276,8 @@ def main() -> int:
         print(f"Tainted Grail workspace atomicity/schema validation failed: {exc}", file=sys.stderr)
         return 1
     print(
-        "Tainted Grail workspace contract passed: schema-0 migration, durable schema 1, "
-        "all-profile path validation, candidate validation, atomic publication, and failure preservation are wired."
+        "Tainted Grail workspace contract passed: Framework-owned schema migration, all-profile path "
+        "validation, candidate validation, atomic publication, and failure preservation are wired."
     )
     return 0
 
