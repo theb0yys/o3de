@@ -93,6 +93,83 @@ namespace TaintedGrailModdingSDK
             }
             return AZ::Success();
         }
+
+        AZ::Outcome<void, AZStd::string> ValidateProfilePaths(
+            const GameProfile& profile,
+            const AZStd::string& canonicalWorkspaceRoot)
+        {
+            AZ::Outcome<void, AZStd::string> result = AZ::Success();
+            if (!profile.m_diagnosticsPath.empty())
+            {
+                result = RequireWorkspaceContained(
+                    profile.m_diagnosticsPath,
+                    canonicalWorkspaceRoot,
+                    "DiagnosticsPath");
+                if (!result.IsSuccess())
+                {
+                    return AZ::Failure(
+                        AZStd::string("Profile ") + profile.m_profileId + ": " + result.GetError());
+                }
+            }
+            if (!profile.m_extractedDataPath.empty())
+            {
+                result = RequireWorkspaceContained(
+                    profile.m_extractedDataPath,
+                    canonicalWorkspaceRoot,
+                    "ExtractedDataPath");
+                if (!result.IsSuccess())
+                {
+                    return AZ::Failure(
+                        AZStd::string("Profile ") + profile.m_profileId + ": " + result.GetError());
+                }
+            }
+
+            auto installPath = ResolvePath(profile.m_installPath, canonicalWorkspaceRoot, "InstallPath");
+            if (!installPath.IsSuccess())
+            {
+                return AZ::Failure(
+                    AZStd::string("Profile ") + profile.m_profileId + ": " + installPath.GetError());
+            }
+            auto managedPath = ResolvePath(
+                profile.m_managedAssembliesPath,
+                canonicalWorkspaceRoot,
+                "ManagedAssembliesPath");
+            if (!managedPath.IsSuccess())
+            {
+                return AZ::Failure(
+                    AZStd::string("Profile ") + profile.m_profileId + ": " + managedPath.GetError());
+            }
+            if (!PathPolicyService::IsCanonicalPathContained(
+                    installPath.GetValue(),
+                    managedPath.GetValue(),
+                    PlatformPathsAreCaseInsensitive))
+            {
+                return AZ::Failure(
+                    AZStd::string("Profile ") + profile.m_profileId
+                    + ": ManagedAssembliesPath must remain inside the canonical InstallPath.");
+            }
+
+            if (profile.m_runtimeTarget == "Mono")
+            {
+                auto pluginPath = ResolvePath(profile.m_pluginPath, canonicalWorkspaceRoot, "PluginPath");
+                if (!pluginPath.IsSuccess())
+                {
+                    return AZ::Failure(
+                        AZStd::string("Profile ") + profile.m_profileId + ": " + pluginPath.GetError());
+                }
+                if (!PathPolicyService::IsCanonicalPathContained(
+                        installPath.GetValue(),
+                        pluginPath.GetValue(),
+                        PlatformPathsAreCaseInsensitive))
+                {
+                    return AZ::Failure(
+                        AZStd::string("Profile ") + profile.m_profileId
+                        + ": PluginPath must remain inside the canonical InstallPath for Mono profiles.");
+                }
+            }
+
+            return AZ::Success();
+        }
     } // namespace
 
     AZ::Outcome<void, AZStd::string> PathPolicyService::ValidateWorkspacePaths(
@@ -129,71 +206,17 @@ namespace TaintedGrailModdingSDK
             return AZ::Failure(AZStd::string(result.GetError()));
         }
 
-        const GameProfile* profile = workspace.FindActiveGameProfile();
-        if (!profile)
+        if (!workspace.FindActiveGameProfile())
         {
             return AZ::Failure(AZStd::string("The active game profile binding is invalid."));
         }
 
-        if (!profile->m_diagnosticsPath.empty())
+        for (const GameProfile& profile : workspace.m_gameProfiles)
         {
-            result = RequireWorkspaceContained(
-                profile->m_diagnosticsPath,
-                canonicalWorkspaceRoot,
-                "DiagnosticsPath");
+            result = ValidateProfilePaths(profile, canonicalWorkspaceRoot);
             if (!result.IsSuccess())
             {
                 return AZ::Failure(AZStd::string(result.GetError()));
-            }
-        }
-        if (!profile->m_extractedDataPath.empty())
-        {
-            result = RequireWorkspaceContained(
-                profile->m_extractedDataPath,
-                canonicalWorkspaceRoot,
-                "ExtractedDataPath");
-            if (!result.IsSuccess())
-            {
-                return AZ::Failure(AZStd::string(result.GetError()));
-            }
-        }
-
-        auto installPath = ResolvePath(profile->m_installPath, canonicalWorkspaceRoot, "InstallPath");
-        if (!installPath.IsSuccess())
-        {
-            return AZ::Failure(AZStd::string(installPath.GetError()));
-        }
-        auto managedPath = ResolvePath(
-            profile->m_managedAssembliesPath,
-            canonicalWorkspaceRoot,
-            "ManagedAssembliesPath");
-        if (!managedPath.IsSuccess())
-        {
-            return AZ::Failure(AZStd::string(managedPath.GetError()));
-        }
-        if (!IsCanonicalPathContained(
-                installPath.GetValue(),
-                managedPath.GetValue(),
-                PlatformPathsAreCaseInsensitive))
-        {
-            return AZ::Failure(AZStd::string(
-                "ManagedAssembliesPath must remain inside the canonical InstallPath."));
-        }
-
-        if (profile->m_runtimeTarget == "Mono")
-        {
-            auto pluginPath = ResolvePath(profile->m_pluginPath, canonicalWorkspaceRoot, "PluginPath");
-            if (!pluginPath.IsSuccess())
-            {
-                return AZ::Failure(AZStd::string(pluginPath.GetError()));
-            }
-            if (!IsCanonicalPathContained(
-                    installPath.GetValue(),
-                    pluginPath.GetValue(),
-                    PlatformPathsAreCaseInsensitive))
-            {
-                return AZ::Failure(AZStd::string(
-                    "PluginPath must remain inside the canonical InstallPath for Mono profiles."));
             }
         }
 
