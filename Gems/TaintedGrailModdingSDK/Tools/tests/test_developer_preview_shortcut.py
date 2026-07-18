@@ -21,21 +21,42 @@ class DeveloperPreviewShortcutTests(unittest.TestCase):
         repo = root / "repo"
         project = repo / "TaintedGrailModdingEditor"
         project.mkdir(parents=True)
-        icon = project / "TaintedGrailModdingEditor.ico"
-        icon.write_bytes(b"\x00\x00\x01\x00\x01\x00icon")
-        build = repo / "build/preview"
+        (project / "TaintedGrailModdingEditor.ico").write_bytes(b"icon")
+        build = repo / shortcut.DEFAULT_BUILD_DIRECTORY
         editor = build / "bin/profile/Editor.exe"
         editor.parent.mkdir(parents=True)
         editor.write_bytes(b"editor")
+        (build / "CMakeCache.txt").write_text("cache", encoding="utf-8")
         return repo, build, editor
 
-    def test_dry_run_uses_dedicated_project_and_icon(self) -> None:
+    def expected_paths(
+        self,
+        repo: Path,
+        build: Path,
+        editor: Path,
+        trust_mode: str,
+    ):
+        return shortcut.developer_preview_path_policy.PreviewEntryPaths(
+            trust_mode=trust_mode,
+            repo_root=repo.resolve(),
+            build_directory=(build.resolve() if trust_mode == "source-built" else None),
+            editor=editor.resolve(),
+            project=(repo / "TaintedGrailModdingEditor").resolve(),
+            icon=(repo / "TaintedGrailModdingEditor/TaintedGrailModdingEditor.ico").resolve(),
+            working_directory=editor.parent.resolve(),
+        )
+
+    def test_dry_run_uses_source_build_policy(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            repo, build, _ = self.make_repo(Path(temporary))
-            output = repo / "build/Tainted Grail Modding Editor.lnk"
+            repo, build, editor = self.make_repo(Path(temporary))
+            output = repo / shortcut.DEFAULT_OUTPUT
             with mock.patch.object(
                 shortcut.validate_developer_preview_project,
                 "validate_preview_project",
+            ), mock.patch.object(
+                shortcut.developer_preview_path_policy,
+                "resolve_source_built_entry",
+                return_value=self.expected_paths(repo, build, editor, "source-built"),
             ):
                 payload = shortcut.create_shortcut(
                     repo_root=repo,
@@ -45,15 +66,13 @@ class DeveloperPreviewShortcutTests(unittest.TestCase):
                     replace=False,
                     dry_run=True,
                 )
-            self.assertEqual(payload["status"], "planned")
-            self.assertIn("TaintedGrailModdingEditor", payload["arguments"][1])
-            self.assertTrue(str(payload["icon"]).endswith("TaintedGrailModdingEditor.ico"))
+            self.assertEqual(payload["trust_mode"], "source-built")
             self.assertFalse(output.exists())
 
-    def test_create_uses_fixed_powershell_script_and_writes_manifest(self) -> None:
+    def test_create_uses_fixed_script_and_records_trust_mode(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo, build, editor = self.make_repo(Path(temporary))
-            output = repo / "build/Tainted Grail Modding Editor.lnk"
+            output = repo / shortcut.DEFAULT_OUTPUT
             calls = []
 
             def runner(command, environment):
@@ -65,9 +84,14 @@ class DeveloperPreviewShortcutTests(unittest.TestCase):
                 shortcut.validate_developer_preview_project,
                 "validate_preview_project",
             ), mock.patch.object(
-                shortcut,
-                "require_windows_x64",
+                shortcut.developer_preview_path_policy,
+                "resolve_source_built_entry",
+                return_value=self.expected_paths(repo, build, editor, "source-built"),
             ), mock.patch.object(
+                shortcut.developer_preview_path_policy,
+                "resolve_shortcut_output",
+                return_value=output.resolve(),
+            ), mock.patch.object(shortcut, "require_windows_x64"), mock.patch.object(
                 shortcut,
                 "resolve_powershell",
                 return_value="powershell.exe",
@@ -82,22 +106,77 @@ class DeveloperPreviewShortcutTests(unittest.TestCase):
                     runner=runner,
                 )
 
-            self.assertEqual(payload["target"], str(editor))
-            self.assertEqual(calls[0][1]["TG_PROJECT_PATH"], str(repo / "TaintedGrailModdingEditor"))
+            self.assertEqual(payload["target"], str(editor.resolve()))
+            self.assertEqual(payload["trust_mode"], "source-built")
             self.assertIn("WScript.Shell", calls[0][0][-1])
-            manifest = output.with_name(shortcut.MANIFEST_NAME)
-            self.assertTrue(manifest.is_file())
+            manifest = shortcut.manifest_path_for(output)
+            document = json.loads(manifest.read_text(encoding="utf-8"))
+            self.assertEqual(document["trust_mode"], "source-built")
             shortcut.verify_shortcut(output)
+
+    def test_explicit_editor_requires_diagnostic_override(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo, build, editor = self.make_repo(Path(temporary))
+            with mock.patch.object(
+                shortcut.validate_developer_preview_project,
+                "validate_preview_project",
+            ):
+                with self.assertRaisesRegex(shortcut.ShortcutError, "diagnostic override"):
+                    shortcut.create_shortcut(
+                        repo_root=repo,
+                        build_dir=build,
+                        explicit_editor=editor,
+                        output=repo / shortcut.DEFAULT_OUTPUT,
+                        replace=False,
+                        dry_run=True,
+                    )
+
+    def test_diagnostic_override_is_labeled(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo, build, editor = self.make_repo(Path(temporary))
+            output = repo / "build/diagnostic-entries/test.lnk"
+            paths = self.expected_paths(repo, build, editor, "diagnostic-override")
+            with mock.patch.object(
+                shortcut.validate_developer_preview_project,
+                "validate_preview_project",
+            ), mock.patch.object(
+                shortcut.developer_preview_path_policy,
+                "resolve_diagnostic_entry",
+                return_value=paths,
+            ), mock.patch.object(
+                shortcut.developer_preview_path_policy,
+                "resolve_shortcut_output",
+                return_value=output.resolve(),
+            ):
+                payload = shortcut.create_shortcut(
+                    repo_root=repo,
+                    build_dir=build,
+                    explicit_editor=editor,
+                    output=output,
+                    replace=False,
+                    dry_run=True,
+                    diagnostic_override=True,
+                )
+            self.assertEqual(payload["trust_mode"], "diagnostic-override")
+            self.assertNotIn("approved_build_directory", payload)
 
     def test_existing_shortcut_requires_replace(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            repo, build, _ = self.make_repo(Path(temporary))
-            output = repo / "build/Tainted Grail Modding Editor.lnk"
+            repo, build, editor = self.make_repo(Path(temporary))
+            output = repo / shortcut.DEFAULT_OUTPUT
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_bytes(b"existing")
             with mock.patch.object(
                 shortcut.validate_developer_preview_project,
                 "validate_preview_project",
+            ), mock.patch.object(
+                shortcut.developer_preview_path_policy,
+                "resolve_source_built_entry",
+                return_value=self.expected_paths(repo, build, editor, "source-built"),
+            ), mock.patch.object(
+                shortcut.developer_preview_path_policy,
+                "resolve_shortcut_output",
+                return_value=output.resolve(),
             ), mock.patch.object(shortcut, "require_windows_x64"):
                 with self.assertRaisesRegex(shortcut.ShortcutError, "--replace"):
                     shortcut.create_shortcut(
@@ -112,14 +191,16 @@ class DeveloperPreviewShortcutTests(unittest.TestCase):
 
     def test_verify_detects_tampering(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            path = Path(temporary) / "Tainted Grail Modding Editor.lnk"
+            path = Path(temporary) / "entry.lnk"
             path.write_bytes(b"shortcut")
             payload = {
-                "shortcut": str(path),
+                "schema_version": 1,
+                "trust_mode": "source-built",
+                "shortcut": str(path.resolve()),
                 "size_bytes": path.stat().st_size,
                 "sha256": shortcut.sha256_file(path),
             }
-            path.with_name(shortcut.MANIFEST_NAME).write_text(
+            shortcut.manifest_path_for(path).write_text(
                 json.dumps(payload),
                 encoding="utf-8",
             )

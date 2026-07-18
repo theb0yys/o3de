@@ -70,16 +70,46 @@ jobs:
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview.py
 
       - name: Test Developer Preview 0 project integration
-        run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview_project.py" -v
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_developer_preview_project.py" -v
 
       - name: Test Developer Preview 0 project opener
-        run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview_open.py" -v
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_developer_preview_open.py" -v
+
+      - name: Test canonical path policy
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_developer_preview_path_policy.py" -v
+
+      - name: Test trusted shortcut generator
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_developer_preview_shortcut.py" -v
+
+      - name: Test trusted clickable entry
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_developer_preview_entry.py" -v
 
       - name: Validate Developer Preview 0 project integration
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_project.py
 
+      - name: Validate canonical path and executable policy
+        run: python Gems/TaintedGrailModdingSDK/Tools/validate_path_policy.py
+
       - name: Test Developer Preview 0 fixture
-        run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview_fixture.py" -v
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_developer_preview_fixture.py" -v
 
       - name: Validate Developer Preview 0 fixture contract
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_fixture.py
@@ -98,10 +128,16 @@ jobs:
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_smoke.py
 
       - name: Test Developer Preview 0 launch wrapper
-        run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview_launch.py" -v
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_developer_preview_launch.py" -v
 
       - name: Test Developer Preview 0 diagnostics
-        run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview_diagnostics.py" -v
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_developer_preview_diagnostics.py" -v
 
       - name: Validate Developer Preview 0 launch and diagnostics contract
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_launch_diagnostics.py
@@ -118,7 +154,10 @@ jobs:
           --output "${{ runner.temp }}/tg-sdk-developer-preview-0-diagnostics"
 
       - name: Test Developer Preview 0 manual UI evidence tooling
-        run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview_ui_evidence.py" -v
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_developer_preview_ui_evidence.py" -v
 
       - name: Validate Developer Preview 0 manual UI evidence contract
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_ui_evidence.py
@@ -137,4 +176,6 @@ jobs:
         run: |
           set -o pipefail
           python -u scripts/commit_validation/validate_file_or_folder.py --path Gems/TaintedGrailModdingSDK 2>&1 \
-            | grep -E "(^[A-Za-z].*(PASSED|FAILED)$|^VALIDATION FAILURE SUMMARY$|^VALIDATOR_FAILED:|^[0-9]+ (failed|passed))"
+            | grep -E \
+              "(^[A-Za-z].*(PASSED|FAILED)$|^VALIDATION FAILURE SUMMARY$|"\
+              "^VALIDATOR_FAILED:|^[0-9]+ (failed|passed))"

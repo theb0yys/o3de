@@ -41,9 +41,10 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
     def make_repo(self, root: Path) -> Path:
         repo = root / "repo"
         project = repo / "TaintedGrailModdingEditor"
+        tools = repo / "Gems/TaintedGrailModdingSDK/Tools"
         (project / "cmake").mkdir(parents=True)
         (repo / "AutomatedTesting").mkdir(parents=True)
-        (repo / "Gems/TaintedGrailModdingSDK/Tools").mkdir(parents=True)
+        tools.mkdir(parents=True)
         (repo / "docs/tainted-grail-sdk").mkdir(parents=True)
 
         (repo / "engine.json").write_text(
@@ -86,36 +87,51 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
             "TaintedGrailModdingEditor\n"
             "developer_preview_entry.py create\n"
             "developer_preview_entry.py verify\n"
+            "validate_path_policy.py\n"
+            "repository-owned path policy\n"
             "Tainted Grail Modding Editor.lnk\n"
             "Tools → Tainted Grail SDK\n"
             "TaintedGrailModdingEditor/user/log/Editor.log\n",
             encoding="utf-8",
         )
-        (repo / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_open.py").write_text(
+        (tools / "developer_preview_open.py").write_text(
             'PREVIEW_PROJECT = Path("TaintedGrailModdingEditor")\n'
             "validate_preview_project(repo_root)\n"
             "developer_preview_launch.main(arguments)\n",
             encoding="utf-8",
         )
-        (repo / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_shortcut.py").write_text(
+        (tools / "developer_preview_path_policy.py").write_text(
+            "APPROVED_BUILD_DIRECTORY\n"
+            "resolve_source_built_entry\n"
+            "resolve_diagnostic_entry\n"
+            "validate_source_editor_binary\n"
+            "developer_preview.validate_build_directory\n"
+            "Diagnostic overrides must not replace\n",
+            encoding="utf-8",
+        )
+        (tools / "developer_preview_shortcut.py").write_text(
             "WScript.Shell\n"
             "TG_SHORTCUT_OUTPUT\n"
-            "TaintedGrailModdingEditor.ico\n"
-            "'--project-path \"'\n"
-            "developer_preview_launch.resolve_editor_executable\n"
+            "developer_preview_path_policy\n"
+            "resolve_source_built_entry\n"
+            "resolve_diagnostic_entry\n"
+            "diagnostic_override\n"
+            '"trust_mode": paths.trust_mode\n'
             "validate_preview_project\n",
             encoding="utf-8",
         )
-        (repo / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py").write_text(
+        (tools / "developer_preview_entry.py").write_text(
             "WScript.Shell\n"
             "developer_preview_shortcut.verify_shortcut\n"
             "developer_preview_shortcut.create_shortcut\n"
-            "inspect_shortcut\n"
-            "verify_entry\n"
-            "if output.exists() and replace\n",
+            "resolve_source_built_entry\n"
+            "_require_manifest_matches_policy\n"
+            "Diagnostic override shortcuts are not verified source-built entries\n"
+            "allow_diagnostic_override\n"
+            "inspect_shortcut\n",
             encoding="utf-8",
         )
-        (repo / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_launch.py").write_text(
+        (tools / "developer_preview_launch.py").write_text(
             'parser.add_argument("--project")\n'
             'command.extend(("--project-path", str(project)))\n'
             "validate_project_path(project)\n",
@@ -157,30 +173,31 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
             with self.assertRaisesRegex(contract.PreviewProjectContractError, "display_name"):
                 contract.validate_preview_project(repo)
 
-    def test_unregistered_project_fails(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            repo = self.make_repo(Path(temporary))
-            path = repo / "engine.json"
-            document = json.loads(path.read_text(encoding="utf-8"))
-            document["projects"].remove("TaintedGrailModdingEditor")
-            path.write_text(json.dumps(document), encoding="utf-8")
-            with self.assertRaisesRegex(contract.PreviewProjectContractError, "register"):
-                contract.validate_preview_project(repo)
-
-    def test_quickstart_must_name_hardened_entry(self) -> None:
+    def test_quickstart_must_name_path_policy(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
             path = repo / "docs/tainted-grail-sdk/OPEN_AND_TEST_EDITOR.md"
-            path.write_text("developer_preview_shortcut.py create\n", encoding="utf-8")
-            with self.assertRaisesRegex(contract.PreviewProjectContractError, "missing required|hardened"):
+            path.write_text("developer_preview_entry.py create\n", encoding="utf-8")
+            with self.assertRaisesRegex(contract.PreviewProjectContractError, "missing required"):
                 contract.validate_preview_project(repo)
 
-    def test_hardened_entry_is_required(self) -> None:
+    def test_sidecar_cannot_be_source_trust_root(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
             path = repo / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py"
+            path.write_text(
+                path.read_text(encoding="utf-8") + "expected_target = Path(target_value)\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(contract.PreviewProjectContractError, "sidecar"):
+                contract.validate_preview_project(repo)
+
+    def test_path_policy_file_is_required(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = self.make_repo(Path(temporary))
+            path = repo / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_path_policy.py"
             path.unlink()
-            with self.assertRaisesRegex(contract.PreviewProjectContractError, "hardened clickable entry"):
+            with self.assertRaisesRegex(contract.PreviewProjectContractError, "path and executable"):
                 contract.validate_preview_project(repo)
 
 

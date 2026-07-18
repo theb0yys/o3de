@@ -14,6 +14,7 @@ ly_add_target(
     NAMESPACE Gem
     FILES_CMAKE
         taintedgrailmoddingsdk_editor_files.cmake
+        taintedgrailmoddingsdk_path_policy_editor_files.cmake
     INCLUDE_DIRECTORIES
         PRIVATE
             Source
@@ -38,6 +39,7 @@ if(PAL_TRAIT_BUILD_TESTS_SUPPORTED AND PAL_TRAIT_TEST_GOOGLE_TEST_SUPPORTED)
         NAMESPACE Gem
         FILES_CMAKE
             taintedgrailmoddingsdk_catalog_tests_files.cmake
+            taintedgrailmoddingsdk_path_policy_tests_files.cmake
         INCLUDE_DIRECTORIES
             PRIVATE
                 Source

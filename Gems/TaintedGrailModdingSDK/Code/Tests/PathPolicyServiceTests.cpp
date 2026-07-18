@@ -1,0 +1,191 @@
+/*
+ * Copyright (c) Contributors to the Open 3D Engine Project.
+ * For complete copyright and license terms please see the LICENSE at the root of this distribution.
+ *
+ * SPDX-License-Identifier: Apache-2.0 OR MIT
+ */
+
+#include "PathPolicyService.h"
+
+#include <AzTest/AzTest.h>
+
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QTemporaryDir>
+
+#include <filesystem>
+#include <system_error>
+
+namespace TaintedGrailModdingSDK
+{
+    namespace
+    {
+        AZStd::string ToAzString(const QString& value)
+        {
+            const QByteArray utf8 = value.toUtf8();
+            return AZStd::string(utf8.constData(), static_cast<size_t>(utf8.size()));
+        }
+
+        bool Touch(const QString& filePath)
+        {
+            QDir().mkpath(QFileInfo(filePath).absolutePath());
+            QFile file(filePath);
+            return file.open(QIODevice::WriteOnly) && file.write("test") == 4;
+        }
+
+        WorkspaceModel RelativeWorkspace()
+        {
+            WorkspaceModel workspace;
+            workspace.m_workspaceId = "test.workspace";
+            workspace.m_rootPath = ".";
+            return workspace;
+        }
+    } // namespace
+
+    TEST(PathPolicyServiceTests, WorkspaceDocumentRequiresCanonicalSuffix)
+    {
+        QTemporaryDir temporary;
+        ASSERT_TRUE(temporary.isValid());
+        const QString invalidPath = QDir(temporary.path()).filePath("workspace.json");
+        ASSERT_TRUE(Touch(invalidPath));
+
+        PathPolicyService policy;
+        const auto result = policy.ResolveWorkspaceDocumentPath(ToAzString(invalidPath), true);
+        EXPECT_FALSE(result.IsSuccess());
+        EXPECT_NE(result.GetError().find(".tgworkspace.json"), AZStd::string::npos);
+    }
+
+    TEST(PathPolicyServiceTests, RelativeWorkspaceRootUsesWorkspaceDocumentDirectory)
+    {
+        QTemporaryDir temporary;
+        ASSERT_TRUE(temporary.isValid());
+        const QString documentPath = QDir(temporary.path()).filePath("preview.tgworkspace.json");
+        ASSERT_TRUE(Touch(documentPath));
+
+        PathPolicyService policy;
+        const auto result = policy.ResolveWorkspaceRoot(
+            RelativeWorkspace(),
+            ToAzString(documentPath),
+            true);
+        ASSERT_TRUE(result.IsSuccess()) << result.GetError().c_str();
+        EXPECT_TRUE(PathPolicyService::IsCanonicalPathContained(
+            result.GetValue(),
+            result.GetValue(),
+            false));
+    }
+
+    TEST(PathPolicyServiceTests, PackManifestInsideWorkspaceIsAccepted)
+    {
+        QTemporaryDir temporary;
+        ASSERT_TRUE(temporary.isValid());
+        const QString documentPath = QDir(temporary.path()).filePath("preview.tgworkspace.json");
+        const QString packPath = QDir(temporary.path()).filePath("Packs/test.pack.tgpack.json");
+        ASSERT_TRUE(Touch(documentPath));
+        ASSERT_TRUE(Touch(packPath));
+
+        PathPolicyService policy;
+        const auto result = policy.ResolvePackManifestPath(
+            RelativeWorkspace(),
+            ToAzString(documentPath),
+            ToAzString(packPath),
+            true);
+        EXPECT_TRUE(result.IsSuccess()) << result.GetError().c_str();
+    }
+
+    TEST(PathPolicyServiceTests, LexicalPrefixOutsideWorkspaceIsRejected)
+    {
+        QTemporaryDir temporary;
+        ASSERT_TRUE(temporary.isValid());
+        const QString workspacePath = QDir(temporary.path()).filePath("workspace");
+        const QString outsidePath = QDir(temporary.path()).filePath(
+            "workspace-escape/test.tgpack.json");
+        QDir().mkpath(workspacePath);
+        const QString documentPath = QDir(workspacePath).filePath(
+            "workspace.tgworkspace.json");
+        ASSERT_TRUE(Touch(documentPath));
+        ASSERT_TRUE(Touch(outsidePath));
+
+        WorkspaceModel workspace;
+        workspace.m_workspaceId = "test.workspace";
+        workspace.m_rootPath = ToAzString(workspacePath);
+        PathPolicyService policy;
+        const auto result = policy.ResolvePackManifestPath(
+            workspace,
+            ToAzString(documentPath),
+            ToAzString(outsidePath),
+            true);
+        EXPECT_FALSE(result.IsSuccess());
+        EXPECT_NE(result.GetError().find("canonical workspace root"), AZStd::string::npos);
+    }
+
+    TEST(PathPolicyServiceTests, SymlinkEscapeIsRejectedAfterCanonicalization)
+    {
+        QTemporaryDir temporary;
+        ASSERT_TRUE(temporary.isValid());
+        const QString workspacePath = QDir(temporary.path()).filePath("workspace");
+        const QString outsidePath = QDir(temporary.path()).filePath("outside");
+        QDir().mkpath(workspacePath);
+        QDir().mkpath(outsidePath);
+        const QString documentPath = QDir(workspacePath).filePath(
+            "workspace.tgworkspace.json");
+        ASSERT_TRUE(Touch(documentPath));
+        ASSERT_TRUE(Touch(QDir(outsidePath).filePath("escape.tgpack.json")));
+
+        const std::filesystem::path linkPath = std::filesystem::u8path(
+            ToAzString(QDir(workspacePath).filePath("linked-outside")).c_str());
+        const std::filesystem::path targetPath = std::filesystem::u8path(
+            ToAzString(outsidePath).c_str());
+        std::error_code error;
+        std::filesystem::create_directory_symlink(targetPath, linkPath, error);
+        if (error)
+        {
+            GTEST_SKIP() << "Filesystem links are unavailable for this test host: "
+                         << error.message();
+        }
+
+        WorkspaceModel workspace;
+        workspace.m_workspaceId = "test.workspace";
+        workspace.m_rootPath = ToAzString(workspacePath);
+        PathPolicyService policy;
+        const auto result = policy.ResolvePackManifestPath(
+            workspace,
+            ToAzString(documentPath),
+            ToAzString(QDir(workspacePath).filePath(
+                "linked-outside/escape.tgpack.json")),
+            true);
+        EXPECT_FALSE(result.IsSuccess());
+        EXPECT_NE(result.GetError().find("canonical workspace root"), AZStd::string::npos);
+    }
+
+    TEST(PathPolicyServiceTests, WindowsCaseFoldUsesPathComponents)
+    {
+        EXPECT_TRUE(PathPolicyService::IsCanonicalPathContained(
+            "C:/Workspace",
+            "c:/workspace/Packs/test.tgpack.json",
+            true));
+        EXPECT_FALSE(PathPolicyService::IsCanonicalPathContained(
+            "C:/Workspace",
+            "c:/workspace-escape/test.tgpack.json",
+            true));
+    }
+
+    TEST(PathPolicyServiceTests, PackManifestSuffixIsRequired)
+    {
+        QTemporaryDir temporary;
+        ASSERT_TRUE(temporary.isValid());
+        const QString documentPath = QDir(temporary.path()).filePath("preview.tgworkspace.json");
+        const QString packPath = QDir(temporary.path()).filePath("Packs/test.json");
+        ASSERT_TRUE(Touch(documentPath));
+        ASSERT_TRUE(Touch(packPath));
+
+        PathPolicyService policy;
+        const auto result = policy.ResolvePackManifestPath(
+            RelativeWorkspace(),
+            ToAzString(documentPath),
+            ToAzString(packPath),
+            true);
+        EXPECT_FALSE(result.IsSuccess());
+        EXPECT_NE(result.GetError().find(".tgpack.json"), AZStd::string::npos);
+    }
+} // namespace TaintedGrailModdingSDK

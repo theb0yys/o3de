@@ -12,7 +12,21 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview.py build `
   --build-dir build/tg-sdk-developer-preview-0-windows-profile
 ```
 
-The launcher expects `Editor.exe` beneath `bin/profile` or `bin/Profile`.
+The trusted clickable entry expects `Editor.exe` beneath `bin/profile` or
+`bin/Profile` in the exact approved Developer Preview build directory.
+
+## Build directory is rejected
+
+The standard clickable entry accepts only:
+
+```text
+build/tg-sdk-developer-preview-0-windows-profile
+```
+
+It also requires `CMakeCache.txt` to bind that directory to the current
+repository through `CMAKE_HOME_DIRECTORY`. Re-run the configure command if the
+cache is missing or belongs to another checkout. A renamed, empty, truncated,
+non-x64, or non-GUI executable is rejected even when it is named `Editor.exe`.
 
 ## Clickable entry is missing
 
@@ -29,9 +43,8 @@ build/Tainted Grail Modding Editor.lnk
 build/Tainted Grail Modding Editor.shortcut.json
 ```
 
-The command creates the `.lnk`, verifies its size and SHA-256, and inspects the
-actual Windows shortcut target, project argument, working directory, icon, and
-description before reporting success.
+The sidecar is evidence about the generated file; trusted target paths are
+derived from the repository and build policy.
 
 ## Existing shortcut cannot be replaced
 
@@ -43,9 +56,37 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py create `
   --replace
 ```
 
-An unrelated link, a missing sidecar manifest, a changed hash, or a semantic
-shortcut mismatch blocks replacement. Keep the existing file and investigate
-instead of deleting it automatically.
+An unrelated link, a missing sidecar, changed hash, unapproved target, or
+semantic shortcut mismatch blocks replacement.
+
+## An explicit Editor.exe is rejected
+
+`--editor` is diagnostic-only and must never replace the standard verified
+entry. Use a separate output:
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py create `
+  --editor C:\diagnostics\Editor.exe `
+  --diagnostic-override `
+  --output build\diagnostic-entries\External Editor.lnk
+```
+
+Normal verification rejects diagnostic overrides. Deliberate inspection needs
+`--allow-diagnostic-override` and still does not promote the link to a verified
+source-built entry.
+
+## The canonical path-policy contract fails
+
+Run:
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/validate_path_policy.py
+```
+
+The contract requires canonical filesystem resolution, component-based
+containment, Windows case folding, symlink/junction escape rejection,
+workspace-relative root resolution, service-boundary pack enforcement, and
+repository-derived shortcut trust.
 
 ## The dedicated project contract fails
 
@@ -55,15 +96,8 @@ Run:
 python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_project.py
 ```
 
-The contract requires:
-
-- `engine.json` registers `TaintedGrailModdingEditor`;
-- the dedicated `project.json` enables `TaintedGrailModdingSDK` exactly once;
-- `AutomatedTesting/project.json` does not enable the TG SDK;
-- the PNG and ICO project-owned icons are valid;
-- the opener and low-level shortcut generator select the dedicated project;
-- the hardened clickable-entry wrapper performs pre-replacement and semantic verification;
-- the quickstart documents the hardened clickable entry.
+The contract requires the dedicated project, Gem enablement, project-owned
+icons, opener, and clickable-entry integration.
 
 ## The Editor exits immediately
 
@@ -85,16 +119,12 @@ After the Editor opens, use **Tools → Tainted Grail SDK**.
 
 If that menu group is absent:
 
-1. validate the dedicated project contract;
+1. validate the dedicated project and path-policy contracts;
 2. reconfigure after pulling project or engine-manifest changes;
 3. rebuild `Editor`;
-4. verify the shortcut targets the same build directory;
+4. recreate and verify the standard shortcut;
 5. close other Editor or Asset Processor instances;
-6. search `TaintedGrailModdingEditor/user/log/Editor.log` for
-   `TaintedGrailModdingSDK` activation or module-load errors.
-
-The expected activation message says the editor foundation was activated and
-FoA runtime execution remains disabled.
+6. search `TaintedGrailModdingEditor/user/log/Editor.log` for activation errors.
 
 ## Shortcut verification fails
 
@@ -104,16 +134,10 @@ Run:
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py verify
 ```
 
-Verification can fail because:
-
-- the `.lnk` size or SHA-256 changed;
-- the manifest path or fields are malformed;
-- the target Editor, project, working directory, or icon no longer exists;
-- the real `.lnk` target, arguments, working directory, icon index, or description differs;
-- PowerShell or `WScript.Shell` cannot inspect the shortcut.
-
-Do not share, replace, or rely on a shortcut that fails verification. Correct
-the underlying build or path issue, then create a new entry deliberately.
+Verification fails when the hash changes, repository-derived paths do not match
+the sidecar, the approved build is missing or bound to another source tree, or
+the actual `.lnk` properties differ. Correct the build or path issue and create
+a new entry deliberately.
 
 ## Native Editor logs and wrapper logs differ
 

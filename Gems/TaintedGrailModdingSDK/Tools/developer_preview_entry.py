@@ -24,6 +24,7 @@ TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
+import developer_preview_path_policy
 import developer_preview_shortcut
 
 SHORTCUT_DESCRIPTION = "Tainted Grail Modding Editor"
@@ -88,7 +89,9 @@ def parse_icon_location(value: str) -> tuple[Path, int]:
     try:
         image_index = int(index_text.strip())
     except ValueError as exc:
-        raise EntryVerificationError(f"Shortcut icon location has an invalid image index: {value}") from exc
+        raise EntryVerificationError(
+            f"Shortcut icon location has an invalid image index: {value}"
+        ) from exc
     return Path(path_text.strip().strip('"')).resolve(strict=False), image_index
 
 
@@ -125,65 +128,94 @@ def inspect_shortcut(
     if not isinstance(inspected, dict) or any(
         not isinstance(inspected.get(key), str) for key in required
     ):
-        raise EntryVerificationError("Shortcut inspection did not return the required string fields.")
+        raise EntryVerificationError(
+            "Shortcut inspection did not return the required string fields."
+        )
     return {key: inspected[key] for key in required}
+
+
+def _require_manifest_matches_policy(
+    payload: dict[str, object],
+    expected: developer_preview_path_policy.PreviewEntryPaths,
+) -> None:
+    expected_arguments = ["--project-path", str(expected.project)]
+    fields = {
+        "target": str(expected.editor),
+        "arguments": expected_arguments,
+        "working_directory": str(expected.working_directory),
+        "icon": str(expected.icon),
+    }
+    for key, value in fields.items():
+        if payload.get(key) != value:
+            raise EntryVerificationError(
+                f"Shortcut manifest {key} does not match repository-owned path policy."
+            )
 
 
 def verify_entry(
     shortcut: Path,
     *,
+    repo_root: Path,
+    allow_diagnostic_override: bool = False,
     runner: PowerShellRunner = default_runner,
 ) -> dict[str, object]:
     shortcut = shortcut.resolve(strict=False)
     payload = developer_preview_shortcut.verify_shortcut(shortcut)
+    trust_mode = payload.get("trust_mode")
+    try:
+        if trust_mode == developer_preview_path_policy.TRUST_MODE_SOURCE_BUILD:
+            expected = developer_preview_path_policy.resolve_source_built_entry(
+                repo_root,
+                developer_preview_path_policy.APPROVED_BUILD_DIRECTORY,
+                require_editor=True,
+                require_configured=True,
+            )
+        elif trust_mode == developer_preview_path_policy.TRUST_MODE_DIAGNOSTIC_OVERRIDE:
+            if not allow_diagnostic_override:
+                raise EntryVerificationError(
+                    "Diagnostic override shortcuts are not verified source-built entries. "
+                    "Pass --allow-diagnostic-override only for deliberate diagnostics."
+                )
+            target = payload.get("target")
+            if not isinstance(target, str) or not target:
+                raise EntryVerificationError("Diagnostic shortcut manifest target is invalid.")
+            expected = developer_preview_path_policy.resolve_diagnostic_entry(
+                repo_root,
+                Path(target),
+            )
+        else:
+            raise EntryVerificationError("Shortcut manifest trust mode is unsupported.")
+    except developer_preview_path_policy.PathPolicyError as exc:
+        raise EntryVerificationError(str(exc)) from exc
 
-    target_value = payload.get("target")
-    arguments_value = payload.get("arguments")
-    working_value = payload.get("working_directory")
-    icon_value = payload.get("icon")
-    if not isinstance(target_value, str) or not target_value:
-        raise EntryVerificationError("Shortcut manifest target is invalid.")
-    if (
-        not isinstance(arguments_value, list)
-        or len(arguments_value) != 2
-        or arguments_value[0] != "--project-path"
-        or not isinstance(arguments_value[1], str)
-    ):
-        raise EntryVerificationError("Shortcut manifest project arguments are invalid.")
-    if not isinstance(working_value, str) or not working_value:
-        raise EntryVerificationError("Shortcut manifest working directory is invalid.")
-    if not isinstance(icon_value, str) or not icon_value:
-        raise EntryVerificationError("Shortcut manifest icon is invalid.")
-
-    expected_target = Path(target_value).resolve(strict=False)
-    expected_project = Path(arguments_value[1]).resolve(strict=False)
-    expected_working = Path(working_value).resolve(strict=False)
-    expected_icon = Path(icon_value).resolve(strict=False)
-    for label, path in (
-        ("target", expected_target),
-        ("project", expected_project),
-        ("working directory", expected_working),
-        ("icon", expected_icon),
-    ):
-        if not path.exists():
-            raise EntryVerificationError(f"Shortcut {label} no longer exists: {path}")
-
+    _require_manifest_matches_policy(payload, expected)
     inspected = inspect_shortcut(shortcut, runner=runner)
     actual_target = Path(inspected["target"]).resolve(strict=False)
     actual_working = Path(inspected["working_directory"]).resolve(strict=False)
     actual_icon, actual_icon_index = parse_icon_location(inspected["icon"])
-    if actual_target != expected_target:
+    if actual_target != expected.editor:
         raise EntryVerificationError(f"Shortcut target mismatch: {actual_target}")
-    if inspected["arguments"] != expected_argument_text(expected_project):
+    if inspected["arguments"] != expected_argument_text(expected.project):
         raise EntryVerificationError(f"Shortcut argument mismatch: {inspected['arguments']}")
-    if actual_working != expected_working:
+    if actual_working != expected.working_directory:
         raise EntryVerificationError(f"Shortcut working-directory mismatch: {actual_working}")
-    if actual_icon != expected_icon or actual_icon_index != 0:
+    if actual_icon != expected.icon or actual_icon_index != 0:
         raise EntryVerificationError(f"Shortcut icon mismatch: {inspected['icon']}")
     if inspected["description"] != SHORTCUT_DESCRIPTION:
-        raise EntryVerificationError(f"Shortcut description mismatch: {inspected['description']}")
+        raise EntryVerificationError(
+            f"Shortcut description mismatch: {inspected['description']}"
+        )
 
-    print(f"Verified clickable entry target, arguments, working directory, icon, and hash: {shortcut}")
+    if trust_mode == developer_preview_path_policy.TRUST_MODE_SOURCE_BUILD:
+        print(
+            "Verified source-built clickable entry from repository-owned policy: "
+            f"{shortcut}"
+        )
+    else:
+        print(
+            "Validated diagnostic-only clickable entry; not a verified release entry: "
+            f"{shortcut}"
+        )
     return payload
 
 
@@ -195,11 +227,17 @@ def create_entry(
     output: Path,
     replace: bool,
     dry_run: bool,
+    diagnostic_override: bool = False,
     runner: PowerShellRunner = default_runner,
 ) -> dict[str, object]:
     output = output.resolve(strict=False)
     if output.exists() and replace:
-        verify_entry(output, runner=runner)
+        verify_entry(
+            output,
+            repo_root=repo_root,
+            allow_diagnostic_override=diagnostic_override,
+            runner=runner,
+        )
 
     payload = developer_preview_shortcut.create_shortcut(
         repo_root=repo_root,
@@ -208,10 +246,16 @@ def create_entry(
         output=output,
         replace=replace,
         dry_run=dry_run,
+        diagnostic_override=diagnostic_override,
         runner=runner,
     )
     if not dry_run:
-        verify_entry(output, runner=runner)
+        verify_entry(
+            output,
+            repo_root=repo_root,
+            allow_diagnostic_override=diagnostic_override,
+            runner=runner,
+        )
     return payload
 
 
@@ -219,7 +263,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    create = subparsers.add_parser("create", help="Create the verified Windows clickable entry.")
+    create = subparsers.add_parser(
+        "create",
+        help="Create the verified Windows clickable entry.",
+    )
     create.add_argument("--repo-root", type=Path)
     source = create.add_mutually_exclusive_group()
     source.add_argument("--editor", type=Path)
@@ -228,12 +275,26 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=developer_preview_shortcut.DEFAULT_BUILD_DIRECTORY,
     )
-    create.add_argument("--output", type=Path, default=developer_preview_shortcut.DEFAULT_OUTPUT)
+    create.add_argument("--diagnostic-override", action="store_true")
+    create.add_argument(
+        "--output",
+        type=Path,
+        default=developer_preview_shortcut.DEFAULT_OUTPUT,
+    )
     create.add_argument("--replace", action="store_true")
     create.add_argument("--dry-run", action="store_true")
 
-    verify = subparsers.add_parser("verify", help="Verify the clickable entry and its manifest.")
-    verify.add_argument("--shortcut", type=Path, default=developer_preview_shortcut.DEFAULT_OUTPUT)
+    verify = subparsers.add_parser(
+        "verify",
+        help="Verify the clickable entry and its manifest.",
+    )
+    verify.add_argument("--repo-root", type=Path)
+    verify.add_argument(
+        "--shortcut",
+        type=Path,
+        default=developer_preview_shortcut.DEFAULT_OUTPUT,
+    )
+    verify.add_argument("--allow-diagnostic-override", action="store_true")
     return parser
 
 
@@ -247,7 +308,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     try:
         if args.command == "verify":
-            verify_entry(developer_preview_shortcut.resolve_path(args.shortcut, repo_root))
+            verify_entry(
+                developer_preview_shortcut.resolve_path(args.shortcut, repo_root),
+                repo_root=repo_root,
+                allow_diagnostic_override=args.allow_diagnostic_override,
+            )
             return 0
 
         create_entry(
@@ -261,6 +326,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             output=developer_preview_shortcut.resolve_path(args.output, repo_root),
             replace=args.replace,
             dry_run=args.dry_run,
+            diagnostic_override=args.diagnostic_override,
         )
         return 0
     except (OSError, RuntimeError, ValueError) as exc:
