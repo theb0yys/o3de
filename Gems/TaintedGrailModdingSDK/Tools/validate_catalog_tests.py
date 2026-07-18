@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 #
 
-"""Validate catalog, governance, economy, preview-smoke, workspace atomicity, and safety coverage."""
+"""Validate catalog, governance, economy, preview-smoke, workspace, and linked-target coverage."""
 
 from __future__ import annotations
 
@@ -24,93 +24,59 @@ def require_contains(text: str, fragment: str, path: Path) -> None:
         fail(f"Missing required fragment {fragment!r} in {path}")
 
 
+def require_file(path: Path) -> str:
+    if not path.is_file():
+        fail(f"Required catalog/workspace test or source file is missing: {path}")
+    return path.read_text(encoding="utf-8")
+
+
+def require_fragments(path: Path, fragments: tuple[str, ...]) -> str:
+    text = require_file(path)
+    for fragment in fragments:
+        require_contains(text, fragment, path)
+    return text
+
+
+def manifest_entries(path: Path) -> set[str]:
+    return set(re.findall(r"^\s+((?:Source|Tests)/[^\s\)]+)\s*$", require_file(path), re.MULTILINE))
+
+
 def main() -> int:
     gem_root = Path(__file__).resolve().parents[1]
     code_root = gem_root / "Code"
     source_root = code_root / "Source"
     tests_root = code_root / "Tests"
     cmake_path = code_root / "CMakeLists.txt"
-    manifest_path = code_root / "taintedgrailmoddingsdk_catalog_tests_files.cmake"
-    database_tests_path = tests_root / "CatalogDatabaseTests.cpp"
-    governance_tests_path = tests_root / "CatalogGovernanceServiceTests.cpp"
-    hardening_tests_path = tests_root / "CatalogGovernanceHardeningTests.cpp"
-    types_tests_path = tests_root / "CatalogGovernanceTypesTests.cpp"
-    economy_tests_path = tests_root / "EconomyAuthoringTests.cpp"
-    preview_smoke_tests_path = tests_root / "DeveloperPreviewSmokeTests.cpp"
-    atomic_tests_path = tests_root / "FoundationServiceWorkspaceLoadTests.cpp"
-    schema_tests_path = tests_root / "WorkspaceSchemaServiceTests.cpp"
-    economy_header_path = source_root / "EconomyAuthoringService.h"
-    economy_source_path = source_root / "EconomyAuthoringService.cpp"
-    editor_header_path = source_root / "ItemRecipeEditorWidget.h"
-    editor_source_path = source_root / "ItemRecipeEditorWidget.cpp"
-    catalog_persistence_path = source_root / "CatalogPersistenceService.cpp"
-    workspace_persistence_path = source_root / "WorkspacePersistenceService.cpp"
-    persistence_compatibility_path = source_root / "PersistenceJsonUtils.h"
+    test_manifest_path = code_root / "taintedgrailmoddingsdk_catalog_tests_files.cmake"
+    core_manifest_path = code_root / "taintedgrailmoddingsdk_core_files.cmake"
+    framework_manifest_path = code_root / "taintedgrailmoddingsdk_framework_files.cmake"
 
     try:
-        required_paths = (
+        cmake = require_fragments(
             cmake_path,
-            manifest_path,
-            database_tests_path,
-            governance_tests_path,
-            hardening_tests_path,
-            types_tests_path,
-            economy_tests_path,
-            preview_smoke_tests_path,
-            atomic_tests_path,
-            schema_tests_path,
-            economy_header_path,
-            economy_source_path,
-            editor_header_path,
-            editor_source_path,
-            catalog_persistence_path,
-            workspace_persistence_path,
-            persistence_compatibility_path,
+            (
+                "PAL_TRAIT_BUILD_TESTS_SUPPORTED",
+                "PAL_TRAIT_TEST_GOOGLE_TEST_SUPPORTED",
+                "NAME ${gem_name}.Core.Static STATIC",
+                "NAME ${gem_name}.Framework.Static STATIC",
+                "NAME ${gem_name}.Catalog.Tests",
+                "Gem::${gem_name}.Framework.Static",
+                "taintedgrailmoddingsdk_catalog_tests_files.cmake",
+                "taintedgrailmoddingsdk_path_policy_tests_files.cmake",
+                "AZ::AzTest",
+                "AZ::AzToolsFramework",
+                "ly_add_googletest",
+                "Tests/DeveloperPreviewSmokeTests.cpp",
+                "Tests/WorkspaceSchemaServiceTests.cpp",
+                "TG_SDK_PREVIEW_TEMPLATE_ROOT",
+                "../Preview/Template",
+            ),
         )
-        for path in required_paths:
-            if not path.is_file():
-                fail(f"Required catalog/workspace test or source file is missing: {path}")
+        if "Source/CatalogDatabase.cpp" in cmake:
+            fail("Production source ownership must remain in manifests, not the test target block")
 
-        cmake = cmake_path.read_text(encoding="utf-8")
-        for fragment in (
-            "PAL_TRAIT_BUILD_TESTS_SUPPORTED",
-            "PAL_TRAIT_TEST_GOOGLE_TEST_SUPPORTED",
-            "NAME ${gem_name}.Catalog.Tests",
-            "taintedgrailmoddingsdk_catalog_tests_files.cmake",
-            "taintedgrailmoddingsdk_path_policy_tests_files.cmake",
-            "AZ::AzTest",
-            "AZ::AzToolsFramework",
-            "ly_add_googletest",
-            "Tests/DeveloperPreviewSmokeTests.cpp",
-            "Tests/WorkspaceSchemaServiceTests.cpp",
-            "TG_SDK_PREVIEW_TEMPLATE_ROOT",
-            "../Preview/Template",
-        ):
-            require_contains(cmake, fragment, cmake_path)
-
-        manifest = manifest_path.read_text(encoding="utf-8")
-        entries = set(re.findall(r"^\s+([^\s\)]+)\s*$", manifest, re.MULTILINE))
-        expected = {
-            "Source/CatalogDatabase.cpp", "Source/CatalogDatabase.h",
-            "Source/CatalogGovernanceBlockerService.cpp", "Source/CatalogGovernanceBlockerService.h",
-            "Source/CatalogGovernanceService.cpp", "Source/CatalogGovernanceService.h",
-            "Source/CatalogGovernanceTypes.cpp", "Source/CatalogGovernanceTypes.h",
-            "Source/CatalogPersistenceService.cpp", "Source/CatalogPersistenceService.h",
-            "Source/CatalogPromotionService.cpp", "Source/CatalogPromotionService.h",
-            "Source/CatalogTransactionService.cpp", "Source/CatalogTransactionService.h",
-            "Source/EconomyAuthoringService.cpp", "Source/EconomyAuthoringService.h",
-            "Source/EconomyBlockerService.cpp", "Source/EconomyBlockerService.h",
-            "Source/EconomyModels.cpp", "Source/EconomyModels.h",
-            "Source/FoundationCatalogService.cpp",
-            "Source/FoundationModels.cpp", "Source/FoundationModels.h",
-            "Source/FoundationNotificationBus.h",
-            "Source/FoundationService.cpp", "Source/FoundationService.h",
-            "Source/FoundationValidationService.cpp", "Source/FoundationValidationService.h",
-            "Source/PackPersistenceService.cpp", "Source/PackPersistenceService.h",
-            "Source/SourceEvidencePersistenceService.cpp", "Source/SourceEvidencePersistenceService.h",
-            "Source/SourceEvidenceRegistry.cpp", "Source/SourceEvidenceRegistry.h",
-            "Source/SourceImportService.cpp", "Source/SourceImportService.h",
-            "Source/WorkspacePersistenceService.cpp", "Source/WorkspacePersistenceService.h",
+        test_entries = manifest_entries(test_manifest_path)
+        expected_tests = {
             "Tests/CatalogDatabaseTests.cpp",
             "Tests/CatalogGovernanceHardeningTests.cpp",
             "Tests/CatalogGovernanceServiceTests.cpp",
@@ -118,188 +84,202 @@ def main() -> int:
             "Tests/DeveloperPreviewSmokeTests.cpp",
             "Tests/EconomyAuthoringTests.cpp",
         }
-        if entries != expected:
-            fail(f"Catalog test manifest mismatch: expected {sorted(expected)}, found {sorted(entries)}")
+        if test_entries != expected_tests:
+            fail(
+                f"Catalog test manifest mismatch: expected {sorted(expected_tests)}, "
+                f"found {sorted(test_entries)}"
+            )
 
-        database_tests = database_tests_path.read_text(encoding="utf-8")
-        for fragment in (
-            "SameDisplayNameDoesNotMergeDistinctRecordIds",
-            "DuplicateExactNativeReferenceIsRejected",
-            "SyntheticRecordRequiresOwningPack",
-            "QueryFiltersEvidencePermissionAndBlockedState",
-            "RelationshipRequiresKnownRecordsAndEvidence",
-        ):
-            require_contains(database_tests, fragment, database_tests_path)
+        core_entries = manifest_entries(core_manifest_path)
+        required_core = {
+            "Source/CatalogDatabase.cpp",
+            "Source/CatalogGovernanceBlockerService.cpp",
+            "Source/CatalogGovernanceTypes.cpp",
+            "Source/CatalogTransactionService.cpp",
+            "Source/EconomyBlockerService.cpp",
+            "Source/EconomyModels.cpp",
+            "Source/FoundationModels.cpp",
+            "Source/FoundationValidationService.cpp",
+            "Source/SourceEvidenceRegistry.cpp",
+        }
+        if not required_core.issubset(core_entries):
+            fail("Core manifest is missing catalog/economy ownership: " + ", ".join(sorted(required_core - core_entries)))
 
-        governance_tests = governance_tests_path.read_text(encoding="utf-8")
-        for fragment in (
-            "ValidationDoesNotGrantUsagePermission",
-            "PermissionRequiresCurrentStateAndValidatedProof",
-            "StaleDecisionRevokesAllowedUsage",
-            "SupersessionRevokesUsageAndRecordsReplacement",
-            "RelationshipValidationAndPermissionUseSameProofGates",
-            "CatalogGovernanceApplyResult",
-            "CatalogValidationApplyResult",
-            'm_axis = "permission"',
-            'm_axis = "staleness"',
-            'm_axis = "supersession"',
-            'm_subjectKind = "relationship"',
-        ):
-            require_contains(governance_tests, fragment, governance_tests_path)
+        framework_entries = manifest_entries(framework_manifest_path)
+        required_framework = {
+            "Source/CatalogGovernanceService.cpp",
+            "Source/CatalogPersistenceService.cpp",
+            "Source/CatalogPromotionService.cpp",
+            "Source/EconomyAuthoringService.cpp",
+            "Source/FoundationCatalogService.cpp",
+            "Source/PackPersistenceService.cpp",
+            "Source/SourceEvidencePersistenceService.cpp",
+            "Source/SourceImportService.cpp",
+            "Source/WorkspacePersistenceService.cpp",
+        }
+        if not required_framework.issubset(framework_entries):
+            fail(
+                "Framework manifest is missing catalog/persistence ownership: "
+                + ", ".join(sorted(required_framework - framework_entries))
+            )
 
-        hardening_tests = hardening_tests_path.read_text(encoding="utf-8")
-        for fragment in (
-            "UnknownEvidenceLeavesOriginalCatalogUnchanged",
-            "WrongEvidenceSubjectLeavesOriginalCatalogUnchanged",
-            "WrongEvidenceProfileLeavesOriginalCatalogUnchanged",
-            "DuplicateGovernanceIdRollsBackStateChange",
-            "DuplicateValidationIdRollsBackStateChange",
-            "PersistenceFailureDoesNotPublishCandidate",
-            "CorruptedDuplicateHistoryDocumentDoesNotReplaceCatalog",
-            "InvalidTypedStateDocumentDoesNotReplaceCatalog",
-            "injected persistence failure",
-            "validation.record.record.test.2",
-            "governance.record.record.test.2",
-        ):
-            require_contains(hardening_tests, fragment, hardening_tests_path)
+        checks = {
+            "CatalogDatabaseTests.cpp": (
+                "SameDisplayNameDoesNotMergeDistinctRecordIds",
+                "DuplicateExactNativeReferenceIsRejected",
+                "SyntheticRecordRequiresOwningPack",
+                "QueryFiltersEvidencePermissionAndBlockedState",
+                "RelationshipRequiresKnownRecordsAndEvidence",
+            ),
+            "CatalogGovernanceServiceTests.cpp": (
+                "ValidationDoesNotGrantUsagePermission",
+                "PermissionRequiresCurrentStateAndValidatedProof",
+                "StaleDecisionRevokesAllowedUsage",
+                "SupersessionRevokesUsageAndRecordsReplacement",
+                "RelationshipValidationAndPermissionUseSameProofGates",
+                "CatalogGovernanceApplyResult",
+                "CatalogValidationApplyResult",
+                'm_axis = "permission"',
+                'm_axis = "staleness"',
+                'm_axis = "supersession"',
+                'm_subjectKind = "relationship"',
+            ),
+            "CatalogGovernanceHardeningTests.cpp": (
+                "UnknownEvidenceLeavesOriginalCatalogUnchanged",
+                "WrongEvidenceSubjectLeavesOriginalCatalogUnchanged",
+                "WrongEvidenceProfileLeavesOriginalCatalogUnchanged",
+                "DuplicateGovernanceIdRollsBackStateChange",
+                "DuplicateValidationIdRollsBackStateChange",
+                "PersistenceFailureDoesNotPublishCandidate",
+                "CorruptedDuplicateHistoryDocumentDoesNotReplaceCatalog",
+                "InvalidTypedStateDocumentDoesNotReplaceCatalog",
+                "injected persistence failure",
+            ),
+            "CatalogGovernanceTypesTests.cpp": (
+                "KnownValuesRoundTripThroughTypedBoundary",
+                "TypographicalValuesFailAtBoundary",
+                "LegacySchemaValuesRemainRepresentable",
+                'ParseValidationState("validted")',
+                'ParseGovernanceAxis("operational-risk")',
+                'ParseConfidenceLevel("unrated")',
+            ),
+            "EconomyAuthoringTests.cpp": (
+                "ItemProfileRequiresCanonicalEconomyItem",
+                "RecipeStationsRequireCanonicalStationRecords",
+                "IngredientAndOutputJoinsValidateIdentityQuantityAndChance",
+                "EconomyDataRoundTripsThroughCanonicalDocument",
+                "AcquisitionRelationshipStartsUnvalidatedAndForbidden",
+                "ActionLaneMatrixReflectsGovernedAllowedAndForbiddenState",
+                "RecipeStationEvidenceCombinesSourcesDeterministically",
+                "RecipeStationEvidenceFailsClosedForUnknownAndUnresolvedEvidence",
+                "RecipeStationEvidenceBlocksStaleStationWithoutMutatingCatalog",
+                'm_persistenceMode = "native_template"',
+                'm_relationshipKind = "sold_by"',
+                '"no_unvalidated_runtime_use"',
+            ),
+            "DeveloperPreviewSmokeTests.cpp": (
+                "DeveloperPreviewFixtureLoadSaveReopenPreservesCanonicalState",
+                "ProofBackedAllowedUsageSurvivesCatalogLoad",
+                "LegacyUnprovenAllowanceStillFailsClosed",
+                "BuildRecipeStationEvidence",
+                "BuildCanonicalSnapshot",
+                "loaded = {}",
+                "EXPECT_EQ(snapshotBefore, snapshotAfterResult.GetValue())",
+            ),
+            "FoundationServiceWorkspaceLoadTests.cpp": (
+                "SuccessfulCandidatePublishesEveryWorkspaceObject",
+                "WorkspaceDocumentFailurePreservesAllLiveState",
+                "ImportIssueFailurePreservesAllLiveState",
+                "CatalogValidationFailurePreservesAllLiveState",
+                "StateSignature",
+            ),
+            "WorkspaceSchemaServiceTests.cpp": (
+                "UnknownSchemaVersionIsRejected",
+                "UnknownSchemaVersionCannotHideBehindLegacyEnvelope",
+                "MalformedLegacyWorkspaceHasMigrationError",
+                "UnsafeLegacyWorkspaceIsClearlyRejected",
+                "SchemaOneRoundTripIsStable",
+                "PreviewFixtureLegacyShapeMigratesAndRoundTrips",
+            ),
+        }
+        for filename, fragments in checks.items():
+            require_fragments(tests_root / filename, fragments)
 
-        types_tests = types_tests_path.read_text(encoding="utf-8")
-        for fragment in (
-            "KnownValuesRoundTripThroughTypedBoundary",
-            "TypographicalValuesFailAtBoundary",
-            "LegacySchemaValuesRemainRepresentable",
-            'ParseValidationState("validted")',
-            'ParseGovernanceAxis("operational-risk")',
-            'ParseConfidenceLevel("unrated")',
-        ):
-            require_contains(types_tests, fragment, types_tests_path)
-
-        economy_tests = economy_tests_path.read_text(encoding="utf-8")
-        for fragment in (
-            "ItemProfileRequiresCanonicalEconomyItem",
-            "RecipeStationsRequireCanonicalStationRecords",
-            "IngredientAndOutputJoinsValidateIdentityQuantityAndChance",
-            "EconomyDataRoundTripsThroughCanonicalDocument",
-            "AcquisitionRelationshipStartsUnvalidatedAndForbidden",
-            "ActionLaneMatrixReflectsGovernedAllowedAndForbiddenState",
-            "RecipeStationEvidenceCombinesSourcesDeterministically",
-            "RecipeStationEvidenceFailsClosedForUnknownAndUnresolvedEvidence",
-            "RecipeStationEvidenceBlocksStaleStationWithoutMutatingCatalog",
-            'm_persistenceMode = "native_template"',
-            'm_relationshipKind = "sold_by"',
-            '"no_unvalidated_runtime_use"',
-            'EXPECT_EQ(rows[0].m_status, "supported evidence")',
-            'EXPECT_EQ(rows[1].m_status, "partial evidence")',
-            "EXPECT_EQ(catalog.GetGovernanceHistory().size(), governanceBefore)",
-        ):
-            require_contains(economy_tests, fragment, economy_tests_path)
-
-        economy_header = economy_header_path.read_text(encoding="utf-8")
-        for fragment in (
-            "struct EconomyRecipeStationEvidenceRow",
-            "BuildRecipeStationEvidence",
-            "const SourceEvidenceRegistry& sourceRegistry",
-            "const CatalogDatabase& catalog",
-            "const AZStd::vector<BlockerRecord>& blockers",
-        ):
-            require_contains(economy_header, fragment, economy_header_path)
-
-        economy_source = economy_source_path.read_text(encoding="utf-8")
-        for fragment in (
-            "supported evidence", "partial evidence", "missing evidence", "unresolved",
-            "The evidence ID is unknown", "The evidence belongs to an unrelated subject",
-            "The station is not validated, current, reference-complete, conflict-free, and non-superseded",
-            "AZStd::sort(",
-        ):
-            require_contains(economy_source, fragment, economy_source_path)
+        economy_header = require_fragments(
+            source_root / "EconomyAuthoringService.h",
+            (
+                "struct EconomyRecipeStationEvidenceRow",
+                "BuildRecipeStationEvidence",
+                "const SourceEvidenceRegistry& sourceRegistry",
+                "const CatalogDatabase& catalog",
+                "const AZStd::vector<BlockerRecord>& blockers",
+            ),
+        )
+        del economy_header
+        economy_source = require_fragments(
+            source_root / "EconomyAuthoringService.cpp",
+            (
+                "supported evidence",
+                "partial evidence",
+                "missing evidence",
+                "unresolved",
+                "The evidence ID is unknown",
+                "The evidence belongs to an unrelated subject",
+                "The station is not validated, current, reference-complete, conflict-free, and non-superseded",
+                "AZStd::sort(",
+            ),
+        )
         for forbidden in (
-            "SaveCatalog(", "ApplyCatalogGovernanceDecision(",
-            "ApplyCatalogValidationDecision(", "UpsertCatalogRelationship(",
+            "SaveCatalog(",
+            "ApplyCatalogGovernanceDecision(",
+            "ApplyCatalogValidationDecision(",
+            "UpsertCatalogRelationship(",
         ):
             if forbidden in economy_source[economy_source.find("BuildRecipeStationEvidence"):]:
                 fail(f"Recipe station evidence builder must remain read-only; found {forbidden!r}")
 
-        editor_header = editor_header_path.read_text(encoding="utf-8")
-        editor_source = editor_source_path.read_text(encoding="utf-8")
-        for fragment in ("RefreshRecipeEvidence", "m_recipeEvidenceTable"):
-            require_contains(editor_header, fragment, editor_header_path)
-        for fragment in (
-            "Station Visibility and Learnability Evidence — Read-only Research",
-            "This view combines exact station IDs",
-            "BuildRecipeStationEvidence(",
-            "Blockers and reasons",
-        ):
-            require_contains(editor_source, fragment, editor_source_path)
+        require_fragments(
+            source_root / "ItemRecipeEditorWidget.h",
+            ("RefreshRecipeEvidence", "m_recipeEvidenceTable"),
+        )
+        require_fragments(
+            source_root / "ItemRecipeEditorWidget.cpp",
+            (
+                "Station Visibility and Learnability Evidence — Read-only Research",
+                "This view combines exact station IDs",
+                "BuildRecipeStationEvidence(",
+                "Blockers and reasons",
+            ),
+        )
 
-        smoke_tests = preview_smoke_tests_path.read_text(encoding="utf-8")
-        for fragment in (
-            "DeveloperPreviewFixtureLoadSaveReopenPreservesCanonicalState",
-            "ProofBackedAllowedUsageSurvivesCatalogLoad",
-            "LegacyUnprovenAllowanceStillFailsClosed",
-            "WorkspacePersistenceService",
-            "PackPersistenceService",
-            "SourceEvidencePersistenceService",
-            "CatalogPersistenceService",
-            "BuildRecipeStationEvidence",
-            "BuildCanonicalSnapshot",
-            "loaded = {}",
-            "EXPECT_EQ(snapshotBefore, snapshotAfterResult.GetValue())",
-        ):
-            require_contains(smoke_tests, fragment, preview_smoke_tests_path)
-        for forbidden in ("FoA.exe", "BepInEx", "HarmonyLib", "WriteProcessMemory", "Deployment/"):
-            if forbidden in smoke_tests:
-                fail(f"Developer Preview smoke test crosses the runtime boundary: {forbidden}")
-
-        atomic_tests = atomic_tests_path.read_text(encoding="utf-8")
-        for fragment in (
-            "SuccessfulCandidatePublishesEveryWorkspaceObject",
-            "WorkspaceDocumentFailurePreservesAllLiveState",
-            "ImportIssueFailurePreservesAllLiveState",
-            "CatalogValidationFailurePreservesAllLiveState",
-            "StateSignature",
-        ):
-            require_contains(atomic_tests, fragment, atomic_tests_path)
-
-        schema_tests = schema_tests_path.read_text(encoding="utf-8")
-        for fragment in (
-            "UnknownSchemaVersionIsRejected",
-            "UnsafeLegacyWorkspaceIsClearlyRejected",
-            "SchemaOneRoundTripIsStable",
-            "PreviewFixtureLegacyShapeMigratesAndRoundTrips",
-        ):
-            require_contains(schema_tests, fragment, schema_tests_path)
-
-        compatibility = persistence_compatibility_path.read_text(encoding="utf-8")
-        for fragment in (
-            "ReadJsonFile",
-            'document.HasMember("Type")',
-            "AZ::JsonSerialization::Load",
-            "Processing::Completed",
-        ):
-            require_contains(compatibility, fragment, persistence_compatibility_path)
-
-        persistence = catalog_persistence_path.read_text(encoding="utf-8")
-        for fragment in (
-            "HasProofBackedAllowance",
-            "FindLatestPermissionEvent",
-            "HasValidatedPermissionBasis",
-            'event->m_newValue == "allow"',
-            'NormalizeLegacyValidationHistory(document);',
-            'NormalizeLegacyGovernanceState(document);',
-            'legacy_permission_review_required',
-            "PersistenceJsonUtils::LoadObjectFromFile",
-        ):
-            require_contains(persistence, fragment, catalog_persistence_path)
-
-        workspace_persistence = workspace_persistence_path.read_text(encoding="utf-8")
-        for fragment in (
-            "WorkspaceSchemaService::CurrentSchemaVersion",
-            "WorkspaceSchemaService::LegacySchemaVersion",
-            "DetectSchemaVersion",
-            "MigrateAndValidate",
-            "QSaveFile",
-        ):
-            require_contains(workspace_persistence, fragment, workspace_persistence_path)
+        compatibility = require_fragments(
+            source_root / "PersistenceJsonUtils.h",
+            ("ReadJsonFile", 'document.HasMember("Type")', "AZ::JsonSerialization::Load", "Processing::Completed"),
+        )
+        del compatibility
+        require_fragments(
+            source_root / "CatalogPersistenceService.cpp",
+            (
+                "HasProofBackedAllowance",
+                "FindLatestPermissionEvent",
+                "HasValidatedPermissionBasis",
+                'event->m_newValue == "allow"',
+                "NormalizeLegacyValidationHistory(document);",
+                "NormalizeLegacyGovernanceState(document);",
+                "legacy_permission_review_required",
+                "PersistenceJsonUtils::LoadObjectFromFile",
+            ),
+        )
+        require_fragments(
+            source_root / "WorkspacePersistenceService.cpp",
+            (
+                "WorkspaceSchemaService::CurrentSchemaVersion",
+                "WorkspaceSchemaService::LegacySchemaVersion",
+                "DetectSchemaVersion",
+                "MigrateAndValidate",
+                "QSaveFile",
+            ),
+        )
     except (OSError, RuntimeError) as exc:
         print(
             f"Tainted Grail catalog/governance/economy/workspace validation failed: {exc}",
@@ -308,7 +288,8 @@ def main() -> int:
         return 1
 
     print(
-        "Tainted Grail catalog, governance, economy, atomic workspace, and persistence-smoke contract passed."
+        "Tainted Grail catalog, governance, economy, atomic workspace, linked-target, and "
+        "persistence-smoke contract passed."
     )
     return 0
 

@@ -30,6 +30,7 @@ This directory contains the public documentation for the TG SDK layer in this O3
 - [Dedicated Editor Entry Architecture](DEDICATED_EDITOR_ENTRY.md) — product-host project, project-owned icons, trusted generated Windows shortcut, and separation from engine testing projects.
 - [Canonical Path and Executable Trust Policy](PATH_POLICY.md) — canonical resolution, component containment, workspace/pack persistence boundaries, source-build provenance, and diagnostic overrides.
 - [Atomic Workspace Transition and Schema Contract](WORKSPACE_ATOMICITY_AND_SCHEMA.md) — schema-0 migration, durable schema 1, candidate construction, cross-binding validation, atomic publication, rollback, and failure-stage tests.
+- [Core and Framework Build Graph](CORE_FRAMEWORK_BUILD_GRAPH.md) — internal static targets, unique source ownership, dependency direction, test linkage, enforcement, and runtime boundary.
 - [Architecture](ARCHITECTURE.md) — layers, responsibilities, invariants, and data flow.
 - [Governance Reliability Baseline](GOVERNANCE_HARDENING.md) — typed transitions, shared record/relationship logic, intrinsic audit atomicity, publish-after-save persistence, and required failure tests.
 - [Code Quality](CODE_QUALITY.md) — mandatory C++, Qt, persistence, UI, testing, and evidence standards.
@@ -62,6 +63,7 @@ A merged architecture decision or schema migration may supersede an older sectio
 
 The project is pre-alpha. Current implemented editor workflows cover:
 
+- internal `Core.Static` and `Framework.Static` build targets with one-way dependencies, unique production-source ownership, and tests linked to production libraries instead of recompiling them;
 - durable workspace schema 1 with validated schema-0 migration and atomic all-or-nothing workspace transitions;
 - workspace and exact game profile;
 - mod and content-pack projects;

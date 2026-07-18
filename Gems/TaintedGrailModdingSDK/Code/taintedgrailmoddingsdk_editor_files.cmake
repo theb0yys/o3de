@@ -8,57 +8,17 @@
 set(FILES
     Source/CatalogBrowserWidget.cpp
     Source/CatalogBrowserWidget.h
-    Source/CatalogDatabase.cpp
-    Source/CatalogDatabase.h
-    Source/CatalogGovernanceBlockerService.cpp
-    Source/CatalogGovernanceBlockerService.h
-    Source/CatalogGovernanceService.cpp
-    Source/CatalogGovernanceService.h
-    Source/CatalogGovernanceTypes.cpp
-    Source/CatalogGovernanceTypes.h
     Source/CatalogGovernanceWidget.cpp
     Source/CatalogGovernanceWidget.h
-    Source/CatalogPersistenceService.cpp
-    Source/CatalogPersistenceService.h
-    Source/CatalogPromotionService.cpp
-    Source/CatalogPromotionService.h
-    Source/CatalogTransactionService.cpp
-    Source/CatalogTransactionService.h
-    Source/EconomyAuthoringService.cpp
-    Source/EconomyAuthoringService.h
-    Source/EconomyBlockerService.cpp
-    Source/EconomyBlockerService.h
-    Source/EconomyModels.cpp
-    Source/EconomyModels.h
-    Source/FoundationCatalogService.cpp
-    Source/FoundationEconomyService.cpp
-    Source/FoundationGovernanceService.cpp
-    Source/FoundationModels.cpp
-    Source/FoundationModels.h
-    Source/FoundationNotificationBus.h
-    Source/FoundationService.cpp
-    Source/FoundationService.h
     Source/FoundationStatusWidget.cpp
     Source/FoundationStatusWidget.h
-    Source/FoundationValidationService.cpp
-    Source/FoundationValidationService.h
     Source/ItemRecipeEditorWidget.cpp
     Source/ItemRecipeEditorWidget.h
     Source/PackManagerWidget.cpp
     Source/PackManagerWidget.h
-    Source/PackPersistenceService.cpp
-    Source/PackPersistenceService.h
     Source/SourceEvidenceIntakeWidget.cpp
     Source/SourceEvidenceIntakeWidget.h
-    Source/SourceEvidencePersistenceService.cpp
-    Source/SourceEvidencePersistenceService.h
-    Source/SourceEvidenceRegistry.cpp
-    Source/SourceEvidenceRegistry.h
-    Source/SourceImportService.cpp
-    Source/SourceImportService.h
     Source/TaintedGrailModdingSDKEditorModule.cpp
     Source/TaintedGrailModdingSDKSystemComponent.cpp
     Source/TaintedGrailModdingSDKSystemComponent.h
-    Source/WorkspacePersistenceService.cpp
-    Source/WorkspacePersistenceService.h
 )

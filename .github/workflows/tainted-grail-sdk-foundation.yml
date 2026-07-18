@@ -63,6 +63,15 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Test Core and Framework build-graph validator
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_validate_core_framework_build_graph.py" -v
+
+      - name: Validate Core and Framework build graph
+        run: python Gems/TaintedGrailModdingSDK/Tools/validate_core_framework_build_graph.py
+
       - name: Test Developer Preview 0 command layer
         run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview.py" -v
 

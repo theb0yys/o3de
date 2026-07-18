@@ -8,6 +8,8 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Added
 
+- Internal `TaintedGrailModdingSDK.Core.Static` and `TaintedGrailModdingSDK.Framework.Static` targets with explicit Core → Framework → Editor dependency direction.
+- Core/Framework build-graph validation and unit tests for unique production-source ownership, test-only manifests, target dependencies, internal aliases, and Core isolation from Qt, AzToolsFramework, and Framework headers.
 - Durable workspace schema 1 with explicit legacy schema-0 migration, unknown-version rejection, stable workspace/profile identities, unique profile bindings, and project-owned fixture round-trip tests.
 - `FoundationWorkspaceLoadService` and `FoundationWorkspaceLoadCandidate` for all-or-nothing workspace, source/evidence, catalog, canonical-path, and active-profile transitions.
 - Direct `FoundationService` integration tests for workspace document, active-profile, path, source, import-issue, registry, catalog-load, catalog-binding, and catalog-validation failures.
@@ -80,13 +82,16 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Changed
 
+- Production implementation files are compiled exactly once by Core, Framework, or Editor; catalog and path-policy tests now link `Framework.Static` instead of recompiling private copies of production `.cpp` files.
+- The Editor Gem target now owns only Qt views, the Editor system component, and module composition; persistence, path policy, loading, and Foundation orchestration are owned by `Framework.Static`.
+- The focused TG SDK workflow now runs the Core/Framework validator and its focused unit tests before the existing Developer Preview and foundation contracts.
 - Workspace loading now builds and validates a complete candidate before publishing any workspace, canonical path, registry, import issue, catalog, catalog path, or snapshot state.
 - Workspace persistence now emits explicit schema-1 JSON; unversioned schema-0 documents are migrated only when every current invariant can be validated safely.
 - The focused TG SDK workflow runs the atomic workspace/schema contract validator in addition to Developer Preview, path-policy, governance, catalog, and source-policy checks.
 - The focused TG SDK workflow runs Developer Preview command, project-integration, opener, fixture, launch, diagnostics, and manual UI evidence tests; command/project/fixture/persistence/launch-diagnostics/manual-evidence contract validators; clean fixture generation/verification; and a clean diagnostics collect→verify cycle before existing foundation, governance, catalog, and source-policy checks.
 - A dedicated Windows workflow validates the product-host project, icon assets, command-line opener, low-level shortcut generator, hardened clickable entry, dry-run plan, and a real COM-created `.lnk`.
 - `AutomatedTesting` is restored to its upstream engine-testing role and no longer enables or hosts the TG SDK preview product.
-- The catalog test target compiles the real persistence services and receives the reviewed fixture-template path for service-level smoke coverage.
+- The catalog test target links the real persistence services and receives the reviewed fixture-template path for service-level smoke coverage.
 - Catalog compatibility loading preserves current validated allowances only when the latest reviewed permission event has valid proof for the same subject; unproven legacy allowances still fail closed.
 - Release and maintainer procedures require exact-commit Windows manual UI evidence, screenshot hashes, privacy review, verifier success, and non-commit handling before a Developer Preview claim.
 - Catalog records carry an explicit staleness state.
@@ -102,6 +107,7 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Security
 
+- The Core/Framework split remains host-tool-only and exposes no internal static target through Tool or Builder aliases; it adds no runtime adapter, deployment, launch, injection, telemetry, or save behavior.
 - Failed workspace candidates cannot publish partial objects, change the live canonical workspace path, redirect pack containment, or replace the previous Foundation snapshot.
 - Workspace root, output, staging, deployment, diagnostics, extracted-data, managed-assembly, and Mono plugin paths are validated before publication and save.
 - Developer Preview fixture generation performs no network access or process launch and refuses silent overwrite of unrelated, partial, modified, or symlink-containing output directories.

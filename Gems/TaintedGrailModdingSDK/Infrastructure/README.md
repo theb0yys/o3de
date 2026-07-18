@@ -1,21 +1,33 @@
 # Tainted Grail Modding Infrastructure
 
-This folder is the shared infrastructure boundary for systems used by the Tainted Grail Modding SDK and Editor.
+This folder records the shared infrastructure boundaries used by the Tainted Grail Modding SDK and Editor.
 
-## Modules
+## Active build modules
 
-- `TaintedFramework/` - framework-level contracts and composition.
-- `TaintedCore/` - shared domain primitives and core services.
-- `TaintedUI/` - reusable Editor UI components and presentation contracts.
-- `Exceptions/` - error types, diagnostics, and failure-reporting contracts.
-- `AI/` - AI-facing contracts and integrations approved by project research.
+The first two scaffolded boundaries now have real internal build targets while source paths remain stable under `Code/Source`:
 
-The folders are scaffolding only. Implementations must remain evidence-gated: each system needs a documented contract, ownership boundary, dependencies, and validation requirements before it is added to a build target.
+- `TaintedCore/` maps to `TaintedGrailModdingSDK.Core.Static` for shared domain primitives and pure core services;
+- `TaintedFramework/` maps to `TaintedGrailModdingSDK.Framework.Static` for persistence, path policy, workspace loading, and Foundation orchestration;
+- the Tool Gem `Editor` target owns Qt widgets, the Editor system component, and module composition.
+
+`Core.Static` and `Framework.Static` are internal implementation targets. Only the existing Editor module is exposed through the Tool and Builder aliases.
+
+## Reserved scaffold modules
+
+These folders remain scaffolding only and have no build target or runtime behavior:
+
+- `TaintedUI/` - future reusable Editor UI components and presentation contracts;
+- `Exceptions/` - future error types, diagnostics, and failure-reporting contracts;
+- `AI/` - future AI-facing contracts and integrations approved by project research.
+
+Implementations remain evidence-gated: each new module needs a documented contract, ownership boundary, dependencies, and validation requirements before build integration.
 
 ## Dependency direction
 
-`TaintedCore` is the lowest shared layer. `TaintedFramework`, `TaintedUI`, `Exceptions`, and `AI` may depend on explicit core contracts, but core code must not depend on UI or AI integrations. Cross-module behavior must be exposed through documented interfaces rather than direct implementation coupling.
+`Core.Static` is the lowest shared layer. `Framework.Static` depends on Core, and Editor depends on Framework. Core must not depend on Framework, Editor, UI, AI, Qt, AzToolsFramework, or runtime integrations. Cross-module behavior is exposed through existing documented C++ interfaces rather than duplicate compilation or reverse implementation coupling.
 
-## Editor integration
+Tests link `Framework.Static` and receive Core transitively. Test manifests own tests only; every production translation unit has exactly one production target owner.
 
-The Modding SDK may consume these modules after their contracts and build integration are documented. This scaffold does not change the current Gem targets or runtime behavior.
+## Runtime boundary
+
+This build split remains entirely editor-side. It adds no FoA runtime adapter, game launch, deployment, injection, save mutation, or telemetry behavior.
