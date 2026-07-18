@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import sys
 import tempfile
 import unittest
+import sys
 from pathlib import Path
 from unittest import mock
 
