@@ -84,7 +84,8 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
         )
         (repo / "docs/tainted-grail-sdk/OPEN_AND_TEST_EDITOR.md").write_text(
             "TaintedGrailModdingEditor\n"
-            "developer_preview_shortcut.py create\n"
+            "developer_preview_entry.py create\n"
+            "developer_preview_entry.py verify\n"
             "Tainted Grail Modding Editor.lnk\n"
             "Tools → Tainted Grail SDK\n"
             "TaintedGrailModdingEditor/user/log/Editor.log\n",
@@ -103,6 +104,15 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
             "'--project-path \"'\n"
             "developer_preview_launch.resolve_editor_executable\n"
             "validate_preview_project\n",
+            encoding="utf-8",
+        )
+        (repo / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py").write_text(
+            "WScript.Shell\n"
+            "developer_preview_shortcut.verify_shortcut\n"
+            "developer_preview_shortcut.create_shortcut\n"
+            "inspect_shortcut\n"
+            "verify_entry\n"
+            "if output.exists() and replace\n",
             encoding="utf-8",
         )
         (repo / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_launch.py").write_text(
@@ -157,12 +167,20 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
             with self.assertRaisesRegex(contract.PreviewProjectContractError, "register"):
                 contract.validate_preview_project(repo)
 
-    def test_quickstart_must_name_clickable_entry(self) -> None:
+    def test_quickstart_must_name_hardened_entry(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
             path = repo / "docs/tainted-grail-sdk/OPEN_AND_TEST_EDITOR.md"
-            path.write_text("launch another project\n", encoding="utf-8")
-            with self.assertRaisesRegex(contract.PreviewProjectContractError, "missing required"):
+            path.write_text("developer_preview_shortcut.py create\n", encoding="utf-8")
+            with self.assertRaisesRegex(contract.PreviewProjectContractError, "missing required|hardened"):
+                contract.validate_preview_project(repo)
+
+    def test_hardened_entry_is_required(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = self.make_repo(Path(temporary))
+            path = repo / "Gems/TaintedGrailModdingSDK/Tools/developer_preview_entry.py"
+            path.unlink()
+            with self.assertRaisesRegex(contract.PreviewProjectContractError, "hardened clickable entry"):
                 contract.validate_preview_project(repo)
 
 
