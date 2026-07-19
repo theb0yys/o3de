@@ -89,6 +89,7 @@ set(FILES
     Source/CanonicalFingerprint.h
     Source/CatalogDatabase.cpp
     Source/CatalogDatabase.h
+    Source/CatalogDatabaseIntegrity.cpp
     Source/CatalogGovernanceBlockerService.cpp
     Source/CatalogGovernanceBlockerService.h
     Source/CatalogGovernanceTypes.cpp
