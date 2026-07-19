@@ -64,12 +64,6 @@ namespace TaintedGrailModdingSDK
             { AdapterDeploymentExecutionLogKind::Diagnostic, "diagnostic" },
         };
 
-        constexpr EnumName<AdapterDeploymentRollbackAction> RollbackActions[] = {
-            { AdapterDeploymentRollbackAction::RemoveAdded, "remove_added" },
-            { AdapterDeploymentRollbackAction::RestoreReplaced, "restore_replaced" },
-            { AdapterDeploymentRollbackAction::RestoreRemoved, "restore_removed" },
-        };
-
         constexpr EnumName<AdapterDeploymentExecutionEnvelopeStatus>
             EnvelopeStatuses[] = {
                 { AdapterDeploymentExecutionEnvelopeStatus::Accepted, "accepted" },
@@ -162,11 +156,6 @@ namespace TaintedGrailModdingSDK
         return EnumToString(kind, LogKinds);
     }
 
-    AZStd::string ToString(AdapterDeploymentRollbackAction action)
-    {
-        return EnumToString(action, RollbackActions);
-    }
-
     AZStd::string ToString(AdapterDeploymentExecutionEnvelopeStatus status)
     {
         return EnumToString(status, EnvelopeStatuses);
@@ -205,13 +194,6 @@ namespace TaintedGrailModdingSDK
         AdapterDeploymentExecutionLogKind& kind)
     {
         return TryParseEnum(value, kind, LogKinds);
-    }
-
-    bool TryParseAdapterDeploymentRollbackAction(
-        const AZStd::string& value,
-        AdapterDeploymentRollbackAction& action)
-    {
-        return TryParseEnum(value, action, RollbackActions);
     }
 
     bool TryParseAdapterDeploymentExecutionEnvelopeStatus(
