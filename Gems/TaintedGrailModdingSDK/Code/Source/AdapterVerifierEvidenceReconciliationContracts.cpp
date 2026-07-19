@@ -7,7 +7,10 @@
 
 #include "AdapterVerifierEvidenceReconciliationContracts.h"
 
+#include "AdapterVerifierEvidenceReconciliationService.h"
+
 #include <AzCore/std/algorithm.h>
+#include <AzCore/std/utility/move.h>
 
 namespace TaintedGrailModdingSDK
 {
@@ -145,42 +148,33 @@ namespace TaintedGrailModdingSDK
             return false;
         }
 
-        bool HasStableUniqueRegistryIds(
-            const AZStd::vector<AZStd::string>& values,
-            bool requireNonEmpty)
+        bool RequestWithinBounds(
+            const AdapterVerifierEvidenceReconciliationRequest& request)
         {
-            if (requireNonEmpty && values.empty())
-            {
-                return false;
-            }
-            AZStd::vector<AZStd::string> sorted = values;
-            for (const AZStd::string& value : sorted)
-            {
-                if (!IsAdapterPostDeploymentVerifierStableId(value))
-                {
-                    return false;
-                }
-            }
-            AZStd::sort(sorted.begin(), sorted.end());
-            return AZStd::adjacent_find(sorted.begin(), sorted.end())
-                == sorted.end();
-        }
+            constexpr size_t MaxCanonicalJsonBytes = 1024 * 1024;
+            constexpr size_t MaxCandidates = 4096;
+            constexpr size_t MaxDispositions = 4096;
+            constexpr size_t MaxEvidencePerDecision = 4096;
+            constexpr size_t MaxTextBytes = 16 * 1024;
 
-        bool RegistryEvidenceIsCandidateBound(
-            const AZStd::vector<AZStd::string>& evidenceIds,
-            const AZStd::vector<AZStd::string>& candidateEvidenceIds)
-        {
-            if (!HasStableUniqueRegistryIds(evidenceIds, true))
+            const AdapterVerifierReleaseReview& review = request.m_releaseReview;
+            if (request.m_reconciliationId.size() > 256
+                || review.m_reportCanonicalJson.size() > MaxCanonicalJsonBytes
+                || review.m_candidateSourceIds.size() > MaxCandidates
+                || review.m_candidateEvidenceIds.size() > MaxCandidates
+                || review.m_evidenceIds.size() > MaxEvidencePerDecision
+                || review.m_dispositions.size() > MaxDispositions
+                || review.m_reviewer.size() > MaxTextBytes
+                || review.m_rationale.size() > MaxTextBytes)
             {
                 return false;
             }
-            for (const AZStd::string& evidenceId : evidenceIds)
+            for (const AdapterVerifierFindingDisposition& disposition :
+                review.m_dispositions)
             {
-                if (AZStd::find(
-                        candidateEvidenceIds.begin(),
-                        candidateEvidenceIds.end(),
-                        evidenceId)
-                    == candidateEvidenceIds.end())
+                if (disposition.m_findingId.size() > 512
+                    || disposition.m_rationale.size() > MaxTextBytes
+                    || disposition.m_evidenceIds.size() > MaxEvidencePerDecision)
                 {
                     return false;
                 }
@@ -188,73 +182,12 @@ namespace TaintedGrailModdingSDK
             return true;
         }
 
-        bool IsBoundedReleaseReview(
-            const AdapterVerifierEvidenceReconciliationRequest& request)
+        void SetError(AZStd::string* error, AZStd::string value)
         {
-            constexpr size_t MaxCanonicalJsonBytes = 1024 * 1024;
-            constexpr size_t MaxCandidates = 4096;
-            constexpr size_t MaxDispositions = 4096;
-            constexpr size_t MaxTextBytes = 16 * 1024;
-
-            const AdapterVerifierReleaseReview& review = request.m_releaseReview;
-            if (!IsAdapterPostDeploymentVerifierStableId(review.m_reviewId)
-                || !IsAdapterPostDeploymentVerifierStableId(review.m_reportId)
-                || review.m_reportCanonicalJson.empty()
-                || review.m_reportCanonicalJson.size() > MaxCanonicalJsonBytes
-                || !IsAdapterPostDeploymentVerifierStableId(
-                    review.m_verifierResultId)
-                || !IsAdapterPostDeploymentVerifierFingerprint(
-                    review.m_workOrderFingerprint)
-                || !IsAdapterPostDeploymentVerifierFingerprint(
-                    review.m_executionResultFingerprint)
-                || !IsAdapterPostDeploymentVerifierFingerprint(
-                    review.m_verifierResultFingerprint)
-                || review.m_candidateSourceIds.size() > MaxCandidates
-                || review.m_candidateEvidenceIds.size() > MaxCandidates
-                || !HasStableUniqueRegistryIds(
-                    review.m_candidateSourceIds,
-                    true)
-                || !HasStableUniqueRegistryIds(
-                    review.m_candidateEvidenceIds,
-                    true)
-                || review.m_decision
-                    == AdapterVerifierReleaseReviewDecision::Unknown
-                || review.m_reviewer.empty()
-                || review.m_reviewer.size() > MaxTextBytes
-                || !RegistryEvidenceIsCandidateBound(
-                    review.m_evidenceIds,
-                    review.m_candidateEvidenceIds)
-                || !IsAdapterPostDeploymentVerifierUtcTimestamp(
-                    review.m_reviewedAtUtc)
-                || review.m_reviewedAtUtc > request.m_evaluatedAtUtc
-                || review.m_rationale.empty()
-                || review.m_rationale.size() > MaxTextBytes
-                || review.m_dispositions.size() > MaxDispositions)
+            if (error)
             {
-                return false;
+                *error = AZStd::move(value);
             }
-
-            AZStd::vector<AZStd::string> findingIds;
-            for (const AdapterVerifierFindingDisposition& disposition :
-                 review.m_dispositions)
-            {
-                findingIds.push_back(disposition.m_findingId);
-                if (!IsAdapterPostDeploymentVerifierStableId(
-                        disposition.m_findingId)
-                    || disposition.m_decision
-                        == AdapterVerifierFindingDispositionDecision::Unknown
-                    || disposition.m_rationale.empty()
-                    || disposition.m_rationale.size() > MaxTextBytes
-                    || !RegistryEvidenceIsCandidateBound(
-                        disposition.m_evidenceIds,
-                        review.m_candidateEvidenceIds))
-                {
-                    return false;
-                }
-            }
-            AZStd::sort(findingIds.begin(), findingIds.end());
-            return AZStd::adjacent_find(findingIds.begin(), findingIds.end())
-                == findingIds.end();
         }
     } // namespace
 
@@ -362,41 +295,76 @@ namespace TaintedGrailModdingSDK
     }
 
     bool AdapterVerifierEvidenceReconciliationRegistry::RegisterRequest(
+        const AdapterVerifierEvidenceReconciliationRequest&,
+        AZStd::string* error)
+    {
+        SetError(
+            error,
+            "Unbound verifier reconciliation registration is prohibited; supply the exact work order, execution result, report, verifier result, and verifier evidence return.");
+        return false;
+    }
+
+    bool AdapterVerifierEvidenceReconciliationRegistry::RegisterRequest(
+        const AdapterDeploymentWorkOrder& workOrder,
+        const AdapterDeploymentExecutionResultEnvelope& executionEnvelope,
+        const AdapterPostDeploymentVerificationReport& report,
+        const AdapterPostDeploymentVerifierResultEnvelope& verifierEnvelope,
+        const AdapterPostDeploymentVerifierEvidenceReturn& verifierEvidence,
         const AdapterVerifierEvidenceReconciliationRequest& request,
         AZStd::string* error)
     {
-        if (!IsAdapterPostDeploymentVerifierStableId(
-                request.m_reconciliationId)
-            || !IsAdapterPostDeploymentVerifierUtcTimestamp(
-                request.m_evaluatedAtUtc)
-            || !IsBoundedReleaseReview(request))
+        if (!RequestWithinBounds(request))
         {
-            if (error)
+            SetError(
+                error,
+                "Verifier reconciliation request exceeds bounded canonical, candidate, disposition, evidence, or text limits.");
+            return false;
+        }
+
+        AdapterVerifierEvidenceReconciliationService service;
+        const AdapterVerifierEvidenceReconciliationResult result =
+            service.BuildReconciliation(
+                workOrder,
+                executionEnvelope,
+                report,
+                verifierEnvelope,
+                verifierEvidence,
+                request);
+        if (!result.m_accepted)
+        {
+            AZStd::string message =
+                "Verifier reconciliation rejected with status "
+                + ToString(result.m_envelope.m_status) + ".";
+            if (!result.m_issues.empty())
             {
-                *error =
-                    "Verifier reconciliation registration requires stable bounded identity, "
-                    "one explicit UTC evaluation time, and a structurally complete exact-"
-                    "bound human review whose evidence is contained in its candidate set.";
+                message += " " + result.m_issues.front().m_code + ": "
+                    + result.m_issues.front().m_message;
             }
+            SetError(error, AZStd::move(message));
             return false;
         }
 
         for (const AdapterVerifierEvidenceReconciliationRequest& existing :
-             m_requests)
+            m_requests)
         {
             if (existing.m_reconciliationId == request.m_reconciliationId)
             {
-                if (error)
-                {
-                    *error =
-                        "A verifier reconciliation request with this identity already "
-                        "exists.";
-                }
+                SetError(
+                    error,
+                    "A verifier reconciliation request with this identity already exists.");
                 return false;
             }
         }
 
         m_requests.push_back(request);
+        AZStd::sort(
+            m_requests.begin(),
+            m_requests.end(),
+            [](const AdapterVerifierEvidenceReconciliationRequest& left,
+                const AdapterVerifierEvidenceReconciliationRequest& right)
+            {
+                return left.m_reconciliationId < right.m_reconciliationId;
+            });
         if (error)
         {
             error->clear();
