@@ -18,6 +18,8 @@ set(FILES
     Source/AdapterPackageAssemblyPreviewWidget.h
     Source/AdapterPostDeploymentVerificationWidget.cpp
     Source/AdapterPostDeploymentVerificationWidget.h
+    Source/AdapterPostDeploymentVerifierWidget.cpp
+    Source/AdapterPostDeploymentVerifierWidget.h
     Source/AdapterRuntimeResultEvidenceWidget.cpp
     Source/AdapterRuntimeResultEvidenceWidget.h
     Source/AdapterStagingDeploymentPreviewWidget.cpp
