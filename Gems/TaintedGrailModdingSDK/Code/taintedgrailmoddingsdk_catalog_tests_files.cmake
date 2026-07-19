@@ -15,4 +15,5 @@ set(FILES
     Tests/EconomyAuthoringTests.cpp
     Tests/EconomyCoverageServiceTests.cpp
     Tests/EconomyDuplicateDetectionServiceTests.cpp
+    Tests/FoundationWorkspaceIsolationTests.cpp
 )
