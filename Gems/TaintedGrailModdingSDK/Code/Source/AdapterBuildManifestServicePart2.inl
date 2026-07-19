@@ -197,6 +197,8 @@ namespace TaintedGrailModdingSDK
             }
         }
 
+        const AZStd::string canonicalPlanJson =
+            AdapterWorkOrderPlanningService{}.SerializeCanonicalPlan(request.m_plan);
         AZStd::vector<AZStd::string> fingerprintReasons;
         if (!IsSha256Fingerprint(manifest.m_planFingerprint))
         {
@@ -205,13 +207,14 @@ namespace TaintedGrailModdingSDK
                 "PlanFingerprint must use lowercase sha256:<64 hex>.");
         }
         if (manifest.m_planCanonicalJson.empty()
+            || manifest.m_planCanonicalJson != canonicalPlanJson
             || !CanonicalSha256Matches(
-                manifest.m_planCanonicalJson,
+                canonicalPlanJson,
                 manifest.m_planFingerprint))
         {
             AddReason(
                 fingerprintReasons,
-                "PlanFingerprint must equal SHA-256 over the exact PlanCanonicalJson bytes.");
+                "PlanCanonicalJson must equal the canonical serialization of the supplied plan object and PlanFingerprint must equal SHA-256 over those exact bytes.");
         }
         bool planMaterialMatches = false;
         for (const AdapterBuildMaterial& material : manifest.m_materials)
