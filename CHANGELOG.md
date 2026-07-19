@@ -8,6 +8,9 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Added
 
+- Pure-Core `AdapterRuntimeResultRegistry` and typed runtime-result contracts for exact attempted plan/step identities, outcomes, failures, cleanup, rollback, safe log references, and SHA-256 fingerprints.
+- Pure-Core `AdapterRuntimeResultEvidenceService` that fail-closes mismatched envelopes and returns deterministic candidate source/evidence documents without registering, persisting, validating, or permitting them.
+- Read-only **Tainted Grail Adapter Runtime Result Evidence** editor pane, production-linked tests, focused negative validation, CI integration, public documentation, and eleven-pane Windows manual UI coverage; the contract does not promote validation or permission.
 - Pure-Core `AdapterWorkOrderPlanningService` for whole-plan compatibility gating, exact reviewed subject rebuilding, typed record and relationship steps, deterministic refusals, stable identities, and canonical JSON with execution disabled.
 - Read-only **Tainted Grail Adapter Work-Order Plans** editor pane with generated steps, exact bindings, typed arguments, evidence and validation proof, canonical JSON, and explicit refusal reasons.
 - Adapter work-order C++ tests, focused validator and negative tests, CI integration, public Phase 7 documentation, and tenth-pane Windows manual UI coverage; execution remains prohibited.
@@ -94,10 +97,10 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Changed
 
-- Phase 7 now includes deterministic work-order plan generation; the next ordered contract is a runtime-result evidence envelope.
-- The focused TG SDK workflow and catalog-test validator enforce work-order planning, exact subject/payload rebuilding, canonical serialization, and the no-persistence/no-execution boundary.
-- The Windows manual UI checklist opens all ten TG SDK panes and verifies the default no-declaration state as one refused candidate with zero generated steps.
-- Phase 7 includes the adapter capability contract foundation and retains the typed compatibility matrix as the prerequisite planning gate.
+- Phase 7 now includes typed runtime-result evidence returns; actual adapter execution remains separately gated and unimplemented.
+- The focused workflow and contract validators now enforce exact attempted plan/step bindings, typed outcomes/failures, cleanup/rollback matching, safe log references, fingerprints, candidate evidence-only output, and the no-execution boundary.
+- The Windows manual UI checklist now covers all eleven panes and the default zero-runtime-result-envelope state.
+- Phase 7 includes deterministic work-order plan generation and the typed capability matrix as prerequisite gates.
 - Phase 6 records both economy acquisition coverage and exact cross-pack duplicate reporting as implemented.
 - Duplicate detection uses only exact, case-sensitive subject references and recipe duplicate keys across distinct owner packs; it performs no display-name or fuzzy matching.
 - Production implementation files are compiled exactly once by Core, Framework, or Editor; catalog and path-policy tests link `Framework.Static` instead of recompiling private copies of production `.cpp` files.
@@ -125,6 +128,8 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Security
 
+- Runtime-result envelopes are transient typed metadata; accepted contracts return source/evidence candidates by value and do not automatically register, persist, promote, validate, permit, dispatch, execute, deploy, launch, or mutate saves.
+- Exact plan/step/recovery/log bindings fail closed, and Slice 10 does not open referenced logs or add an actual FoA adapter implementation or execution path.
 - Work-order plans are transient, immutable descriptions only; `ExecutionAllowed` is false on every plan and step, and no save, export, dispatch, adapter invocation, code generation, process access, deployment, launch, telemetry, or save mutation is added.
 - Whole-plan refusal and independent exact-subject rebuilding prevent a partially compatible adapter or unreviewed aggregate subject from producing a plan step.
 - Adapter declarations are transient metadata only; Slice 8 adds no adapter document, loader, process access, BepInEx/Harmony execution, deployment, game launch, save mutation, or runtime adapter implementation.
@@ -149,7 +154,7 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 - Generated screenshots must remain beneath `build/` or outside the repository and are not release package contents.
 - Developer Preview commands do not install dependencies silently, use shell command strings, launch FoA, invoke runtime adapters, deploy files, modify saves, or collect telemetry.
 - Preview build-directory validation rejects the repository root, directories containing the checkout, `.git` paths, unrelated non-empty directories, and CMake caches bound to another source tree.
-- Runtime execution remains disabled in editor-owned workspace, pack, source/evidence, catalog, validation, governance, typed economy, adapter-contract, and work-order-planning workflows.
+- Runtime execution remains disabled in editor-owned workspace, pack, source/evidence, catalog, validation, governance, typed economy, adapter-contract, work-order-planning, and runtime-result-evidence workflows.
 - Source intake rejects missing or mismatched profile and fingerprint bindings.
 - Structured imports are size-limited and fail closed on malformed schemas.
 - Catalog promotion cannot grant allowed usages and adds `no_unvalidated_runtime_use`.
@@ -167,8 +172,10 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Known limitations
 
+- Runtime-result envelopes and evidence returns are transient; Slice 10 adds no file loader, transport, automatic import, durable runtime-result schema, or actual runtime proof capture.
+- Generated candidate evidence remains unreviewed and unrated until a separate ordinary source/evidence, validation, and permission workflow accepts it.
 - Generated work-order plans are planning evidence only; they are not persisted, exported, dispatched, executed, deployed, or returned to an adapter.
-- The runtime-result evidence envelope, actual runtime adapters, execution, cleanup/rollback reporting, and runtime proof capture are not implemented.
+- Actual runtime adapters, execution, cleanup/rollback behavior, and live proof capture are not implemented.
 - Adapter declarations are transient and cleared on Editor shutdown; there is no declaration persistence or registration UI, so normal Developer Preview sessions display `unsupported` rows and refused plans by default.
 - Cross-pack duplicate groups are review candidates only; they do not confirm semantic equivalence, choose a canonical winner, authorize deletion, or prove a runtime conflict.
 - Economy acquisition coverage is research-only: it does not prove actual vendor stock, loot tables, reward delivery, recipe learning, crafting availability, runtime registration, persistence, cleanup, or rollback.

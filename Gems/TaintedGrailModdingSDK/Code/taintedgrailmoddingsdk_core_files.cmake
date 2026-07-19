@@ -10,6 +10,13 @@ set(FILES
     Source/AdapterCompatibilityService.h
     Source/AdapterContractRegistry.cpp
     Source/AdapterContractRegistry.h
+    Source/AdapterRuntimeResultContracts.cpp
+    Source/AdapterRuntimeResultContracts.h
+    Source/AdapterRuntimeResultEvidenceService.cpp
+    Source/AdapterRuntimeResultEvidenceService.h
+    Source/AdapterRuntimeResultEvidenceServicePart1.inl
+    Source/AdapterRuntimeResultEvidenceServicePart2.inl
+    Source/AdapterRuntimeResultEvidenceServicePart3.inl
     Source/AdapterWorkOrderPlanningService.cpp
     Source/AdapterWorkOrderPlanningServicePart1.inl
     Source/AdapterWorkOrderPlanningServicePart2.inl

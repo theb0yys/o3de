@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted correction contract for Slice 5 and extended by Slices 6, 7, 8, and 9. The build graph decomposes editor-side implementation into real targets without changing durable schemas, runtime permissions, deployment, game launch, or save behavior.
+Accepted correction contract for Slice 5 and extended by Slices 6, 7, 8, 9, and 10. The build graph decomposes editor-side implementation into real targets without changing durable schemas, runtime permissions, deployment, game launch, or save behavior.
 
 ## Targets
 
@@ -16,6 +16,7 @@ Owns shared domain state and services that are free of Qt and host-tool dependen
 - foundation validation, economy blocker evaluation, and immutable economy acquisition coverage and cross-pack duplicate analysis;
 - typed transient adapter declarations, strict semantic-version compatibility, capability evaluation, and permission/proof readiness analysis;
 - deterministic, canonical, execution-prohibited adapter work-order planning;
+- typed runtime-result contract validation and candidate source/evidence return;
 - the source/evidence registry.
 
 Core depends publicly on `AZ::AzCore`. Core must not depend on Framework, Editor, Qt, AzToolsFramework, runtime adapters, deployment, or game APIs.
@@ -36,7 +37,7 @@ Framework depends publicly on Core and privately on the host-tool facilities nee
 
 Remains the Tool Gem module and owns only composition and presentation:
 
-- Qt widgets, including the read-only economy acquisition, duplicate-report, adapter-capability, and work-order-plan panes;
+- Qt widgets, including the read-only economy acquisition, duplicate-report, adapter-capability, work-order-plan, and runtime-result-evidence panes;
 - the Editor system component;
 - the Gem Editor module.
 
@@ -74,6 +75,8 @@ The adapter declaration registry is deliberately transient Core state. It has no
 
 Work-order planning is also transient Core state. It reads immutable packs, declarations, catalog state, source/evidence, governance history, and blockers; returns plans or refusals by value; and performs no filesystem, persistence, process, deployment, launch, telemetry, or save operation.
 
+Runtime-result contracts remain transient Core state. They validate externally supplied metadata against an exact canonical plan and return candidate source/evidence documents by value. They do not register evidence, open logs, persist files, invoke adapters, promote governance, or create an execution path.
+
 ## Enforcement
 
 `validate_core_framework_build_graph.py` fails when:
@@ -109,10 +112,19 @@ The work-order-plan validator additionally enforces:
 - no work-order persistence, export, dispatch, adapter invocation, runtime code, or mutable UI control;
 - production-linked failure, determinism, and non-mutation tests.
 
+The runtime-result validator additionally enforces:
+
+- exact attempted plan and step bindings;
+- typed outcomes, failures, cleanup, rollback, and log kinds;
+- safe relative log references and lowercase SHA-256 fingerprints;
+- candidate source/evidence return without automatic registration, persistence, validation, or permission;
+- a non-editable runtime-result evidence pane;
+- no adapter call, process access, deployment, launch, telemetry, save mutation, or execution path.
+
 ## Runtime boundary
 
-No runtime adapter is added. No FoA, Unity, BepInEx, Harmony, deployment, injection, telemetry, game launch, save mutation, or work-order execution code is introduced or authorized. Core and Framework remain host-tool implementation targets inside the existing Tool Gem.
+No runtime adapter is added. No FoA, Unity, BepInEx, Harmony, deployment, injection, telemetry, game launch, save mutation, work-order execution, or result capture code is introduced or authorized. Core and Framework remain host-tool implementation targets inside the existing Tool Gem.
 
 ## Rollback
 
-Revert the implementing pull request. No durable documents or user state require migration because these slices change build ownership and add transient or derived read-only analysis and planning only.
+Revert the implementing pull request. No durable documents or user state require migration because these slices change build ownership and add transient or derived read-only analysis, planning, and evidence candidates only.
