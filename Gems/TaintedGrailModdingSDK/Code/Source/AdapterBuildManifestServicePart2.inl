@@ -121,11 +121,23 @@ namespace TaintedGrailModdingSDK
                  "toolchain_lock",
                  "license" })
         {
-            if (!HasMaterialRole(manifest.m_materials, role))
+            bool requiredRoleSatisfied = false;
+            for (const AdapterBuildMaterial& material : manifest.m_materials)
+            {
+                if (material.m_role == role
+                    && material.m_required
+                    && !material.m_locator.empty())
+                {
+                    requiredRoleSatisfied = true;
+                    break;
+                }
+            }
+            if (!requiredRoleSatisfied)
             {
                 AddReason(
                     inputReasons,
-                    AZStd::string("Required build material is missing: ") + role);
+                    AZStd::string("Required build material must be marked required and have a locator: ")
+                        + role);
             }
         }
         for (const char* role : {
@@ -192,6 +204,15 @@ namespace TaintedGrailModdingSDK
                 fingerprintReasons,
                 "PlanFingerprint must use lowercase sha256:<64 hex>.");
         }
+        if (manifest.m_planCanonicalJson.empty()
+            || !CanonicalSha256Matches(
+                manifest.m_planCanonicalJson,
+                manifest.m_planFingerprint))
+        {
+            AddReason(
+                fingerprintReasons,
+                "PlanFingerprint must equal SHA-256 over the exact PlanCanonicalJson bytes.");
+        }
         bool planMaterialMatches = false;
         for (const AdapterBuildMaterial& material : manifest.m_materials)
         {
@@ -203,6 +224,7 @@ namespace TaintedGrailModdingSDK
                         + material.m_materialId);
             }
             if (material.m_role == "work_order_plan"
+                && material.m_required
                 && material.m_fingerprint == manifest.m_planFingerprint)
             {
                 planMaterialMatches = true;
@@ -212,7 +234,7 @@ namespace TaintedGrailModdingSDK
         {
             AddReason(
                 fingerprintReasons,
-                "The work_order_plan material must carry the exact PlanFingerprint.");
+                "The required work_order_plan material must carry the derived PlanFingerprint.");
         }
 
         AZStd::vector<AZStd::string> pathReasons;
