@@ -9,6 +9,7 @@
 
 #include "AdapterPostDeploymentVerifierContracts.h"
 #include "FoundationModels.h"
+#include "SourceEvidenceRegistry.h"
 
 namespace TaintedGrailModdingSDK
 {
@@ -60,6 +61,7 @@ namespace TaintedGrailModdingSDK
             const AdapterDeploymentWorkOrder& workOrder,
             const AdapterDeploymentExecutionResultEnvelope& executionEnvelope,
             const AdapterPostDeploymentVerificationReport& report,
+            const SourceEvidenceRegistry& sourceRegistry,
             const AdapterPostDeploymentVerifierResultEnvelope& verifierEnvelope) const;
     };
 } // namespace TaintedGrailModdingSDK
