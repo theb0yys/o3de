@@ -7,6 +7,7 @@
 
 #include "AdapterDeploymentWorkOrderService.h"
 #include "AdapterStagingDeploymentPreviewService.h"
+#include "CanonicalFingerprint.h"
 
 #include <AzTest/AzTest.h>
 
@@ -104,7 +105,8 @@ namespace TaintedGrailModdingSDK
                     "text/markdown",
                     '2'),
             };
-            request.m_packagePreviewFingerprint = PipelineFingerprint('a');
+            request.m_packagePreviewFingerprint =
+                CalculateCanonicalSha256(request.m_packagePreview.m_canonicalJson);
 
             request.m_targetInventory.m_inventoryId = "owner.target-inventory";
             request.m_targetInventory.m_inventoryFingerprint = PipelineFingerprint('b');
@@ -149,7 +151,8 @@ namespace TaintedGrailModdingSDK
         {
             AdapterDeploymentWorkOrderRequest request;
             request.m_preview = preview;
-            request.m_previewFingerprint = PipelineFingerprint('c');
+            request.m_previewFingerprint =
+                CalculateCanonicalSha256(preview.m_canonicalJson);
 
             request.m_confirmation.m_confirmationId = "owner.confirmation";
             request.m_confirmation.m_previewId = preview.m_previewId;
