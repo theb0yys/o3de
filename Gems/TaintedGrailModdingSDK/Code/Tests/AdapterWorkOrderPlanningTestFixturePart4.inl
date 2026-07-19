@@ -233,7 +233,7 @@ namespace
                     fixture.m_sourceRegistry,
                     MakeEvidence(
                         relationship->m_evidenceIds.front(),
-                        nativeItem.m_subjectRef));
+                        relationship->m_relationshipId));
             }
             AddRelationshipWithProof(
                 fixture,
