@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 #
 
-"""Run repository-owned TG SDK validation locally."""
+"""Run the repository-owned TG SDK validation gate without GitHub Actions."""
 
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ TOOLS_ROOT = Path(__file__).resolve().parent
 TESTS_ROOT = TOOLS_ROOT / "tests"
 
 VALIDATORS = (
+    "validate_ci_runner_policy.py",
     "validate_core_framework_build_graph.py",
     "validate_economy_coverage_dashboard.py",
     "validate_economy_duplicate_detection.py",
@@ -254,6 +255,12 @@ def main() -> int:
         for command in static_commands:
             print(f"{command.label}: {display_command(command)}")
         return 0
+
+    print(
+        "TG SDK local validation is authoritative while GitHub Actions remains "
+        "manual-only. No automated per-commit test result is claimed.",
+        flush=True,
+    )
 
     failures = run_commands(static_commands, keep_going=arguments.keep_going)
     if not failures and not arguments.skip_fixtures:
