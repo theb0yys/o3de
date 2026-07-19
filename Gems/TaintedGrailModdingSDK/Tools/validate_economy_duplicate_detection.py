@@ -33,6 +33,13 @@ def require_fragments(text: str, fragments: Iterable[str], label: str) -> None:
             )
 
 
+def require_any_fragment(text: str, fragments: Iterable[str], label: str) -> None:
+    if not any(fragment in text for fragment in fragments):
+        raise EconomyDuplicateContractError(
+            f"{label} is missing every accepted progression fragment: {tuple(fragments)!r}."
+        )
+
+
 def reject_fragments(text: str, fragments: Iterable[str], label: str) -> None:
     for fragment in fragments:
         if fragment in text:
@@ -222,9 +229,14 @@ def validate_economy_duplicate_detection(repo_root: Path) -> None:
     build_graph = read_text(repo_root / "docs/tainted-grail-sdk/CORE_FRAMEWORK_BUILD_GRAPH.md")
     require_fragments(
         build_graph,
+        ("immutable economy acquisition coverage and cross-pack duplicate analysis",),
+        "Core/Framework build graph",
+    )
+    require_any_fragment(
+        build_graph,
         (
-            "immutable economy acquisition coverage and cross-pack duplicate analysis",
             "read-only economy acquisition and duplicate-report dashboards",
+            "read-only economy acquisition, duplicate-report, adapter-capability, and work-order-plan panes",
         ),
         "Core/Framework build graph",
     )
@@ -283,10 +295,10 @@ def validate_economy_duplicate_detection(repo_root: Path) -> None:
         "User guide",
     )
     manual_ui = read_text(repo_root / "docs/tainted-grail-sdk/DEVELOPER_PREVIEW_MANUAL_UI_SMOKE.md")
+    require_any_fragment(manual_ui, ("All eight TG SDK panes", "All ten TG SDK panes"), "Windows manual UI smoke")
     require_fragments(
         manual_ui,
         (
-            "All eight TG SDK panes",
             "Tainted Grail Economy Cross-Pack Duplicates",
             "cross-pack duplicate candidates",
             "preview.duplicate-companion",
@@ -302,8 +314,12 @@ def validate_economy_duplicate_detection(repo_root: Path) -> None:
         (
             "Economy cross-pack duplicate report",
             "Status: implemented, continuing hardening and Windows UI verification.",
-            "work-order generation after adapter contracts exist",
         ),
+        "Roadmap",
+    )
+    require_any_fragment(
+        roadmap,
+        ("work-order generation after adapter contracts exist", "Deterministic work-order plan generation"),
         "Roadmap",
     )
     changelog = read_text(repo_root / "CHANGELOG.md")

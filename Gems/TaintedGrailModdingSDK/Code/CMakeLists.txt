@@ -67,6 +67,7 @@ if(PAL_TRAIT_BUILD_TESTS_SUPPORTED AND PAL_TRAIT_TEST_GOOGLE_TEST_SUPPORTED)
         FILES_CMAKE
             taintedgrailmoddingsdk_catalog_tests_files.cmake
             taintedgrailmoddingsdk_path_policy_tests_files.cmake
+            taintedgrailmoddingsdk_work_order_tests_files.cmake
         INCLUDE_DIRECTORIES
             PRIVATE
                 Source

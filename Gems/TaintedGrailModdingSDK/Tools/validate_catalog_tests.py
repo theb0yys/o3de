@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 #
 
-"""Validate catalog, governance, economy, adapter, preview-smoke, workspace, and linked-target coverage."""
+"""Validate catalog, governance, economy, adapter, work-order, workspace, and linked-target coverage."""
 
 from __future__ import annotations
 
@@ -37,6 +37,12 @@ def require_fragments(path: Path, fragments: tuple[str, ...]) -> str:
     return text
 
 
+def require_text_fragments(text: str, fragments: tuple[str, ...], label: str) -> None:
+    for fragment in fragments:
+        if fragment not in text:
+            fail(f"Missing required fragment {fragment!r} in {label}")
+
+
 def manifest_entries(path: Path) -> set[str]:
     return set(re.findall(r"^\s+((?:Source|Tests)/[^\s\)]+)\s*$", require_file(path), re.MULTILINE))
 
@@ -48,6 +54,7 @@ def main() -> int:
     tests_root = code_root / "Tests"
     cmake_path = code_root / "CMakeLists.txt"
     test_manifest_path = code_root / "taintedgrailmoddingsdk_catalog_tests_files.cmake"
+    work_order_test_manifest_path = code_root / "taintedgrailmoddingsdk_work_order_tests_files.cmake"
     core_manifest_path = code_root / "taintedgrailmoddingsdk_core_files.cmake"
     framework_manifest_path = code_root / "taintedgrailmoddingsdk_framework_files.cmake"
 
@@ -63,6 +70,7 @@ def main() -> int:
                 "Gem::${gem_name}.Framework.Static",
                 "taintedgrailmoddingsdk_catalog_tests_files.cmake",
                 "taintedgrailmoddingsdk_path_policy_tests_files.cmake",
+                "taintedgrailmoddingsdk_work_order_tests_files.cmake",
                 "AZ::AzTest",
                 "AZ::AzToolsFramework",
                 "ly_add_googletest",
@@ -93,10 +101,31 @@ def main() -> int:
                 f"found {sorted(test_entries)}"
             )
 
+        work_order_entries = manifest_entries(work_order_test_manifest_path)
+        expected_work_order_entries = {
+            "Tests/AdapterWorkOrderPlanningTests.cpp",
+            "Tests/AdapterWorkOrderPlanningTestFixturePart1.inl",
+            "Tests/AdapterWorkOrderPlanningTestFixturePart2.inl",
+            "Tests/AdapterWorkOrderPlanningTestFixturePart3.inl",
+            "Tests/AdapterWorkOrderPlanningTestFixturePart4.inl",
+            "Tests/AdapterWorkOrderPlanningTestFixturePart5.inl",
+            "Tests/AdapterWorkOrderPlanningTestsPart1.inl",
+            "Tests/AdapterWorkOrderPlanningTestsPart2.inl",
+            "Tests/AdapterWorkOrderPlanningTestsPart3.inl",
+        }
+        if work_order_entries != expected_work_order_entries:
+            fail(
+                f"Work-order test manifest mismatch: expected {sorted(expected_work_order_entries)}, "
+                f"found {sorted(work_order_entries)}"
+            )
+        if any(entry.startswith("Source/") for entry in work_order_entries):
+            fail("Work-order tests must link production targets instead of recompiling production sources")
+
         core_entries = manifest_entries(core_manifest_path)
         required_core = {
             "Source/AdapterCompatibilityService.cpp",
             "Source/AdapterContractRegistry.cpp",
+            "Source/AdapterWorkOrderPlanningService.cpp",
             "Source/CatalogDatabase.cpp",
             "Source/CatalogGovernanceBlockerService.cpp",
             "Source/CatalogGovernanceTypes.cpp",
@@ -111,7 +140,7 @@ def main() -> int:
         }
         if not required_core.issubset(core_entries):
             fail(
-                "Core manifest is missing catalog/economy/adapter ownership: "
+                "Core manifest is missing catalog/economy/adapter/work-order ownership: "
                 + ", ".join(sorted(required_core - core_entries))
             )
 
@@ -256,6 +285,28 @@ def main() -> int:
         for filename, fragments in checks.items():
             require_fragments(tests_root / filename, fragments)
 
+        work_order_tests = "\n".join(
+            require_file(code_root / entry) for entry in sorted(work_order_entries)
+        )
+        require_text_fragments(
+            work_order_tests,
+            (
+                "AnyNonSupportedCompatibilityRowRefusesWholePlan",
+                "FullySupportedCatalogBuildsCanonicalPlanOnly",
+                "AggregateSupportCannotLeakUnreviewedSubjectsIntoSteps",
+                "RelationshipStepsBindResolvedTargetsAndProof",
+                "MissingRelationshipProofRefusesWholePlan",
+                "InvalidTypedPayloadEvidenceRefusesWholePlan",
+                "CanonicalSerializationIsDeterministic",
+                "PlanningDoesNotMutateInputs",
+                'EXPECT_EQ(result.m_generatedPlanCount, 0)',
+                'EXPECT_EQ(plan.m_steps.size(), 11)',
+                "declarationCountBefore",
+                "relationshipCountBefore",
+            ),
+            "production-linked adapter work-order tests",
+        )
+
         economy_header = require_fragments(
             source_root / "EconomyAuthoringService.h",
             (
@@ -302,16 +353,9 @@ def main() -> int:
                 "Blockers and reasons",
             ),
         )
-
         require_fragments(
             source_root / "EconomyCoverageService.cpp",
-            (
-                "BuildAcquisitionCoverage",
-                '"covered"',
-                '"partial"',
-                '"blocked"',
-                '"missing"',
-            ),
+            ("BuildAcquisitionCoverage", '"covered"', '"partial"', '"blocked"', '"missing"'),
         )
         require_fragments(
             source_root / "EconomyDuplicateDetectionService.cpp",
@@ -336,12 +380,28 @@ def main() -> int:
         )
         require_fragments(
             source_root / "AdapterContractRegistry.cpp",
+            ("TryParseAdapterSemanticVersion", "IsAdapterVersionCompatible", '"item_grant"', '"rollback"'),
+        )
+
+        planner_parts = sorted(source_root.glob("AdapterWorkOrderPlanningServicePart*.inl"))
+        planner = require_file(source_root / "AdapterWorkOrderPlanningService.h") + "\n" + require_file(
+            source_root / "AdapterWorkOrderPlanningService.cpp"
+        ) + "\n" + "\n".join(require_file(path) for path in planner_parts)
+        require_text_fragments(
+            planner,
             (
-                "TryParseAdapterSemanticVersion",
-                "IsAdapterVersionCompatible",
-                '"item_grant"',
-                '"rollback"',
+                "BuildPlans",
+                "BuildCapabilityMatrix",
+                "GroupIsSupported",
+                'row->m_status != "supported"',
+                "CollectReadySubjects",
+                "CollectRelationshipValidationProof",
+                "RecordPayloadIsComplete",
+                "SerializeCanonicalPlan",
+                "ExecutionAllowed",
+                "m_executionAllowed = false",
             ),
+            "adapter work-order planner",
         )
 
         compatibility = require_fragments(
@@ -374,14 +434,14 @@ def main() -> int:
         )
     except (OSError, RuntimeError) as exc:
         print(
-            f"Tainted Grail catalog/governance/economy/adapter/workspace validation failed: {exc}",
+            f"Tainted Grail catalog/governance/economy/adapter/work-order/workspace validation failed: {exc}",
             file=sys.stderr,
         )
         return 1
 
     print(
-        "Tainted Grail catalog, governance, economy analysis, adapter contracts, atomic workspace, "
-        "linked-target, and persistence-smoke contract passed."
+        "Tainted Grail catalog, governance, economy analysis, adapter contracts, work-order plans, "
+        "atomic workspace, linked-target, and persistence-smoke contract passed."
     )
     return 0
 

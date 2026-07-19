@@ -264,6 +264,8 @@ def validate_adapter_contracts(repo_root: Path) -> None:
             "transient registry",
             "No runtime adapter implementation",
             "Slice 9",
+            "canonical work-order plans",
+            "execution remains prohibited",
         ),
         "FoA adapter contract design",
     )
@@ -273,8 +275,8 @@ def validate_adapter_contracts(repo_root: Path) -> None:
         (
             "Adapter capability contract foundation",
             "Status: implemented, continuing hardening and Windows UI verification.",
-            "deterministic work-order generation",
-            "plans only",
+            "Deterministic work-order plan generation",
+            "runtime-result evidence envelope",
         ),
         "Roadmap",
     )
@@ -311,9 +313,9 @@ def validate_adapter_contracts(repo_root: Path) -> None:
     require_fragments(
         manual_ui,
         (
-            "All nine TG SDK panes",
+            "All ten TG SDK panes",
             "Tainted Grail Adapter Capability Matrix",
-            "unsupported rows when no adapter declaration is registered",
+            "unsupported` rows when no adapter declaration is registered",
             "non-editable",
         ),
         "Windows manual UI smoke",

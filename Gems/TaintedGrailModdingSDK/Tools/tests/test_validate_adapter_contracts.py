@@ -107,7 +107,8 @@ AdapterContractRegistry::Get() tr("Capability") tr("Status")
             "typed adapter identity semantic version item_grant recipe_learn recipe_append "
             "vendor_mutation loot_mutation reward_mutation persistence cleanup rollback "
             "supported unsupported version_mismatch permission_missing proof_missing "
-            "transient registry No runtime adapter implementation Slice 9",
+            "transient registry No runtime adapter implementation Slice 9 "
+            "canonical work-order plans execution remains prohibited",
             encoding="utf-8",
         )
         (docs / "README.md").write_text("FoA Adapter Contracts FOA_ADAPTER_CONTRACTS.md", encoding="utf-8")
@@ -117,14 +118,14 @@ AdapterContractRegistry::Get() tr("Capability") tr("Status")
             encoding="utf-8",
         )
         (docs / "DEVELOPER_PREVIEW_MANUAL_UI_SMOKE.md").write_text(
-            "All nine TG SDK panes Tainted Grail Adapter Capability Matrix "
-            "unsupported rows when no adapter declaration is registered non-editable",
+            "All ten TG SDK panes Tainted Grail Adapter Capability Matrix "
+            "unsupported` rows when no adapter declaration is registered non-editable",
             encoding="utf-8",
         )
         (repo / "ROADMAP.md").write_text(
             "Adapter capability contract foundation\n"
             "Status: implemented, continuing hardening and Windows UI verification.\n"
-            "deterministic work-order generation plans only",
+            "Deterministic work-order plan generation runtime-result evidence envelope",
             encoding="utf-8",
         )
         (repo / "CHANGELOG.md").write_text(

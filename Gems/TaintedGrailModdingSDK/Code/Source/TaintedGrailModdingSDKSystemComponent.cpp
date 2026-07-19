@@ -9,6 +9,7 @@
 
 #include "AdapterCapabilityMatrixWidget.h"
 #include "AdapterContractRegistry.h"
+#include "AdapterWorkOrderPlanWidget.h"
 #include "CatalogBrowserWidget.h"
 #include "CatalogGovernanceWidget.h"
 #include "EconomyCoverageDashboardWidget.h"
@@ -42,6 +43,7 @@ namespace TaintedGrailModdingSDK
         constexpr const char* EconomyCoverageDashboardViewPaneName = "Tainted Grail Economy Acquisition Coverage";
         constexpr const char* EconomyDuplicateReportViewPaneName = "Tainted Grail Economy Cross-Pack Duplicates";
         constexpr const char* AdapterCapabilityMatrixViewPaneName = "Tainted Grail Adapter Capability Matrix";
+        constexpr const char* AdapterWorkOrderPlanViewPaneName = "Tainted Grail Adapter Work-Order Plans";
     }
 
     void TaintedGrailModdingSDKSystemComponent::Reflect(AZ::ReflectContext* context)
@@ -71,7 +73,7 @@ namespace TaintedGrailModdingSDK
         if (auto* serializeContext = azrtti_cast<AZ::SerializeContext*>(context))
         {
             serializeContext->Class<TaintedGrailModdingSDKSystemComponent, AZ::Component>()
-                ->Version(7);
+                ->Version(8);
         }
     }
 
@@ -110,6 +112,7 @@ namespace TaintedGrailModdingSDK
             AzToolsFramework::UnregisterViewPane(EconomyCoverageDashboardViewPaneName);
             AzToolsFramework::UnregisterViewPane(EconomyDuplicateReportViewPaneName);
             AzToolsFramework::UnregisterViewPane(AdapterCapabilityMatrixViewPaneName);
+            AzToolsFramework::UnregisterViewPane(AdapterWorkOrderPlanViewPaneName);
             m_viewRegistered = false;
         }
 
@@ -224,6 +227,17 @@ namespace TaintedGrailModdingSDK
             AdapterCapabilityMatrixViewPaneName,
             "Tainted Grail SDK",
             adapterMatrixOptions);
+
+        AzToolsFramework::ViewPaneOptions workOrderPlanOptions;
+        workOrderPlanOptions.paneRect = QRect(280, 280, 1360, 940);
+        workOrderPlanOptions.preferedDockingArea = Qt::BottomDockWidgetArea;
+        workOrderPlanOptions.isDeletable = true;
+        workOrderPlanOptions.isPreview = true;
+        workOrderPlanOptions.saveKeyName = QStringLiteral("TaintedGrailModdingSDK.AdapterWorkOrderPlans");
+        AzToolsFramework::RegisterViewPane<AdapterWorkOrderPlanWidget>(
+            AdapterWorkOrderPlanViewPaneName,
+            "Tainted Grail SDK",
+            workOrderPlanOptions);
 
         m_viewRegistered = true;
     }

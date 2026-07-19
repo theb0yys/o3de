@@ -159,6 +159,10 @@ Core contains no Qt, AzToolsFramework, Foundation, persistence, filesystem, proc
 
 Slice 8 is contract metadata and read-only compatibility analysis only. It cannot execute an adapter, affect a running game, deploy content, launch the game, alter saves, or generate work orders.
 
-## Slice 9 boundary
+## Slice 9
 
-Slice 9 may generate deterministic work-order **plans only** from reviewed catalog records against these typed contracts. It must not execute those plans. Runtime results, when a later real adapter exists, must return as new evidence rather than silently changing validation or permission.
+Slice 9 implements deterministic canonical work-order plans from reviewed catalog records against these typed contracts. It rebuilds exact subject, evidence, permission, validation, relationship, target, and blocker readiness instead of treating an aggregate `supported` row as sufficient by itself.
+
+Plans remain transient and execution remains prohibited. They cannot be saved, exported, dispatched, deployed, or run. See [FoA Adapter Work-Order Plans](FOA_ADAPTER_WORK_ORDER_PLANS.md).
+
+The next ordered contract is a runtime-result evidence envelope. Runtime results, when a later real adapter exists, must return as new evidence rather than silently changing validation or permission.
