@@ -7,6 +7,7 @@
 
 #include "TaintedGrailModdingSDKSystemComponent.h"
 
+#include "AdapterBuildManifestWidget.h"
 #include "AdapterCapabilityMatrixWidget.h"
 #include "AdapterContractRegistry.h"
 #include "AdapterRuntimeResultContracts.h"
@@ -48,6 +49,8 @@ namespace TaintedGrailModdingSDK
         constexpr const char* AdapterWorkOrderPlanViewPaneName = "Tainted Grail Adapter Work-Order Plans";
         constexpr const char* AdapterRuntimeResultEvidenceViewPaneName =
             "Tainted Grail Adapter Runtime Result Evidence";
+        constexpr const char* AdapterBuildManifestViewPaneName =
+            "Tainted Grail Adapter Build Manifests";
     }
 
     void TaintedGrailModdingSDKSystemComponent::Reflect(AZ::ReflectContext* context)
@@ -77,7 +80,7 @@ namespace TaintedGrailModdingSDK
         if (auto* serializeContext = azrtti_cast<AZ::SerializeContext*>(context))
         {
             serializeContext->Class<TaintedGrailModdingSDKSystemComponent, AZ::Component>()
-                ->Version(9);
+                ->Version(10);
         }
     }
 
@@ -118,6 +121,7 @@ namespace TaintedGrailModdingSDK
             AzToolsFramework::UnregisterViewPane(AdapterCapabilityMatrixViewPaneName);
             AzToolsFramework::UnregisterViewPane(AdapterWorkOrderPlanViewPaneName);
             AzToolsFramework::UnregisterViewPane(AdapterRuntimeResultEvidenceViewPaneName);
+            AzToolsFramework::UnregisterViewPane(AdapterBuildManifestViewPaneName);
             m_viewRegistered = false;
         }
 
@@ -256,6 +260,18 @@ namespace TaintedGrailModdingSDK
             AdapterRuntimeResultEvidenceViewPaneName,
             "Tainted Grail SDK",
             runtimeResultOptions);
+
+        AzToolsFramework::ViewPaneOptions buildManifestOptions;
+        buildManifestOptions.paneRect = QRect(320, 320, 1400, 980);
+        buildManifestOptions.preferedDockingArea = Qt::BottomDockWidgetArea;
+        buildManifestOptions.isDeletable = true;
+        buildManifestOptions.isPreview = true;
+        buildManifestOptions.saveKeyName =
+            QStringLiteral("TaintedGrailModdingSDK.AdapterBuildManifests");
+        AzToolsFramework::RegisterViewPane<AdapterBuildManifestWidget>(
+            AdapterBuildManifestViewPaneName,
+            "Tainted Grail SDK",
+            buildManifestOptions);
 
         m_viewRegistered = true;
     }

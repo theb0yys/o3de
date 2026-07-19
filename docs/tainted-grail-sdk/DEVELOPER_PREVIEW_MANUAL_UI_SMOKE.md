@@ -8,7 +8,7 @@ This checklist proves the source-built Tainted Grail SDK panes are usable in a *
 
 The accepted evidence must be tied to the **exact source commit** being reviewed. Do not reuse screenshots from an older commit.
 
-Historical acceptance contracts referred to **All eight TG SDK panes**, **All nine TG SDK panes**, and **All ten TG SDK panes** as Slices 7, 8, and 9 were added. The current Slice 10 pass requires **All eleven TG SDK panes**.
+Historical acceptance contracts referred to **All eight TG SDK panes**, **All nine TG SDK panes**, **All ten TG SDK panes**, and **All eleven TG SDK panes** as Slices 7–10 were added. The current Slice 11 pass requires **All twelve TG SDK panes**.
 
 ## Safety and privacy boundary
 
@@ -16,7 +16,7 @@ Use only the project-owned synthetic Developer Preview 0 fixture and the project
 
 - proprietary game files, assets, saves, identifiers, or screenshots;
 - credentials, tokens, user names, private absolute paths, or unrelated desktop content;
-- FoA, BepInEx, Harmony, Avalon Core, runtime adapters, work-order execution, runtime-result capture, deployment, injection, or save-mutation tooling.
+- FoA, BepInEx, Harmony, Avalon Core, runtime adapters, work-order execution, runtime-result capture, compiler invocation, package assembly, deployment, injection, or save-mutation tooling.
 
 The evidence tool does not capture the screen and does not inspect screenshot pixels. The tester must review each image before attaching it.
 
@@ -55,7 +55,7 @@ Copy-Item `
 
 The canonical fixture verifier intentionally covers the unchanged generated fixture only. The copied companion is separately repository-owned and must match the reviewed source commit. Follow `Gems/TaintedGrailModdingSDK/Preview/DuplicateReview/README.md` during the duplicate-report step.
 
-No adapter declaration is registered by the preview fixture. The expected Adapter Capability Matrix state is deterministic `unsupported` rows, the expected Adapter Work-Order Plans state is a refused candidate for each loaded pack with zero generated steps, and the expected Adapter Runtime Result Evidence state is **zero registered runtime-result envelopes**.
+No adapter declaration is registered by the preview fixture. The expected Adapter Capability Matrix state is deterministic `unsupported` rows, the expected Adapter Work-Order Plans state is a refused candidate for each loaded pack with zero generated steps, the expected Adapter Runtime Result Evidence state is **zero registered runtime-result envelopes**, and the expected Adapter Build Manifests state is **zero ready build definitions**.
 
 ## Launch the Editor
 
@@ -101,9 +101,10 @@ From **Tools → Tainted Grail SDK**, open:
 - Tainted Grail Economy Cross-Pack Duplicates;
 - Tainted Grail Adapter Capability Matrix;
 - Tainted Grail Adapter Work-Order Plans;
-- Tainted Grail Adapter Runtime Result Evidence.
+- Tainted Grail Adapter Runtime Result Evidence;
+- Tainted Grail Adapter Build Manifests.
 
-Confirm every pane opens without an error and remains interactive. **All eleven TG SDK panes** must be present.
+Confirm every pane opens without an error and remains interactive. **All twelve TG SDK panes** must be present.
 
 Record:
 
@@ -112,7 +113,7 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview_ui_evidence.py record
   --output build/tg-sdk-developer-preview-0-ui-evidence `
   --check all-panes-open `
   --status pass `
-  --notes "All eleven TG SDK panes opened from the Tools menu."
+  --notes "All twelve TG SDK panes opened from the Tools menu."
 ```
 
 Screenshot required.
@@ -134,7 +135,7 @@ Use `Tab`, `Shift+Tab`, arrow keys, and activation keys where appropriate. Confi
 
 A screenshot is not mandatory because focus traversal is temporal, but detailed notes are required.
 
-### 4. Preview workspace, economy analyses, adapter readiness, plans, and result evidence
+### 4. Preview workspace, economy analyses, adapter readiness, plans, result evidence, and build manifests
 
 Open the generated synthetic workspace after the companion pack has been copied. Confirm both owner packs load:
 
@@ -168,8 +169,11 @@ Confirm:
 - no canonical JSON is presented as executable, and no plan or step reports execution as allowed;
 - the Adapter Runtime Result Evidence pane shows **zero registered runtime-result envelopes**, zero accepted/rejected contracts, and zero candidate source/evidence records;
 - outcome, failure, cleanup/rollback, logs/fingerprints, evidence-candidate, and issue columns are visible;
-- no runtime-result file picker, registration, import, save, promotion, dispatch, execution, deployment, launch, or save-mutation control exists;
-- all five analysis, planning, and result-evidence panes remain **non-editable**.
+- the Adapter Build Manifests pane shows the refused plan state and **zero ready build definitions**;
+- manifest, exact plan, profile/runtime, status, builder/toolchain, plugin metadata, resolved materials, expected package outputs, and canonical JSON/reason columns are visible;
+- no manifest reports `BuildAllowed=true`;
+- no runtime-result file picker, registration, import, save, promotion, plan or manifest export, compiler/build/package action, dispatch, execution, deployment, launch, or save-mutation control exists;
+- all six analysis, planning, result-evidence, and build-manifest panes remain **non-editable**.
 
 Record this observation under `preview-data-displayed`. Screenshot required.
 
@@ -221,7 +225,8 @@ Also confirm:
 - the Adapter Capability Matrix returns to the same deterministic `unsupported` state after relaunch because its declaration registry is transient;
 - the Adapter Work-Order Plans pane deterministically rebuilds the same refused candidates with zero generated steps;
 - the Adapter Runtime Result Evidence pane returns to zero envelopes because its registry is transient;
-- no adapter declaration, work-order plan, or runtime-result file appears in the workspace.
+- the Adapter Build Manifests pane returns to zero ready definitions and does not create a manifest file;
+- no adapter declaration, work-order plan, runtime-result, or build-manifest file appears in the workspace.
 
 Screenshot required after reopen.
 
@@ -233,9 +238,9 @@ Confirm the failure message identifies the affected path or subject and does not
 
 Screenshot required.
 
-### 9. Runtime boundary remains absent
+### 9. Runtime and build boundary remain absent
 
-Inspect every TG SDK pane and confirm no runtime, deployment, injection, save-mutation, plan save/export/dispatch/execution, result capture/import/promotion, adapter loading/registration, automatic duplicate merge, pack rejection, or winner-selection action is exposed.
+Inspect every TG SDK pane and confirm no runtime, compiler invocation, package assembly, archive creation, file copy, dependency download, deployment, injection, save-mutation, plan save/export/dispatch/execution, result capture/import/promotion, adapter loading/registration, automatic duplicate merge, pack rejection, or winner-selection action is exposed.
 
 Record detailed notes. A screenshot is optional because absence is established across the full pass, not by a single image.
 
@@ -251,8 +256,8 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview_ui_evidence.py attach
   --screenshot C:\Evidence\catalog-and-governance.png `
   --check all-panes-open `
   --check preview-data-displayed `
-  --title "Catalog, economy, adapter, planning, and result-evidence panes" `
-  --description "Synthetic preview data with fail-closed adapter rows, refused plans, and zero result envelopes." `
+  --title "Catalog, economy, adapter, planning, result-evidence, and build-manifest panes" `
+  --description "Synthetic preview data with fail-closed adapter rows, refused plans, zero result envelopes, and zero ready build definitions." `
   --privacy-reviewed `
   --project-owned-only
 ```

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted correction contract for Slice 5 and extended by Slices 6, 7, 8, 9, and 10. The build graph decomposes editor-side implementation into real targets without changing durable schemas, runtime permissions, deployment, game launch, or save behavior.
+Accepted correction contract for Slice 5 and extended by Slices 6, 7, 8, 9, 10, and 11. The build graph decomposes editor-side implementation into real targets without changing durable schemas, runtime permissions, deployment, game launch, or save behavior.
 
 ## Targets
 
@@ -17,6 +17,7 @@ Owns shared domain state and services that are free of Qt and host-tool dependen
 - typed transient adapter declarations, strict semantic-version compatibility, capability evaluation, and permission/proof readiness analysis;
 - deterministic, canonical, execution-prohibited adapter work-order planning;
 - typed runtime-result contract validation and candidate source/evidence return;
+- reproducible adapter build-manifest generation with exact toolchain, material, path, and redistribution checks;
 - the source/evidence registry.
 
 Core depends publicly on `AZ::AzCore`. Core must not depend on Framework, Editor, Qt, AzToolsFramework, runtime adapters, deployment, or game APIs.
@@ -37,7 +38,7 @@ Framework depends publicly on Core and privately on the host-tool facilities nee
 
 Remains the Tool Gem module and owns only composition and presentation:
 
-- Qt widgets, including the read-only economy acquisition, duplicate-report, adapter-capability, work-order-plan, and runtime-result-evidence panes;
+- Qt widgets, including the read-only economy acquisition, duplicate-report, adapter-capability, work-order-plan, runtime-result-evidence, and adapter-build-manifest panes;
 - the Editor system component;
 - the Gem Editor module.
 
@@ -76,6 +77,8 @@ The adapter declaration registry is deliberately transient Core state. It has no
 Work-order planning is also transient Core state. It reads immutable packs, declarations, catalog state, source/evidence, governance history, and blockers; returns plans or refusals by value; and performs no filesystem, persistence, process, deployment, launch, telemetry, or save operation.
 
 Runtime-result contracts remain transient Core state. They validate externally supplied metadata against an exact canonical plan and return candidate source/evidence documents by value. They do not register evidence, open logs, persist files, invoke adapters, promote governance, or create an execution path.
+
+Adapter build manifests are transient Core state. They bind an exact plan to caller-supplied build definitions, resolved materials, BepInEx metadata, expected outputs, safe package paths, and redistribution decisions. Even a `ready` definition retains `BuildAllowed=false` and performs no toolchain resolution, compilation, package assembly, persistence, deployment, launch, or execution.
 
 ## Enforcement
 
@@ -121,10 +124,21 @@ The runtime-result validator additionally enforces:
 - a non-editable runtime-result evidence pane;
 - no adapter call, process access, deployment, launch, telemetry, save mutation, or execution path.
 
+The adapter build-manifest validator additionally enforces:
+
+- exact plan, pack, adapter, profile, source revision, O3DE revision, and toolchain binding;
+- required resolved materials and lowercase SHA-256 fingerprints;
+- BepInEx plugin metadata plus exact hard and soft dependency declarations;
+- safe expected-output containment beneath the package root;
+- explicit redistribution gates;
+- deterministic canonical serialization with `BuildAllowed=false`;
+- a non-editable build-manifest pane;
+- no compiler, package assembler, archive, copy, deployment, launch, telemetry, save mutation, or execution path.
+
 ## Runtime boundary
 
-No runtime adapter is added. No FoA, Unity, BepInEx, Harmony, deployment, injection, telemetry, game launch, save mutation, work-order execution, or result capture code is introduced or authorized. Core and Framework remain host-tool implementation targets inside the existing Tool Gem.
+No runtime adapter is added. No FoA, Unity, BepInEx, Harmony, compiler invocation, package assembly, deployment, injection, telemetry, game launch, save mutation, work-order execution, or result capture code is introduced or authorized. Core and Framework remain host-tool implementation targets inside the existing Tool Gem.
 
 ## Rollback
 
-Revert the implementing pull request. No durable documents or user state require migration because these slices change build ownership and add transient or derived read-only analysis, planning, and evidence candidates only.
+Revert the implementing pull request. No durable documents or user state require migration because these slices change build ownership and add transient or derived read-only analysis, planning, evidence candidates, and build definitions only.

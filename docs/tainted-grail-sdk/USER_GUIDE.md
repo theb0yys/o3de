@@ -30,6 +30,8 @@ python Gems/TaintedGrailModdingSDK/Tools/validate_foundation.py
 python Gems/TaintedGrailModdingSDK/Tools/validate_catalog_tests.py
 python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_contracts.py
 python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_work_order_plans.py
+python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_runtime_results.py
+python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_build_manifests.py
 ```
 
 After launching the O3DE Editor, open **Tools → Tainted Grail SDK**.
@@ -46,6 +48,8 @@ Current tools:
 - **Tainted Grail Economy Cross-Pack Duplicates**
 - **Tainted Grail Adapter Capability Matrix**
 - **Tainted Grail Adapter Work-Order Plans**
+- **Tainted Grail Adapter Runtime Result Evidence**
+- **Tainted Grail Adapter Build Manifests**
 
 ## Recommended workflow
 
@@ -63,7 +67,9 @@ Use the tools in this order:
 10. review economy acquisition coverage and exact cross-pack duplicate candidates;
 11. review adapter capability, version, permission, and proof readiness;
 12. review generated or refused canonical adapter work-order plans;
-13. review the shared status window before any later downstream work.
+13. review any externally supplied runtime-result envelope and its candidate evidence without importing it automatically;
+14. review the reproducible adapter build definition and resolve every toolchain, material, fingerprint, path, and redistribution blocker;
+15. review the shared status window before any later downstream work.
 
 ## Workspace and game profile
 
@@ -101,7 +107,7 @@ Configure:
 - diagnostics and extracted-data locations;
 - installed DLC/content scopes.
 
-Imported evidence, catalogs, validation events, governance decisions, adapter evidence, and work-order plans are bound to the exact active profile. Changing profiles does not re-authorise older data.
+Imported evidence, catalogs, validation events, governance decisions, adapter evidence, work-order plans, runtime-result candidates, and build manifests are bound to the exact active profile. Changing profiles does not re-authorise older data.
 
 ### Apply and save
 
@@ -390,6 +396,52 @@ Generated plans show:
 
 With no transient adapter declaration, each loaded pack produces one refused plan group and zero generated steps. No work-order file is written to the workspace.
 
+## Adapter runtime-result evidence
+
+Open **Tainted Grail Adapter Runtime Result Evidence** to inspect externally supplied result metadata against one exact canonical plan.
+
+Typed outcomes are:
+
+- `not_attempted`;
+- `succeeded`;
+- `failed`;
+- `skipped`.
+
+The contract checks exact plan and step identities, sequence, capability, subject binding, typed failures, cleanup and rollback summaries, safe relative log references, and lowercase SHA-256 fingerprints. A missing, duplicate, unknown, or changed step fails closed.
+
+An accepted envelope returns candidate source and evidence documents by value for step outcomes, failures, cleanup, rollback, plan binding, and referenced log fingerprints. These candidates begin unrated. **Nothing is persisted or promoted** and nothing is automatically registered with the source/evidence registry, validated, permitted, or published into the catalog.
+
+The pane is non-editable. It does not provide a file picker, import, registration, save, dispatch, execution, deployment, launch, or save-mutation control. The ordinary Developer Preview state has zero registered runtime-result envelopes.
+
+## Adapter build manifests
+
+Open **Tainted Grail Adapter Build Manifests** after an exact work-order plan exists.
+
+A manifest is a read-only reproducible build definition. It binds:
+
+- exact plan ID, canonical JSON, and plan fingerprint;
+- exact pack, adapter, profile, game version, branch, and runtime target;
+- source commit and O3DE revision;
+- builder, compiler, configuration, target framework, deterministic-build, CI-normalisation, and path-map declarations;
+- BepInEx plugin GUID, name, version, package root, and hard or soft dependencies;
+- required resolved materials and fingerprints;
+- expected package outputs;
+- package-path and redistribution policy.
+
+Statuses are evaluated in fail-closed order:
+
+- `plan_mismatch`;
+- `toolchain_unresolved`;
+- `input_missing`;
+- `fingerprint_missing`;
+- `path_invalid`;
+- `redistribution_blocked`;
+- `ready`.
+
+The pane shows resolved materials, expected package outputs, deterministic reasons, and canonical JSON. `BuildAllowed` is false even for `ready` definitions. With the ordinary preview fixture there is no transient adapter declaration or resolved toolchain, so the pane reports zero ready build definitions.
+
+The pane is non-editable and **nothing is built or packaged**. It cannot save or export a manifest, invoke a compiler, copy files, create an archive, download dependencies, deploy content, launch FoA, or execute an adapter.
+
 ## Foundation status and blockers
 
 The status window reports:
@@ -426,7 +478,7 @@ MyWorkspace/
 └── Reports/
 ```
 
-There is no adapter declaration file or work-order plan file in the workspace layout.
+There is no adapter declaration, work-order plan, runtime-result, or adapter build-manifest file in the workspace layout.
 
 ## Safe-use rules
 
@@ -442,6 +494,7 @@ There is no adapter declaration file or work-order plan file in the workspace la
 - Do not treat a duplicate candidate group as an automatic merge or deletion instruction.
 - Do not treat a `supported` adapter row as permission to execute runtime behavior.
 - Do not treat generated canonical JSON as an executable or deployable artifact.
+- Do not treat a `ready` build manifest as proof that a build ran or an output exists.
 - Review generated output before any future deployment.
 
 ## Troubleshooting
@@ -515,6 +568,25 @@ There is no adapter declaration file or work-order plan file in the workspace la
 - confirm vendor, loot, and reward relationships have resolved current target records and relationship validation proof;
 - resolve applicable open blockers;
 - do not attempt to bypass refusal by manually copying a partial step set.
+
+### Runtime-result envelope is rejected
+
+- confirm the envelope binds to the exact plan ID and canonical JSON;
+- confirm it contains exactly one result for every canonical step and no unknown step;
+- confirm succeeded results have output fingerprints and failed or skipped results have typed failures;
+- confirm cleanup and rollback summaries exactly match their corresponding step results;
+- confirm log locators are safe relative paths and every fingerprint uses lowercase `sha256:<64 hex>`;
+- remember that acceptance returns candidate evidence only and does not validate or permit it.
+
+### Build manifest is not `ready`
+
+- for `plan_mismatch`, regenerate the exact plan for the same pack, adapter, profile, branch, and runtime target;
+- for `toolchain_unresolved`, provide exact builder/compiler versions, source commit, O3DE revision, target framework, deterministic-build, CI-normalisation, and path-map declarations;
+- for `input_missing`, provide every required material and expected output role;
+- for `fingerprint_missing`, provide lowercase SHA-256 fingerprints and bind the plan material to the exact plan fingerprint;
+- for `path_invalid`, keep all locators relative and every expected output beneath the declared `BepInEx/plugins/` package root;
+- for `redistribution_blocked`, remove non-redistributable inputs from package contents or correct the output policy;
+- do not treat `ready` as authority to build, package, deploy, or execute.
 
 ## Getting help
 

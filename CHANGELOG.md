@@ -8,6 +8,9 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Added
 
+- Pure-Core `AdapterBuildManifestService` for exact plan binding, reproducible build definitions, resolved material fingerprints, BepInEx plugin metadata, dependency declarations, expected package outputs, path containment, and redistribution gates.
+- Read-only **Tainted Grail Adapter Build Manifests** editor pane with deterministic `ready`, `plan_mismatch`, `toolchain_unresolved`, `input_missing`, `fingerprint_missing`, `path_invalid`, and `redistribution_blocked` states plus canonical JSON with `BuildAllowed: false`.
+- Adapter build-manifest C++ tests, focused validator and negative tests, CI integration, public Phase 8 documentation, and twelve-pane Windows manual UI coverage; no build or package operation is introduced.
 - Pure-Core `AdapterRuntimeResultRegistry` and typed runtime-result contracts for exact attempted plan/step identities, outcomes, failures, cleanup, rollback, safe log references, and SHA-256 fingerprints.
 - Pure-Core `AdapterRuntimeResultEvidenceService` that fail-closes mismatched envelopes and returns deterministic candidate source/evidence documents without registering, persisting, validating, or permitting them.
 - Read-only **Tainted Grail Adapter Runtime Result Evidence** editor pane, production-linked tests, focused negative validation, CI integration, public documentation, and eleven-pane Windows manual UI coverage; the contract does not promote validation or permission.
@@ -55,7 +58,7 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 - Developer Preview troubleshooting documentation for missing Editor output, clickable-entry failures, absent TG SDK panes, native log locations, diagnostics failures, verification, and disclosure review.
 - Windows manual UI checklist covering all TG SDK panes, normal scaling, keyboard traversal, synthetic data display, Item and Recipe Editor state, station/learnability evidence, save-close-reopen behavior, actionable failure messages, and the runtime boundary.
 - Screenshot-evidence initializer, recorder, PNG attachment helper, final attestation, and verifier bound to an exact source commit.
-- Screenshot evidence checks for PNG integrity, dimensions, size limits, SHA-256 hashes, required checklist coverage, path traversal, symlinks, unexpected files, textual private paths, secret-like material, privacy review, and no-runtime attestations.
+- Screenshot evidence checks for PNG integrity, dimensions, size limits, SHA-256 hashes, required coverage, path traversal, symlinks, unexpected files, textual private paths, secret-like material, privacy review, and no-runtime attestations.
 - Sixteen manual UI evidence unit tests covering pending initialization, output containment, note privacy, PNG validation, evidence completion, tampering, missing coverage, symlinks, unexpected files, and commit mismatch.
 - Workspace and exact FoA game-profile management with durable `*.tgworkspace.json` documents.
 - Mod/content-pack project management with durable `*.tgpack.json` manifests.
@@ -97,9 +100,11 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Changed
 
-- Phase 7 now includes typed runtime-result evidence returns; actual adapter execution remains separately gated and unimplemented.
-- The focused workflow and contract validators now enforce exact attempted plan/step bindings, typed outcomes/failures, cleanup/rollback matching, safe log references, fingerprints, candidate evidence-only output, and the no-execution boundary.
-- The Windows manual UI checklist now covers all eleven panes and the default zero-runtime-result-envelope state.
+- Phase 8 is now active with reproducible adapter build-manifest definitions; deterministic package-assembly preview is the next ordered slice.
+- The focused workflow and contract validators now enforce exact plan/toolchain/material binding, path containment, redistribution decisions, deterministic canonical build definitions, and the no-build boundary.
+- The Windows manual UI checklist now covers all twelve panes and the default zero-ready-build-definition state.
+- Phase 7 includes typed runtime-result evidence returns; actual adapter execution remains separately gated and unimplemented.
+- The focused workflow and contract validators enforce exact attempted plan/step bindings, typed outcomes/failures, cleanup/rollback matching, safe log references, fingerprints, candidate evidence-only output, and the no-execution boundary.
 - Phase 7 includes deterministic work-order plan generation and the typed capability matrix as prerequisite gates.
 - Phase 6 records both economy acquisition coverage and exact cross-pack duplicate reporting as implemented.
 - Duplicate detection uses only exact, case-sensitive subject references and recipe duplicate keys across distinct owner packs; it performs no display-name or fuzzy matching.
@@ -128,6 +133,8 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Security
 
+- Build manifests are transient definitions only; `BuildAllowed` is false for every status, including `ready`, and no compiler, package assembler, archive writer, file copier, dependency downloader, deployment, launch, telemetry, save mutation, or adapter execution is added.
+- Exact source/O3DE revisions, fingerprints, safe package-relative paths, and redistribution decisions fail closed before a definition can be `ready`.
 - Runtime-result envelopes are transient typed metadata; accepted contracts return source/evidence candidates by value and do not automatically register, persist, promote, validate, permit, dispatch, execute, deploy, launch, or mutate saves.
 - Exact plan/step/recovery/log bindings fail closed, and Slice 10 does not open referenced logs or add an actual FoA adapter implementation or execution path.
 - Work-order plans are transient, immutable descriptions only; `ExecutionAllowed` is false on every plan and step, and no save, export, dispatch, adapter invocation, code generation, process access, deployment, launch, telemetry, or save mutation is added.
@@ -154,7 +161,7 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 - Generated screenshots must remain beneath `build/` or outside the repository and are not release package contents.
 - Developer Preview commands do not install dependencies silently, use shell command strings, launch FoA, invoke runtime adapters, deploy files, modify saves, or collect telemetry.
 - Preview build-directory validation rejects the repository root, directories containing the checkout, `.git` paths, unrelated non-empty directories, and CMake caches bound to another source tree.
-- Runtime execution remains disabled in editor-owned workspace, pack, source/evidence, catalog, validation, governance, typed economy, adapter-contract, work-order-planning, and runtime-result-evidence workflows.
+- Runtime execution remains disabled in editor-owned workspace, pack, source/evidence, catalog, validation, governance, typed economy, adapter-contract, work-order-planning, runtime-result-evidence, and build-manifest workflows.
 - Source intake rejects missing or mismatched profile and fingerprint bindings.
 - Structured imports are size-limited and fail closed on malformed schemas.
 - Catalog promotion cannot grant allowed usages and adds `no_unvalidated_runtime_use`.
@@ -172,6 +179,8 @@ The project follows the principles of Keep a Changelog. Version numbers follow S
 
 ### Known limitations
 
+- Build-manifest previews are transient and accept caller-supplied toolchain and fingerprint declarations; no trusted toolchain resolver, build invocation, output digest, provenance statement, package assembly, archive, or SBOM is implemented.
+- A `ready` build definition does not prove the compiler, dependency cache, source tree, or expected output exists and does not authorize a build.
 - Runtime-result envelopes and evidence returns are transient; Slice 10 adds no file loader, transport, automatic import, durable runtime-result schema, or actual runtime proof capture.
 - Generated candidate evidence remains unreviewed and unrated until a separate ordinary source/evidence, validation, and permission workflow accepts it.
 - Generated work-order plans are planning evidence only; they are not persisted, exported, dispatched, executed, deployed, or returned to an adapter.

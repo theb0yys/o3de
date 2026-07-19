@@ -117,6 +117,15 @@ jobs:
       - name: Validate adapter runtime-result evidence contract
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_runtime_results.py
 
+      - name: Test adapter build-manifest validator
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_validate_adapter_build_manifests.py" -v
+
+      - name: Validate adapter build-manifest contract
+        run: python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_build_manifests.py
+
       - name: Test Developer Preview 0 command layer
         run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview.py" -v
 
