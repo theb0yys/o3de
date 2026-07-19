@@ -36,6 +36,7 @@ This directory contains the public documentation for the TG SDK layer in this O3
 
 - [Contributing](../../CONTRIBUTING.md) — contribution lifecycle and DCO requirements.
 - [Development Guide](DEVELOPMENT_GUIDE.md) — repository setup, build, validation, and implementation workflow.
+- [CI, Runner, and Local Validation Policy](CI_AND_LOCAL_VALIDATION.md) — current manual-only workflow state, authoritative local command, self-hosted runner boundary, token handling, and restoration conditions.
 - [Developer Preview 0 Design](DEVELOPER_PREVIEW_0_DESIGN.md) — approved scope, acceptance criteria, safety boundary, and implementation sequence.
 - [Dedicated Editor Entry Architecture](DEDICATED_EDITOR_ENTRY.md) — product-host project, project-owned icons, trusted generated Windows shortcut, and separation from engine testing projects.
 - [Canonical Path and Executable Trust Policy](PATH_POLICY.md) — canonical resolution, component containment, workspace/pack persistence boundaries, source-build provenance, and diagnostic overrides.
@@ -94,6 +95,8 @@ The project is pre-alpha. Current implemented editor workflows cover:
 - typed transient deployment confirmations and work orders with exact scope, expiry, maintenance windows, preflight evidence, deterministic operator steps/checklists, and all execution/mutation permissions disabled;
 - typed transient deployment execution-result envelopes with exact work-order/executor binding, attempted steps, backup/restore outcomes, target verification, rollback, safe logs, and candidate evidence returned without automatic promotion;
 - Developer Preview validation, deterministic synthetic fixtures, controlled Editor launch, diagnostics, and exact-commit Windows manual UI evidence tooling.
+
+Automatic GitHub Actions triggers are currently suspended; the local validation command is the documented test gate and no automated per-commit result is claimed.
 
 The actual Windows screenshot pass remains pending. Trusted identity/time providers, independent preflight/result verification, acknowledgement, toolchain resolution, compilation, file-backed staging/target inventory, package copying/archiving, backup/restore, runtime adapters, production deployment, live executor capture, and remaining specialised domain tools are not complete.
 
