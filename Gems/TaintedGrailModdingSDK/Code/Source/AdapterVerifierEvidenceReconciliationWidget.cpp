@@ -77,6 +77,42 @@ namespace TaintedGrailModdingSDK
             return nullptr;
         }
 
+        QString ReviewDetails(const AdapterVerifierReleaseReview& review)
+        {
+            return QObject::tr(
+                       "%1 | decision=%2 | reviewer=%3 | reviewed=%4 | candidates=%5/%6")
+                .arg(
+                    ToQString(review.m_reviewId),
+                    ToQString(ToString(review.m_decision)),
+                    ToQString(review.m_reviewer),
+                    ToQString(review.m_reviewedAtUtc),
+                    QString::number(static_cast<qulonglong>(
+                        review.m_candidateSourceIds.size())),
+                    QString::number(static_cast<qulonglong>(
+                        review.m_candidateEvidenceIds.size())));
+        }
+
+        QString FindingDetails(
+            const AdapterVerifierReconciliationFinding& finding)
+        {
+            return QObject::tr(
+                       "%1 | %2 | relationship=%3 | subject=%4 | step=%5 | check=%6 | "
+                       "compatibility blocker=%7 | release blocker=%8 | disposition=%9")
+                .arg(
+                    ToQString(finding.m_findingId),
+                    ToQString(ToString(finding.m_kind)),
+                    ToQString(ToString(finding.m_relationship)),
+                    ToQString(finding.m_subjectRef),
+                    ToQString(finding.m_stepId),
+                    ToQString(finding.m_checkId),
+                    finding.m_blocksCompatibility ? QObject::tr("yes")
+                                                   : QObject::tr("no"),
+                    finding.m_blocksRelease ? QObject::tr("yes")
+                                            : QObject::tr("no"),
+                    finding.m_requiresHumanDisposition ? QObject::tr("required")
+                                                       : QObject::tr("not required"));
+        }
+
         QString IssueDetails(
             const AdapterVerifierEvidenceReconciliationResult& result)
         {
@@ -114,37 +150,6 @@ namespace TaintedGrailModdingSDK
                 values.push_back(value);
             }
             return values.join(QStringLiteral(" | "));
-        }
-
-        QString FindingDetails(
-            const AdapterVerifierReconciliationFinding& finding)
-        {
-            return QObject::tr(
-                       "%1 | %2 | relationship=%3 | subject=%4 | step=%5 | check=%6 | "
-                       "compatibility blocker=%7 | release blocker=%8 | disposition=%9")
-                .arg(
-                    ToQString(finding.m_findingId),
-                    ToQString(ToString(finding.m_kind)),
-                    ToQString(ToString(finding.m_relationship)),
-                    ToQString(finding.m_subjectRef),
-                    ToQString(finding.m_stepId),
-                    ToQString(finding.m_checkId),
-                    finding.m_blocksCompatibility ? QObject::tr("yes")
-                                                  : QObject::tr("no"),
-                    finding.m_blocksRelease ? QObject::tr("yes")
-                                            : QObject::tr("no"),
-                    finding.m_requiresHumanDisposition ? QObject::tr("required")
-                                                       : QObject::tr("not required"));
-        }
-
-        QString ReviewDetails(const AdapterVerifierReleaseReview& review)
-        {
-            return QObject::tr("%1 | decision=%2 | reviewer=%3 | reviewed=%4")
-                .arg(
-                    ToQString(review.m_reviewId),
-                    ToQString(ToString(review.m_decision)),
-                    ToQString(review.m_reviewer),
-                    ToQString(review.m_reviewedAtUtc));
         }
     } // namespace
 
@@ -232,19 +237,7 @@ namespace TaintedGrailModdingSDK
         const AZStd::vector<AdapterVerifierEvidenceReconciliationRequest>& requests =
             AdapterVerifierEvidenceReconciliationRegistry::Get().GetRequests();
 
-        int rowCount = 0;
-        for (const AdapterVerifierEvidenceReconciliationRequest& request : requests)
-        {
-            const AdapterPostDeploymentVerifierResultEnvelope* verifierEnvelope =
-                FindVerifierEnvelope(
-                    verifierEnvelopes,
-                    request.m_releaseReview.m_verifierResultId);
-            rowCount += verifierEnvelope && !verifierEnvelope->m_checkResults.empty()
-                ? static_cast<int>(verifierEnvelope->m_checkResults.size())
-                : 1;
-        }
-        m_table->setRowCount(rowCount);
-
+        m_table->setRowCount(0);
         AZ::u64 acceptedCount = 0;
         AZ::u64 approvedCount = 0;
         AZ::u64 holdCount = 0;
@@ -259,16 +252,9 @@ namespace TaintedGrailModdingSDK
                     request.m_releaseReview.m_verifierResultId);
             if (!verifierEnvelope)
             {
-                SetCell(
-                    m_table,
-                    rowIndex,
-                    0,
-                    ToQString(request.m_reconciliationId));
-                SetCell(
-                    m_table,
-                    rowIndex,
-                    1,
-                    tr("binding_mismatch"));
+                m_table->insertRow(rowIndex);
+                SetCell(m_table, rowIndex, 0, ToQString(request.m_reconciliationId));
+                SetCell(m_table, rowIndex, 1, tr("binding_mismatch"));
                 SetCell(
                     m_table,
                     rowIndex,
@@ -294,16 +280,9 @@ namespace TaintedGrailModdingSDK
                 : nullptr;
             if (!executionEnvelope || !workOrder)
             {
-                SetCell(
-                    m_table,
-                    rowIndex,
-                    0,
-                    ToQString(request.m_reconciliationId));
-                SetCell(
-                    m_table,
-                    rowIndex,
-                    1,
-                    tr("binding_mismatch"));
+                m_table->insertRow(rowIndex);
+                SetCell(m_table, rowIndex, 0, ToQString(request.m_reconciliationId));
+                SetCell(m_table, rowIndex, 1, tr("binding_mismatch"));
                 SetCell(
                     m_table,
                     rowIndex,
@@ -355,11 +334,14 @@ namespace TaintedGrailModdingSDK
                 : 0;
             rejectedCount += result.m_accepted ? 0 : 1;
 
-            const int findingRows = result.m_envelope.m_findings.empty()
+            const size_t findingCount = result.m_envelope.m_findings.empty()
                 ? 1
-                : static_cast<int>(result.m_envelope.m_findings.size());
-            for (int findingIndex = 0; findingIndex < findingRows; ++findingIndex)
+                : result.m_envelope.m_findings.size();
+            for (size_t findingIndex = 0;
+                 findingIndex < findingCount;
+                 ++findingIndex)
             {
+                m_table->insertRow(rowIndex);
                 SetCell(
                     m_table,
                     rowIndex,
@@ -457,11 +439,7 @@ namespace TaintedGrailModdingSDK
                     tr("verifier execution=no | target access=no | file mutation=no | "
                        "evidence promotion=no | archive assembly/signing=no | "
                        "release publication=no | FoA launch=no | adapter call=no"));
-                SetCell(
-                    m_table,
-                    rowIndex,
-                    10,
-                    IssueDetails(result));
+                SetCell(m_table, rowIndex, 10, IssueDetails(result));
                 ++rowIndex;
             }
         }
