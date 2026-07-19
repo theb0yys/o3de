@@ -163,29 +163,11 @@ namespace TaintedGrailModdingSDK
         AZStd::string m_code;
         AZStd::string m_targetPath;
         AZStd::string m_reason;
-    };
 
-    // The existing contract preserves deployment.preview_only in the displayed
-    // blocker collection as a safety notice. It is not a fail-closed handoff
-    // blocker. Iteration and size() retain every entry, while empty() reports
-    // whether any actual blocking entry remains for downstream slice gating.
-    class AdapterDeploymentPreviewBlockers final
-        : public AZStd::vector<AdapterDeploymentPreviewBlocker>
-    {
-    public:
-        using AZStd::vector<AdapterDeploymentPreviewBlocker>::vector;
-
-        bool empty() const
-        {
-            for (const AdapterDeploymentPreviewBlocker& blocker : *this)
-            {
-                if (blocker.m_code != "deployment.preview_only")
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
+        // True means the finding prevents downstream work-order generation.
+        // False preserves a visible safety notice without disguising it through
+        // container semantics.
+        bool m_blocksProgression = true;
     };
 
     struct AdapterStagingDeploymentPreviewRequest
@@ -217,13 +199,16 @@ namespace TaintedGrailModdingSDK
         AZStd::vector<AdapterDeploymentConflict> m_conflicts;
         AZStd::vector<AdapterDeploymentBackupRequirement> m_backups;
         AZStd::vector<AdapterDeploymentRollbackStep> m_rollbackSteps;
-        AdapterDeploymentPreviewBlockers m_blockers;
+        AZStd::vector<AdapterDeploymentPreviewBlocker> m_blockers;
         AZStd::string m_canonicalJson;
         bool m_stagingMutationAllowed = false;
         bool m_deploymentMutationAllowed = false;
         bool m_rollbackExecutionAllowed = false;
         bool m_launchAllowed = false;
     };
+
+    bool HasBlockingDeploymentPreviewFinding(
+        const AdapterStagingDeploymentPreview& preview);
 
     class AdapterStagingDeploymentPreviewRegistry
     {
