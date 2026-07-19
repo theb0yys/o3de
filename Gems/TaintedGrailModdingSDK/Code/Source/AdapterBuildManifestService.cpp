@@ -17,6 +17,15 @@
 #include <locale>
 #include <sstream>
 
+#define IsSafeRelativePath LegacyBuildManifestIsSafeRelativePath
+#define PathIsInsideRoot LegacyBuildManifestPathIsInsideRoot
+#define HasDuplicateOutputPaths LegacyBuildManifestHasDuplicateOutputPaths
+#define SortOutputs LegacyBuildManifestSortOutputs
 #include "AdapterBuildManifestServicePart1.inl"
+#undef SortOutputs
+#undef HasDuplicateOutputPaths
+#undef PathIsInsideRoot
+#undef IsSafeRelativePath
+#include "AdapterBuildManifestPathPolicy.inl"
 #include "AdapterBuildManifestServicePart2.inl"
 #include "AdapterBuildManifestServicePart3.inl"
