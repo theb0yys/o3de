@@ -8,6 +8,8 @@
 #include "AdapterPostDeploymentVerifierEvidenceService.h"
 
 #include "AdapterContractRegistry.h"
+#include "AdapterPostDeploymentVerifierResultCanonical.h"
+#include "CanonicalFingerprint.h"
 #include "ResearchContractValidation.h"
 
 #include <AzCore/std/algorithm.h>
