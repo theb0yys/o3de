@@ -208,7 +208,6 @@ def validate_pipeline_handoffs_and_evidence(repo_root: Path) -> None:
         staging_service,
         (
             'if (code == "deployment.preview_only")',
-            "return;",
             "#define AddBlocker AddDeploymentPreviewFinding",
         ),
         "Ready-preview handoff",
@@ -287,9 +286,9 @@ def validate_reconciliation_and_release(repo_root: Path) -> None:
             "SameStableIdSet(",
             "m_candidateSourceIds",
             "m_candidateEvidenceIds",
-            'AppendReconciliationJsonStringArray(\n                output,\n                "CandidateSourceIds"',
-            'AppendReconciliationJsonStringArray(\n                output,\n                "CandidateEvidenceIds"',
-            "EvidenceBoundToFinding",
+            '"CandidateSourceIds"',
+            '"CandidateEvidenceIds"',
+            "EvidenceIdsSupportFinding",
             "flags.m_reviewMissing",
         ),
         "Verifier reconciliation",
@@ -349,7 +348,7 @@ def validate_catalog_planning_and_paths(repo_root: Path) -> None:
         source_root + "AdapterWorkOrderPlanningServicePart3.inl",
     ) + read(
         repo_root,
-        source_root + "AdapterWorkOrderPlanningServicePart4.inl",
+        source_root + "AdapterWorkOrderPlanningServicePart5.inl",
     ) + read(
         repo_root,
         source_root + "AdapterWorkOrderPlanningServicePart8.inl",
@@ -362,7 +361,9 @@ def validate_catalog_planning_and_paths(repo_root: Path) -> None:
             "HasOpenRelationshipBlocker",
             '"relationship:" + relationship.m_relationshipId',
             "CollectRelationshipValidationProof",
-            "FindEffectiveGovernanceEvent",
+            "FindEffectivePermissionEvent",
+            '"economy-recipe-ingredient:" + ingredient.m_linkId',
+            '"economy-recipe-output:" + output.m_linkId',
         ),
         "Planning and blocker evaluation",
     )
