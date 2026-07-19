@@ -281,7 +281,7 @@ def validate_adapter_work_order_plans(repo_root: Path) -> None:
             "transient",
             "ExecutionAllowed",
             "No runtime execution",
-            "runtime-result evidence envelope",
+            "runtime-result evidence",
         ),
         "Work-order planning design",
     )
@@ -303,7 +303,7 @@ def validate_adapter_work_order_plans(repo_root: Path) -> None:
         (
             "Deterministic work-order plan generation",
             "Status: implemented, continuing hardening and Windows UI verification.",
-            "runtime-result evidence envelope",
+            "Runtime-result evidence envelope",
         ),
         "Roadmap",
     )

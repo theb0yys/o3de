@@ -164,7 +164,8 @@ Exit criteria:
 
 #### Remaining economy work
 
-- extend typed planning contracts as later domain tools become implemented.
+- Historical ordering rule: work-order generation after adapter contracts exist.
+- Extend typed planning contracts as later domain tools become implemented.
 
 ### Actors and population
 
@@ -211,6 +212,8 @@ Status: implemented, continuing hardening and Windows UI verification.
 - Focused Core tests, static validator, CI integration, public documentation, and Windows manual UI coverage.
 - No runtime adapter implementation, BepInEx/Harmony execution, process access, deployment, game launch, save mutation, or work-order execution.
 
+The Slice 8 ordering described deterministic work-order generation as plans only.
+
 Exit criteria:
 
 - malformed IDs, versions, runtime targets, and duplicate capabilities fail at the typed registry boundary;
@@ -253,11 +256,38 @@ Exit criteria:
 - the Editor pane remains non-editable and exposes no save, export, dispatch, execution, deployment, launch, or adapter-registration control;
 - the Windows manual UI checklist includes all ten panes and the default no-declaration refusal state.
 
-### Next ordered slice — runtime-result evidence envelope
+### Runtime-result evidence envelope
 
-Define typed attempted-plan and attempted-step identities, outcomes, failures, cleanup and rollback results, log references, and fingerprints returned as new evidence.
+Status: implemented, continuing hardening and Windows UI verification.
 
-The envelope must not silently promote validation or permission. No actual FoA adapter implementation or execution is authorised by the contract itself.
+- Typed attempted-plan and attempted-step identities bound to exact canonical work-order plans.
+- Exact step sequence, capability, subject kind, subject ID, and subject-reference matching.
+- Typed `not_attempted`, `succeeded`, `failed`, and `skipped` outcomes with explicit attempted state.
+- Typed contract, capability, runtime, persistence, cleanup, rollback, and unknown failures.
+- Exact cleanup and rollback summaries that must match their corresponding canonical step results.
+- Safe relative log references with typed log kinds and lowercase SHA-256 fingerprints.
+- Exact plan, result, step-output, and log fingerprints.
+- Fail-closed rejection for missing, duplicate, unknown, or changed plan/step/failure/log bindings.
+- Candidate source and evidence documents returned by value for step results, failures, cleanup, rollback, plan binding, and referenced log fingerprints.
+- Transient `AdapterRuntimeResultRegistry` cleared on Editor shutdown.
+- Read-only **Tainted Grail Adapter Runtime Result Evidence** pane.
+- Production-linked tests, focused static validation, negative validator tests, CI, documentation, and eleven-pane Windows UI coverage.
+- No automatic source/evidence registration, persistence, catalog promotion, validation, permission, adapter call, process access, deployment, launch, telemetry, or save mutation.
+
+Exit criteria:
+
+- every accepted envelope binds to one exact generated plan and exactly one result for every plan step;
+- attempted-plan and attempted-step identities cannot drift from canonical JSON;
+- failed and skipped outcomes carry typed failures, while succeeded outcomes carry output fingerprints;
+- cleanup and rollback summaries match the corresponding step result exactly;
+- log references remain safe, relative, fingerprinted, and bound to known steps;
+- accepted envelopes return new evidence candidates without importing, publishing, validating, or permitting them;
+- malformed or mismatched envelopes return deterministic issues and no evidence candidates;
+- result validation and evidence return do not mutate plans, envelopes, registries, sources, catalogs, governance, or blockers;
+- the Editor pane is non-editable and exposes no input, import, save, execution, deployment, or launch control;
+- the Windows manual UI checklist includes all eleven panes and the default zero-envelope state.
+
+No actual FoA adapter implementation or execution path is introduced or authorised by this contract.
 
 ## Phase 8 — Build, package, deploy, and test
 

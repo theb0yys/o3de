@@ -125,11 +125,13 @@ Production-linked tests cover:
 
 The focused validator rejects runtime/process code, persistence or export paths, mutable UI controls, weakened all-capability gating, missing canonical sorting, incomplete tests, and missing documentation.
 
-## Next ordered slice
+## Slice 10 runtime-result evidence
 
-The next Phase 7 slice is a typed runtime-result evidence envelope: attempted plan and step identities, outcomes, failure details, cleanup and rollback results, log references, and fingerprints returned as new evidence.
+Slice 10 implements the typed runtime-result evidence contract described by the earlier next ordered slice. It binds externally supplied attempted-plan and attempted-step identities back to this exact canonical plan, validates typed outcomes, failures, cleanup, rollback, safe log references, and fingerprints, and returns candidate source/evidence documents.
 
-That contract does not silently promote permission. An actual runtime adapter and execution remain separately gated future work.
+The runtime-result evidence contract has no execution path. It does not save or dispatch a plan, call an adapter, read a log, import evidence automatically, or promote validation or permission.
+
+See [FoA Adapter Runtime Result Evidence Contract](FOA_ADAPTER_RUNTIME_RESULT_EVIDENCE.md).
 
 ## Rollback
 

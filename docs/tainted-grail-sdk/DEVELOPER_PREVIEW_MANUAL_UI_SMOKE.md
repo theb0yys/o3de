@@ -8,13 +8,15 @@ This checklist proves the source-built Tainted Grail SDK panes are usable in a *
 
 The accepted evidence must be tied to the **exact source commit** being reviewed. Do not reuse screenshots from an older commit.
 
+Historical acceptance contracts referred to **All eight TG SDK panes**, **All nine TG SDK panes**, and **All ten TG SDK panes** as Slices 7, 8, and 9 were added. The current Slice 10 pass requires **All eleven TG SDK panes**.
+
 ## Safety and privacy boundary
 
 Use only the project-owned synthetic Developer Preview 0 fixture and the project-owned duplicate-review companion. Do not display or capture:
 
 - proprietary game files, assets, saves, identifiers, or screenshots;
 - credentials, tokens, user names, private absolute paths, or unrelated desktop content;
-- FoA, BepInEx, Harmony, Avalon Core, runtime adapters, work-order execution, deployment, injection, or save-mutation tooling.
+- FoA, BepInEx, Harmony, Avalon Core, runtime adapters, work-order execution, runtime-result capture, deployment, injection, or save-mutation tooling.
 
 The evidence tool does not capture the screen and does not inspect screenshot pixels. The tester must review each image before attaching it.
 
@@ -53,7 +55,7 @@ Copy-Item `
 
 The canonical fixture verifier intentionally covers the unchanged generated fixture only. The copied companion is separately repository-owned and must match the reviewed source commit. Follow `Gems/TaintedGrailModdingSDK/Preview/DuplicateReview/README.md` during the duplicate-report step.
 
-No adapter declaration is registered by the preview fixture. The expected Adapter Capability Matrix state is therefore deterministic `unsupported` rows, and the expected Adapter Work-Order Plans state is a refused candidate for each loaded pack with zero generated steps.
+No adapter declaration is registered by the preview fixture. The expected Adapter Capability Matrix state is deterministic `unsupported` rows, the expected Adapter Work-Order Plans state is a refused candidate for each loaded pack with zero generated steps, and the expected Adapter Runtime Result Evidence state is **zero registered runtime-result envelopes**.
 
 ## Launch the Editor
 
@@ -98,9 +100,10 @@ From **Tools → Tainted Grail SDK**, open:
 - Tainted Grail Economy Acquisition Coverage;
 - Tainted Grail Economy Cross-Pack Duplicates;
 - Tainted Grail Adapter Capability Matrix;
-- Tainted Grail Adapter Work-Order Plans.
+- Tainted Grail Adapter Work-Order Plans;
+- Tainted Grail Adapter Runtime Result Evidence.
 
-Confirm every pane opens without an error and remains interactive. **All ten TG SDK panes** must be present.
+Confirm every pane opens without an error and remains interactive. **All eleven TG SDK panes** must be present.
 
 Record:
 
@@ -109,7 +112,7 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview_ui_evidence.py record
   --output build/tg-sdk-developer-preview-0-ui-evidence `
   --check all-panes-open `
   --status pass `
-  --notes "All ten TG SDK panes opened from the Tools menu."
+  --notes "All eleven TG SDK panes opened from the Tools menu."
 ```
 
 Screenshot required.
@@ -131,7 +134,7 @@ Use `Tab`, `Shift+Tab`, arrow keys, and activation keys where appropriate. Confi
 
 A screenshot is not mandatory because focus traversal is temporal, but detailed notes are required.
 
-### 4. Preview workspace, economy analyses, adapter readiness, and plans
+### 4. Preview workspace, economy analyses, adapter readiness, plans, and result evidence
 
 Open the generated synthetic workspace after the companion pack has been copied. Confirm both owner packs load:
 
@@ -163,8 +166,10 @@ Confirm:
 - the Adapter Work-Order Plans pane shows **one refused plan group and zero generated steps** for each loaded pack;
 - the refusal displays failed capabilities, compatibility statuses, subjects, and reasons;
 - no canonical JSON is presented as executable, and no plan or step reports execution as allowed;
-- no adapter declaration, registration, plan save/export/dispatch, execution, deployment, launch, or save control exists;
-- all four analysis and planning panes remain **non-editable**.
+- the Adapter Runtime Result Evidence pane shows **zero registered runtime-result envelopes**, zero accepted/rejected contracts, and zero candidate source/evidence records;
+- outcome, failure, cleanup/rollback, logs/fingerprints, evidence-candidate, and issue columns are visible;
+- no runtime-result file picker, registration, import, save, promotion, dispatch, execution, deployment, launch, or save-mutation control exists;
+- all five analysis, planning, and result-evidence panes remain **non-editable**.
 
 Record this observation under `preview-data-displayed`. Screenshot required.
 
@@ -215,7 +220,8 @@ Also confirm:
 
 - the Adapter Capability Matrix returns to the same deterministic `unsupported` state after relaunch because its declaration registry is transient;
 - the Adapter Work-Order Plans pane deterministically rebuilds the same refused candidates with zero generated steps;
-- no adapter declaration or work-order plan file appears in the workspace.
+- the Adapter Runtime Result Evidence pane returns to zero envelopes because its registry is transient;
+- no adapter declaration, work-order plan, or runtime-result file appears in the workspace.
 
 Screenshot required after reopen.
 
@@ -229,7 +235,7 @@ Screenshot required.
 
 ### 9. Runtime boundary remains absent
 
-Inspect every TG SDK pane and confirm no runtime, deployment, injection, save-mutation, plan save/export/dispatch/execution, adapter loading/registration, automatic duplicate merge, pack rejection, or winner-selection action is exposed.
+Inspect every TG SDK pane and confirm no runtime, deployment, injection, save-mutation, plan save/export/dispatch/execution, result capture/import/promotion, adapter loading/registration, automatic duplicate merge, pack rejection, or winner-selection action is exposed.
 
 Record detailed notes. A screenshot is optional because absence is established across the full pass, not by a single image.
 
@@ -245,8 +251,8 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview_ui_evidence.py attach
   --screenshot C:\Evidence\catalog-and-governance.png `
   --check all-panes-open `
   --check preview-data-displayed `
-  --title "Catalog, economy analysis, adapter capability, and work-order plan panes" `
-  --description "Project-owned synthetic preview data with fail-closed adapter rows and refused plans." `
+  --title "Catalog, economy, adapter, planning, and result-evidence panes" `
+  --description "Synthetic preview data with fail-closed adapter rows, refused plans, and zero result envelopes." `
   --privacy-reviewed `
   --project-owned-only
 ```

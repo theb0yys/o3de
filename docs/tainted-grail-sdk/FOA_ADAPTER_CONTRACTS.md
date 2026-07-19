@@ -165,4 +165,8 @@ Slice 9 implements deterministic canonical work-order plans from reviewed catalo
 
 Plans remain transient and execution remains prohibited. They cannot be saved, exported, dispatched, deployed, or run. See [FoA Adapter Work-Order Plans](FOA_ADAPTER_WORK_ORDER_PLANS.md).
 
-The next ordered contract is a runtime-result evidence envelope. Runtime results, when a later real adapter exists, must return as new evidence rather than silently changing validation or permission.
+## Slice 10
+
+Slice 10 implements the runtime-result evidence envelope. It validates externally supplied attempted plan and step identities, typed outcomes and failures, cleanup and rollback summaries, safe log references, and fingerprints against one exact canonical plan.
+
+Accepted runtime-result contracts return candidate source/evidence documents only. They do not silently change validation or permission, remove blockers, register evidence, persist files, invoke an adapter, or create an execution path. See [FoA Adapter Runtime Result Evidence](FOA_ADAPTER_RUNTIME_RESULT_EVIDENCE.md).

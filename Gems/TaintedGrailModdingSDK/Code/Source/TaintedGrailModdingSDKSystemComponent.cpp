@@ -9,6 +9,8 @@
 
 #include "AdapterCapabilityMatrixWidget.h"
 #include "AdapterContractRegistry.h"
+#include "AdapterRuntimeResultContracts.h"
+#include "AdapterRuntimeResultEvidenceWidget.h"
 #include "AdapterWorkOrderPlanWidget.h"
 #include "CatalogBrowserWidget.h"
 #include "CatalogGovernanceWidget.h"
@@ -44,6 +46,8 @@ namespace TaintedGrailModdingSDK
         constexpr const char* EconomyDuplicateReportViewPaneName = "Tainted Grail Economy Cross-Pack Duplicates";
         constexpr const char* AdapterCapabilityMatrixViewPaneName = "Tainted Grail Adapter Capability Matrix";
         constexpr const char* AdapterWorkOrderPlanViewPaneName = "Tainted Grail Adapter Work-Order Plans";
+        constexpr const char* AdapterRuntimeResultEvidenceViewPaneName =
+            "Tainted Grail Adapter Runtime Result Evidence";
     }
 
     void TaintedGrailModdingSDKSystemComponent::Reflect(AZ::ReflectContext* context)
@@ -73,7 +77,7 @@ namespace TaintedGrailModdingSDK
         if (auto* serializeContext = azrtti_cast<AZ::SerializeContext*>(context))
         {
             serializeContext->Class<TaintedGrailModdingSDKSystemComponent, AZ::Component>()
-                ->Version(8);
+                ->Version(9);
         }
     }
 
@@ -113,9 +117,11 @@ namespace TaintedGrailModdingSDK
             AzToolsFramework::UnregisterViewPane(EconomyDuplicateReportViewPaneName);
             AzToolsFramework::UnregisterViewPane(AdapterCapabilityMatrixViewPaneName);
             AzToolsFramework::UnregisterViewPane(AdapterWorkOrderPlanViewPaneName);
+            AzToolsFramework::UnregisterViewPane(AdapterRuntimeResultEvidenceViewPaneName);
             m_viewRegistered = false;
         }
 
+        AdapterRuntimeResultRegistry::Get().Clear();
         AdapterContractRegistry::Get().Clear();
         AzToolsFramework::EditorEvents::Bus::Handler::BusDisconnect();
         FoundationService::Get().Shutdown();
@@ -238,6 +244,18 @@ namespace TaintedGrailModdingSDK
             AdapterWorkOrderPlanViewPaneName,
             "Tainted Grail SDK",
             workOrderPlanOptions);
+
+        AzToolsFramework::ViewPaneOptions runtimeResultOptions;
+        runtimeResultOptions.paneRect = QRect(300, 300, 1380, 960);
+        runtimeResultOptions.preferedDockingArea = Qt::BottomDockWidgetArea;
+        runtimeResultOptions.isDeletable = true;
+        runtimeResultOptions.isPreview = true;
+        runtimeResultOptions.saveKeyName =
+            QStringLiteral("TaintedGrailModdingSDK.AdapterRuntimeResultEvidence");
+        AzToolsFramework::RegisterViewPane<AdapterRuntimeResultEvidenceWidget>(
+            AdapterRuntimeResultEvidenceViewPaneName,
+            "Tainted Grail SDK",
+            runtimeResultOptions);
 
         m_viewRegistered = true;
     }
