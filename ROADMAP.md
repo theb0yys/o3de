@@ -302,9 +302,38 @@ Exit criteria:
 - the Editor pane remains non-editable and exposes no verifier, import, promotion, deployment, rollback, launch, archive, signing, publication, or adapter action;
 - the Windows manual UI checklist includes all seventeen panes and the default zero-post-deployment-report state.
 
-### Next ordered slice — independent post-deployment verifier contract
+### Independent post-deployment verifier contract
 
-Define a separately reviewed verifier identity, exact input binding, deterministic result envelope, failures, and safe diagnostics for independent checking of the deployed target. The contract must not launch FoA, deploy or mutate files, call a runtime adapter, promote evidence, sign an archive, or publish a release.
+Status: implemented, continuing hardening and Windows UI verification.
+
+- Bind one exact current structurally eligible post-deployment report, typed status, deterministic canonical JSON, execution-result identity/fingerprint, work-order identity/fingerprint, and exact profile/game/branch/runtime context.
+- Require one accepted evidence-backed review of the separately supplied verifier with stable identity, strict semantic version, lowercase SHA-256 fingerprint, named reviewer, UTC review time, and unique required capabilities.
+- Require exactly one check for every canonical add, replace, and remove work-order step with exact sequence, target path, expected presence, and expected fingerprint.
+- Preserve typed `not_run`, `matched`, `mismatched`, `failed`, and `inconclusive` outcomes, attempted and observation-recorded state, observed presence/fingerprint, and UTC check time.
+- Require reciprocal same-check failures and safe fingerprinted diagnostics for failed and inconclusive checks.
+- Deterministic `report_not_ready`, `verifier_unreviewed`, `report_binding_mismatch`, `envelope_invalid`, `check_coverage_incomplete`, `failure_diagnostic_binding_mismatch`, `observation_mismatch`, and `accepted` states.
+- Keep complete observation mismatches structurally contract-valid while distinguishing them from all-matched `accepted` results.
+- Return candidate source/evidence documents by value for report binding, verifier review, checks, failures, and diagnostics without automatic promotion.
+- Transient `AdapterPostDeploymentVerifierResultRegistry` and read-only **Tainted Grail Independent Post-Deployment Verifier Results** pane.
+- Public contract documentation and eighteen-pane Windows manual UI coverage.
+- **No verifier discovery or execution, target filesystem access, deployment mutation, FoA launch, adapter call, evidence promotion, archive signing, or release publication** is implemented or authorised.
+
+Exit criteria:
+
+- only an exact current eligible report and accepted capability-complete verifier review can reach a structurally valid result;
+- every canonical mutation step has exactly one exact independent check and no unknown, duplicate, missing, or extra check can pass;
+- matched observations reproduce the exact expected target state while mismatched observations actually differ;
+- not-run checks remain distinct from failed and inconclusive attempts;
+- failures and diagnostics are stable, safe, unique, reciprocal, same-check bound, and non-orphaned;
+- structurally valid observation mismatches return candidate evidence but never become `accepted`;
+- equivalent inputs produce identical canonical report JSON, statuses, issue ordering, candidate identities, and evidence ordering;
+- validation and evidence return do not mutate work orders, execution results, reports, verifier envelopes, or registries;
+- the Editor pane remains non-editable and exposes no verifier, filesystem, deployment, launch, adapter, promotion, archive, signing, publication, or release action;
+- the Windows manual UI checklist includes all eighteen panes and the default zero-independent-verifier-envelope state.
+
+### Next ordered slice — verifier evidence reconciliation and release-decision envelope
+
+Reconcile one exact post-deployment report with one structurally valid independent-verifier evidence return into explicit compatibility and release-decision states. The envelope must preserve existing blockers and adverse verifier observations, require human review, and must not execute a verifier, mutate files, launch FoA, call an adapter, promote evidence, sign an archive, or publish a release.
 
 Controlled pipeline:
 
@@ -312,7 +341,7 @@ Controlled pipeline:
 validate → generate → build → package → deploy → launch → capture → attach evidence
 ```
 
-Remaining Phase 8 work includes controlled package assembly, trusted filesystem inventory and hashing, trusted identity/time providers, acknowledgement/signing, actual backup/restore and deployment implementations, independent result verification, release archives, checksums, and separately reviewed runtime adapters.
+Remaining Phase 8 work includes controlled package assembly, trusted filesystem inventory and hashing, trusted identity/time providers, acknowledgement/signing, actual backup/restore and deployment implementations, actual independent verifier execution and target access, verifier evidence reconciliation, release archives, checksums, and separately reviewed runtime adapters.
 
 ## Phase 9 — Ecosystem and automation
 
