@@ -10,6 +10,17 @@ set(FILES
     Source/AdapterCompatibilityService.h
     Source/AdapterContractRegistry.cpp
     Source/AdapterContractRegistry.h
+    Source/AdapterWorkOrderPlanningService.cpp
+    Source/AdapterWorkOrderPlanningServicePart1.inl
+    Source/AdapterWorkOrderPlanningServicePart2.inl
+    Source/AdapterWorkOrderPlanningServicePart3.inl
+    Source/AdapterWorkOrderPlanningServicePart4.inl
+    Source/AdapterWorkOrderPlanningServicePart5.inl
+    Source/AdapterWorkOrderPlanningServicePart6.inl
+    Source/AdapterWorkOrderPlanningServicePart7.inl
+    Source/AdapterWorkOrderPlanningServicePart8.inl
+    Source/AdapterWorkOrderPlanningServicePart9.inl
+    Source/AdapterWorkOrderPlanningService.h
     Source/CatalogDatabase.cpp
     Source/CatalogDatabase.h
     Source/CatalogGovernanceBlockerService.cpp

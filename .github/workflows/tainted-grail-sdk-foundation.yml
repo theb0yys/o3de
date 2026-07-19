@@ -99,6 +99,15 @@ jobs:
       - name: Validate adapter contract foundation
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_contracts.py
 
+      - name: Test adapter work-order plan validator
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_validate_adapter_work_order_plans.py" -v
+
+      - name: Validate adapter work-order plan contract
+        run: python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_work_order_plans.py
+
       - name: Test Developer Preview 0 command layer
         run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview.py" -v
 

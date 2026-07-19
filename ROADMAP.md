@@ -164,7 +164,7 @@ Exit criteria:
 
 #### Remaining economy work
 
-- work-order generation after adapter contracts exist.
+- extend typed planning contracts as later domain tools become implemented.
 
 ### Actors and population
 
@@ -209,7 +209,7 @@ Status: implemented, continuing hardening and Windows UI verification.
 - Transient Core declaration registry cleared on Editor shutdown.
 - Read-only **Tainted Grail Adapter Capability Matrix**.
 - Focused Core tests, static validator, CI integration, public documentation, and Windows manual UI coverage.
-- No runtime adapter implementation, BepInEx/Harmony execution, process access, deployment, game launch, save mutation, or work-order generation.
+- No runtime adapter implementation, BepInEx/Harmony execution, process access, deployment, game launch, save mutation, or work-order execution.
 
 Exit criteria:
 
@@ -223,18 +223,41 @@ Exit criteria:
 - the matrix remains read-only and exposes no registration, execution, work-order, deployment, launch, or save action;
 - the Windows manual UI checklist includes all nine panes and the no-declaration fail-closed state.
 
-### Next ordered slice — deterministic work-order generation
+### Deterministic work-order plan generation
 
-Slice 9 is deterministic work-order generation from reviewed catalog records against typed adapter contracts. It produces **plans only** and must not execute them.
+Status: implemented, continuing hardening and Windows UI verification.
 
-- Stable work-order identities and canonical subject bindings.
-- Required adapter identity, version, runtime target, and capability references.
-- Exact input evidence, permission evidence, and validation-proof references.
-- Deterministic ordering and canonical plan serialization.
-- Refusal when any compatibility row is not `supported`.
-- No process access, loader execution, deployment, game launch, save mutation, or runtime action.
+- Pure Core planning over exact packs, transient adapter declarations, the Slice 8 compatibility matrix, reviewed catalog subjects, source/evidence, governance history, and blockers.
+- Whole-plan refusal unless all eleven compatibility rows are `supported`.
+- Independent rebuilding of each exact subject's identity, permission, validation, evidence, relationship, target, typed payload, and blocker readiness.
+- Stable plan and step identities containing exact pack, adapter, profile, game-version, branch, runtime-target, capability, and subject bindings.
+- Record steps for governed item/recipe capabilities and relationship steps for vendor, loot, and reward capabilities.
+- Resolved current relationship targets and relationship validation proof.
+- Complete typed item/recipe payload arguments with exact input evidence.
+- Deterministic step order, one-based sequence numbers, sorted evidence/proof/argument collections, fixed JSON property order, escaping, and locale-independent numeric formatting.
+- Canonical JSON with `ExecutionAllowed: false` on the plan and every step.
+- Deterministic refusals containing failed capabilities, compatibility statuses, subjects, and reasons.
+- Read-only **Tainted Grail Adapter Work-Order Plans** pane.
+- Production-linked tests, focused static validator, validator negative tests, CI integration, public documentation, and ten-pane Windows UI coverage.
+- No plan persistence, export, dispatch, adapter call, code generation, process access, deployment, launch, telemetry, save mutation, or execution.
 
-Later runtime proof must return as new evidence, not silently promote validation or permission.
+Exit criteria:
+
+- one non-supported capability refuses the complete pack/adapter candidate;
+- aggregate compatibility cannot leak an independently unreviewed subject into a step;
+- custom-registration and recipe-append steps require complete typed payloads and exact evidence;
+- vendor, loot, and reward steps require resolved current targets and relationship validation proof;
+- equivalent reviewed inputs produce byte-identical canonical JSON;
+- plans and steps always retain `ExecutionAllowed: false`;
+- planning does not mutate packs, declarations, sources, evidence, catalog, governance, or blockers;
+- the Editor pane remains non-editable and exposes no save, export, dispatch, execution, deployment, launch, or adapter-registration control;
+- the Windows manual UI checklist includes all ten panes and the default no-declaration refusal state.
+
+### Next ordered slice — runtime-result evidence envelope
+
+Define typed attempted-plan and attempted-step identities, outcomes, failures, cleanup and rollback results, log references, and fingerprints returned as new evidence.
+
+The envelope must not silently promote validation or permission. No actual FoA adapter implementation or execution is authorised by the contract itself.
 
 ## Phase 8 — Build, package, deploy, and test
 

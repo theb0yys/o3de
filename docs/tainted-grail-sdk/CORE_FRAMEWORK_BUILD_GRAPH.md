@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted correction contract for Slice 5 and extended by Slices 6, 7, and 8. The build graph decomposes editor-side implementation into real targets without changing durable schemas, runtime permissions, deployment, game launch, or save behavior.
+Accepted correction contract for Slice 5 and extended by Slices 6, 7, 8, and 9. The build graph decomposes editor-side implementation into real targets without changing durable schemas, runtime permissions, deployment, game launch, or save behavior.
 
 ## Targets
 
@@ -15,6 +15,7 @@ Owns shared domain state and services that are free of Qt and host-tool dependen
 - governance types and governance blocker evaluation;
 - foundation validation, economy blocker evaluation, and immutable economy acquisition coverage and cross-pack duplicate analysis;
 - typed transient adapter declarations, strict semantic-version compatibility, capability evaluation, and permission/proof readiness analysis;
+- deterministic, canonical, execution-prohibited adapter work-order planning;
 - the source/evidence registry.
 
 Core depends publicly on `AZ::AzCore`. Core must not depend on Framework, Editor, Qt, AzToolsFramework, runtime adapters, deployment, or game APIs.
@@ -35,7 +36,7 @@ Framework depends publicly on Core and privately on the host-tool facilities nee
 
 Remains the Tool Gem module and owns only composition and presentation:
 
-- Qt widgets, including the read-only economy acquisition, duplicate-report, and adapter-capability matrix panes;
+- Qt widgets, including the read-only economy acquisition, duplicate-report, adapter-capability, and work-order-plan panes;
 - the Editor system component;
 - the Gem Editor module.
 
@@ -43,7 +44,7 @@ Editor depends privately on Framework. It does not recompile Core or Framework s
 
 ## Tests
 
-Tests link Framework and receive Core transitively. Test manifests contain test translation units only. Production `.cpp` files are compiled exactly once by Core, Framework, or Editor; tests do not compile private copies of production implementation files.
+Tests link Framework and receive Core transitively. Test manifests contain test translation units and included test fragments only. Production `.cpp` files are compiled exactly once by Core, Framework, or Editor; tests do not compile private copies of production implementation files.
 
 ## Dependency direction
 
@@ -71,6 +72,8 @@ Qt-dependent services are deliberately Framework-owned rather than being labelle
 
 The adapter declaration registry is deliberately transient Core state. It has no persistence service, document schema, filesystem path, loader integration, process access, or runtime implementation. Editor shutdown clears the registry.
 
+Work-order planning is also transient Core state. It reads immutable packs, declarations, catalog state, source/evidence, governance history, and blockers; returns plans or refusals by value; and performs no filesystem, persistence, process, deployment, launch, telemetry, or save operation.
+
 ## Enforcement
 
 `validate_core_framework_build_graph.py` fails when:
@@ -94,7 +97,17 @@ The adapter-contract validator additionally enforces:
 - transient declaration storage with no adapter persistence document;
 - exact profile-bound adapter, permission, and validation proof;
 - a non-editable matrix;
-- no work-order generation or runtime behavior in Slice 8.
+- no runtime behavior in the contract foundation.
+
+The work-order-plan validator additionally enforces:
+
+- all-eleven-capability support before a candidate can generate;
+- independent exact subject, permission, proof, payload, relationship, target, and blocker rebuilding;
+- stable plan and step identities;
+- canonical sorting and JSON serialization;
+- `ExecutionAllowed: false` at plan and step level;
+- no work-order persistence, export, dispatch, adapter invocation, runtime code, or mutable UI control;
+- production-linked failure, determinism, and non-mutation tests.
 
 ## Runtime boundary
 
@@ -102,4 +115,4 @@ No runtime adapter is added. No FoA, Unity, BepInEx, Harmony, deployment, inject
 
 ## Rollback
 
-Revert the implementing pull request. No durable documents or user state require migration because these slices change build ownership and add transient or derived read-only analysis only.
+Revert the implementing pull request. No durable documents or user state require migration because these slices change build ownership and add transient or derived read-only analysis and planning only.

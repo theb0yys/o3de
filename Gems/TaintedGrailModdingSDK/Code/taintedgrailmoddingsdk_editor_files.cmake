@@ -8,6 +8,8 @@
 set(FILES
     Source/AdapterCapabilityMatrixWidget.cpp
     Source/AdapterCapabilityMatrixWidget.h
+    Source/AdapterWorkOrderPlanWidget.cpp
+    Source/AdapterWorkOrderPlanWidget.h
     Source/CatalogBrowserWidget.cpp
     Source/CatalogBrowserWidget.h
     Source/CatalogGovernanceWidget.cpp

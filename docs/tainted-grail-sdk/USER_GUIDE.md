@@ -29,6 +29,7 @@ Run the repository validators first:
 python Gems/TaintedGrailModdingSDK/Tools/validate_foundation.py
 python Gems/TaintedGrailModdingSDK/Tools/validate_catalog_tests.py
 python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_contracts.py
+python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_work_order_plans.py
 ```
 
 After launching the O3DE Editor, open **Tools → Tainted Grail SDK**.
@@ -44,6 +45,7 @@ Current tools:
 - **Tainted Grail Economy Acquisition Coverage**
 - **Tainted Grail Economy Cross-Pack Duplicates**
 - **Tainted Grail Adapter Capability Matrix**
+- **Tainted Grail Adapter Work-Order Plans**
 
 ## Recommended workflow
 
@@ -60,7 +62,8 @@ Use the tools in this order:
 9. allow or forbid one named usage lane explicitly;
 10. review economy acquisition coverage and exact cross-pack duplicate candidates;
 11. review adapter capability, version, permission, and proof readiness;
-12. review the shared status window before downstream planning.
+12. review generated or refused canonical adapter work-order plans;
+13. review the shared status window before any later downstream work.
 
 ## Workspace and game profile
 
@@ -98,7 +101,7 @@ Configure:
 - diagnostics and extracted-data locations;
 - installed DLC/content scopes.
 
-Imported evidence, catalogs, validation events, governance decisions, and adapter evidence are bound to the exact active profile. Changing profiles does not re-authorise older data.
+Imported evidence, catalogs, validation events, governance decisions, adapter evidence, and work-order plans are bound to the exact active profile. Changing profiles does not re-authorise older data.
 
 ### Apply and save
 
@@ -123,7 +126,7 @@ A pack requires:
 - content, asset, and localisation declarations;
 - build configuration and release channel.
 
-`RequiredAdapterVersion` is the pack’s minimum adapter contract version. Slice 8 interprets it through a conservative semantic-version policy: the declared adapter must be at least that version, use the same major version, and use the same minor version while the major version is zero.
+`RequiredAdapterVersion` is the pack’s minimum adapter contract version. The typed adapter contract interprets it through a conservative semantic-version policy: the declared adapter must be at least that version, use the same major version, and use the same minor version while the major version is zero.
 
 Synthetic catalog records require an existing pack owner. Do not reuse native game identities for custom content.
 
@@ -335,7 +338,7 @@ The report does not merge records, reject a pack, choose a winner, author govern
 
 Open **Tainted Grail Adapter Capability Matrix** to inspect Phase 7 readiness across packs, typed adapter declarations, the active runtime target, catalog permissions, validation proof, and adapter evidence.
 
-Slice 8 defines these capabilities:
+The typed capabilities are:
 
 - `item_grant`;
 - `recipe_learn`;
@@ -359,9 +362,33 @@ The matrix statuses are:
 
 The evaluation order is support, version, permission, proof, then `supported`. A more fundamental failure therefore cannot be hidden by a later proof state.
 
-The adapter declaration registry is transient and cleared when the Editor shuts down. There is no adapter declaration document or registration control in Slice 8. With no declaration registered, the matrix deliberately shows `unsupported` rows for all eleven capabilities for each pack.
+The adapter declaration registry is transient and cleared when the Editor shuts down. There is no adapter declaration document or registration control. With no declaration registered, the matrix deliberately shows `unsupported` rows for all eleven capabilities for each pack.
 
-**`supported` means contract readiness only.** It does not load or execute an adapter, generate a work order, deploy files, launch FoA, or mutate a save.
+**`supported` means contract readiness only.** It does not load or execute an adapter, deploy files, launch FoA, or mutate a save.
+
+## Adapter work-order plans
+
+Open **Tainted Grail Adapter Work-Order Plans** after reviewing the capability matrix.
+
+The pane derives one candidate for each exact pack and transient adapter declaration. A plan is **generated** only when all eleven compatibility rows are `supported` and every exact catalog subject independently passes identity, permission, validation, evidence, relationship, target, typed-payload, and blocker checks.
+
+A candidate is **refused** when any compatibility row is not supported or any exact payload check fails. Refusal is whole-plan: the pane does not cherry-pick a partial set of steps.
+
+Generated plans show:
+
+- stable plan and step IDs;
+- exact pack, adapter/version, profile, game version, branch, and runtime target;
+- ordered record or relationship steps;
+- source records and resolved relationship targets;
+- sorted typed arguments;
+- input and adapter-declaration evidence;
+- permission event and permission evidence IDs;
+- validation proof IDs;
+- byte-deterministic canonical JSON.
+
+`ExecutionAllowed` is false on every plan and step. **Execution is prohibited.** The pane is non-editable and cannot save, export, dispatch, execute, deploy, launch, or invoke an adapter.
+
+With no transient adapter declaration, each loaded pack produces one refused plan group and zero generated steps. No work-order file is written to the workspace.
 
 ## Foundation status and blockers
 
@@ -399,7 +426,7 @@ MyWorkspace/
 └── Reports/
 ```
 
-There is no adapter declaration file in the workspace layout in Slice 8.
+There is no adapter declaration file or work-order plan file in the workspace layout.
 
 ## Safe-use rules
 
@@ -414,6 +441,7 @@ There is no adapter declaration file in the workspace layout in Slice 8.
 - Do not assume clearing staleness restores permission.
 - Do not treat a duplicate candidate group as an automatic merge or deletion instruction.
 - Do not treat a `supported` adapter row as permission to execute runtime behavior.
+- Do not treat generated canonical JSON as an executable or deployable artifact.
 - Review generated output before any future deployment.
 
 ## Troubleshooting
@@ -478,6 +506,15 @@ There is no adapter declaration file in the workspace layout in Slice 8.
 - confirm the subject remains validated, current, reference-complete, conflict-free, and non-superseded;
 - confirm the permission event and its validation IDs target that same record;
 - confirm all permission, validation, adapter identity, and capability evidence resolves to active-profile-bound sources.
+
+### Work-order candidate is refused
+
+- inspect every failed capability and compatibility status;
+- confirm all eleven matrix rows are `supported` for the same pack and adapter declaration;
+- confirm exact record, typed-profile, ingredient, output, relationship, and target evidence is present;
+- confirm vendor, loot, and reward relationships have resolved current target records and relationship validation proof;
+- resolve applicable open blockers;
+- do not attempt to bypass refusal by manually copying a partial step set.
 
 ## Getting help
 

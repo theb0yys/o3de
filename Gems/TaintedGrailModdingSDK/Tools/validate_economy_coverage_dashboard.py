@@ -33,6 +33,13 @@ def require_fragments(text: str, fragments: Iterable[str], label: str) -> None:
             )
 
 
+def require_any_fragment(text: str, fragments: Iterable[str], label: str) -> None:
+    if not any(fragment in text for fragment in fragments):
+        raise EconomyCoverageContractError(
+            f"{label} is missing every accepted progression fragment: {tuple(fragments)!r}."
+        )
+
+
 def reject_fragments(text: str, fragments: Iterable[str], label: str) -> None:
     for fragment in fragments:
         if fragment in text:
@@ -207,11 +214,12 @@ def validate_economy_coverage_dashboard(repo_root: Path) -> None:
     roadmap = read_text(repo_root / "ROADMAP.md")
     require_fragments(
         roadmap,
-        (
-            "Economy acquisition coverage dashboard",
-            "Economy cross-pack duplicate report",
-            "work-order generation after adapter contracts exist",
-        ),
+        ("Economy acquisition coverage dashboard", "Economy cross-pack duplicate report"),
+        "Roadmap",
+    )
+    require_any_fragment(
+        roadmap,
+        ("work-order generation after adapter contracts exist", "Deterministic work-order plan generation"),
         "Roadmap",
     )
 

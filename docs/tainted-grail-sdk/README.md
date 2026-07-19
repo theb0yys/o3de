@@ -18,6 +18,7 @@ This directory contains the public documentation for the TG SDK layer in this O3
 - [Economy Acquisition Coverage](ECONOMY_ACQUISITION_COVERAGE.md) — read-only vendor, loot, reward, learnability, and crafting coverage derived from canonical relationships, exact evidence binding, governance, and blockers.
 - [Economy Cross-Pack Duplicate Report](ECONOMY_CROSS_PACK_DUPLICATES.md) — exact cross-pack subject and recipe-key candidates, evidence health, governance state, blockers, and read-only review results.
 - [FoA Adapter Contracts](FOA_ADAPTER_CONTRACTS.md) — typed adapter identity, semantic versions, capabilities, permission/proof gates, and the read-only compatibility matrix.
+- [FoA Adapter Work-Order Plans](FOA_ADAPTER_WORK_ORDER_PLANS.md) — deterministic canonical plans and refusals from reviewed catalog records, with execution permanently disabled.
 - [Data Formats](DATA_FORMATS.md) — workspace, pack, source, evidence, issue, catalog, validation, governance-history, and typed-domain contracts.
 - [Support](../../SUPPORT.md) — where and how to ask for help.
 - [Security](../../SECURITY.md) — private reporting and secure-use guidance.
@@ -36,7 +37,8 @@ This directory contains the public documentation for the TG SDK layer in this O3
 - [Core and Framework Build Graph](CORE_FRAMEWORK_BUILD_GRAPH.md) — internal static targets, unique source ownership, dependency direction, test linkage, enforcement, and runtime boundary.
 - [Economy Acquisition Coverage Contract](ECONOMY_ACQUISITION_COVERAGE.md) — Core analysis ownership, lane/status semantics, evidence and blocker handling, determinism, non-mutation, and runtime boundary.
 - [Economy Cross-Pack Duplicate Contract](ECONOMY_CROSS_PACK_DUPLICATES.md) — exact signal semantics, pack gating, candidate health, determinism, non-mutation, and runtime boundary.
-- [FoA Adapter Contracts](FOA_ADAPTER_CONTRACTS.md) — Core registry and compatibility ownership, typed capability vocabulary, SemVer policy, proof ordering, and Slice 9 boundary.
+- [FoA Adapter Contracts](FOA_ADAPTER_CONTRACTS.md) — Core registry and compatibility ownership, typed capability vocabulary, SemVer policy, proof ordering, and planning boundary.
+- [FoA Adapter Work-Order Plans](FOA_ADAPTER_WORK_ORDER_PLANS.md) — all-capability gating, exact payload/proof rebuilding, stable identities, canonical JSON, refusal semantics, and execution prohibition.
 - [Architecture](ARCHITECTURE.md) — layers, responsibilities, invariants, and data flow.
 - [Governance Reliability Baseline](GOVERNANCE_HARDENING.md) — typed transitions, shared record/relationship logic, intrinsic audit atomicity, publish-after-save persistence, and required failure tests.
 - [Code Quality](CODE_QUALITY.md) — mandatory C++, Qt, persistence, UI, testing, and evidence standards.
@@ -80,6 +82,7 @@ The project is pre-alpha. Current implemented editor workflows cover:
 - typed item and recipe profiles, joins, station references, and acquisition relationships;
 - read-only action lanes, station/learnability evidence rows, economy acquisition coverage, and exact cross-pack duplicate candidate reports;
 - typed transient adapter declarations, semantic-version compatibility, capability/permission/proof evaluation, and a read-only adapter capability matrix;
+- deterministic transient adapter work-order plans and refusals with canonical JSON and execution disabled;
 - Developer Preview 0 prerequisite checks, configure/build wrapping, deterministic synthetic fixture, SHA-256 verification, and service-level load/save/reopen smoke coverage;
 - canonical workspace and pack path enforcement with component containment and filesystem-link escape rejection;
 - dedicated `TaintedGrailModdingEditor` O3DE project with `TaintedGrailModdingSDK` enabled and project-owned PNG/ICO assets;
@@ -89,7 +92,7 @@ The project is pre-alpha. Current implemented editor workflows cover:
 - explicit local diagnostics collection with path/secret redaction, allow-listed files, log excerpts, workspace-relative hashes, manifest verification, and no automatic upload;
 - Windows manual UI checklist and screenshot-evidence tooling with exact-commit binding, PNG hashes, required coverage, and privacy/runtime attestations.
 
-The actual Windows screenshot pass remains pending. Work-order generation, runtime adapters, production deployment, and remaining specialised domain tools are not complete.
+The actual Windows screenshot pass remains pending. Runtime-result evidence envelopes, runtime adapters, production deployment, and remaining specialised domain tools are not complete.
 
 ## Documentation contribution rules
 

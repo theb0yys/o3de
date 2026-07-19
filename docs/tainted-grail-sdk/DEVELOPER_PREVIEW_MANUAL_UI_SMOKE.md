@@ -53,7 +53,7 @@ Copy-Item `
 
 The canonical fixture verifier intentionally covers the unchanged generated fixture only. The copied companion is separately repository-owned and must match the reviewed source commit. Follow `Gems/TaintedGrailModdingSDK/Preview/DuplicateReview/README.md` during the duplicate-report step.
 
-Slice 8 does not register an adapter declaration. The expected Adapter Capability Matrix state for this manual pass is therefore the deterministic fail-closed no-declaration state.
+No adapter declaration is registered by the preview fixture. The expected Adapter Capability Matrix state is therefore deterministic `unsupported` rows, and the expected Adapter Work-Order Plans state is a refused candidate for each loaded pack with zero generated steps.
 
 ## Launch the Editor
 
@@ -97,9 +97,10 @@ From **Tools → Tainted Grail SDK**, open:
 - Tainted Grail Item and Recipe Editor;
 - Tainted Grail Economy Acquisition Coverage;
 - Tainted Grail Economy Cross-Pack Duplicates;
-- Tainted Grail Adapter Capability Matrix.
+- Tainted Grail Adapter Capability Matrix;
+- Tainted Grail Adapter Work-Order Plans.
 
-Confirm every pane opens without an error and remains interactive. **All nine TG SDK panes** must be present.
+Confirm every pane opens without an error and remains interactive. **All ten TG SDK panes** must be present.
 
 Record:
 
@@ -108,7 +109,7 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview_ui_evidence.py record
   --output build/tg-sdk-developer-preview-0-ui-evidence `
   --check all-panes-open `
   --status pass `
-  --notes "All nine TG SDK panes opened from the Tools menu."
+  --notes "All ten TG SDK panes opened from the Tools menu."
 ```
 
 Screenshot required.
@@ -130,7 +131,7 @@ Use `Tab`, `Shift+Tab`, arrow keys, and activation keys where appropriate. Confi
 
 A screenshot is not mandatory because focus traversal is temporal, but detailed notes are required.
 
-### 4. Preview workspace, economy analyses, and adapter readiness
+### 4. Preview workspace, economy analyses, adapter readiness, and plans
 
 Open the generated synthetic workspace after the companion pack has been copied. Confirm both owner packs load:
 
@@ -157,10 +158,13 @@ Confirm:
 - exact signal, exact match key, owner packs, canonical records, evidence, blockers, and status are visible;
 - same-pack repeats, case-different keys, and display-name similarity do not appear as duplicate groups;
 - the Adapter Capability Matrix lists all eleven typed capabilities for each loaded pack;
-- the matrix shows **unsupported rows when no adapter declaration is registered**;
+- the matrix shows `unsupported` rows when no adapter declaration is registered;
 - required adapter version, active runtime target, capability, status, and actionable reason are visible;
-- no adapter declaration, registration, work-order, execution, deployment, launch, or save control exists;
-- all three analysis panes remain **non-editable**.
+- the Adapter Work-Order Plans pane shows **one refused plan group and zero generated steps** for each loaded pack;
+- the refusal displays failed capabilities, compatibility statuses, subjects, and reasons;
+- no canonical JSON is presented as executable, and no plan or step reports execution as allowed;
+- no adapter declaration, registration, plan save/export/dispatch, execution, deployment, launch, or save control exists;
+- all four analysis and planning panes remain **non-editable**.
 
 Record this observation under `preview-data-displayed`. Screenshot required.
 
@@ -207,7 +211,11 @@ Confirm the reviewed state survives:
 - derived economy acquisition coverage rows and statuses;
 - the derived partial cross-pack duplicate group, exact key, candidate health, and status.
 
-Also confirm the Adapter Capability Matrix returns to the same deterministic `unsupported` state after relaunch because its declaration registry is transient and no declaration is registered.
+Also confirm:
+
+- the Adapter Capability Matrix returns to the same deterministic `unsupported` state after relaunch because its declaration registry is transient;
+- the Adapter Work-Order Plans pane deterministically rebuilds the same refused candidates with zero generated steps;
+- no adapter declaration or work-order plan file appears in the workspace.
 
 Screenshot required after reopen.
 
@@ -221,7 +229,7 @@ Screenshot required.
 
 ### 9. Runtime boundary remains absent
 
-Inspect every TG SDK pane and confirm no runtime, deployment, injection, save-mutation, work-order generation/execution, adapter loading/registration, automatic duplicate merge, pack rejection, or winner-selection action is exposed.
+Inspect every TG SDK pane and confirm no runtime, deployment, injection, save-mutation, plan save/export/dispatch/execution, adapter loading/registration, automatic duplicate merge, pack rejection, or winner-selection action is exposed.
 
 Record detailed notes. A screenshot is optional because absence is established across the full pass, not by a single image.
 
@@ -237,8 +245,8 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview_ui_evidence.py attach
   --screenshot C:\Evidence\catalog-and-governance.png `
   --check all-panes-open `
   --check preview-data-displayed `
-  --title "Catalog, economy analysis, and adapter-capability panes" `
-  --description "Project-owned synthetic preview data and fail-closed adapter rows in the O3DE Editor." `
+  --title "Catalog, economy analysis, adapter capability, and work-order plan panes" `
+  --description "Project-owned synthetic preview data with fail-closed adapter rows and refused plans." `
   --privacy-reviewed `
   --project-owned-only
 ```
