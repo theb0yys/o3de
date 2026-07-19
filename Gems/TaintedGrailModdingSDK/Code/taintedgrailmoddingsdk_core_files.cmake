@@ -20,6 +20,8 @@ set(FILES
     Source/AdapterDeploymentExecutionEvidenceServicePart1.inl
     Source/AdapterDeploymentExecutionEvidenceServicePart2.inl
     Source/AdapterDeploymentExecutionEvidenceServicePart3.inl
+    Source/AdapterDeploymentExecutionResultCanonical.cpp
+    Source/AdapterDeploymentExecutionResultCanonical.h
     Source/AdapterDeploymentExecutionResultContracts.cpp
     Source/AdapterDeploymentExecutionResultContracts.h
     Source/AdapterDeploymentWorkOrderService.cpp
@@ -48,6 +50,9 @@ set(FILES
     Source/AdapterPostDeploymentVerifierEvidenceServicePart3.inl
     Source/AdapterPostDeploymentVerifierEvidenceServicePart4.inl
     Source/AdapterPostDeploymentVerifierEvidenceServicePart5.inl
+    Source/AdapterPostDeploymentVerifierEvidenceServicePart6.inl
+    Source/AdapterPostDeploymentVerifierResultCanonical.cpp
+    Source/AdapterPostDeploymentVerifierResultCanonical.h
     Source/AdapterReleaseArtifactContracts.cpp
     Source/AdapterReleaseArtifactContracts.h
     Source/AdapterReleaseArtifactProvenanceService.cpp
@@ -58,6 +63,8 @@ set(FILES
     Source/AdapterReleaseAssemblyEvidenceService.h
     Source/AdapterReleaseAssemblyResultContracts.cpp
     Source/AdapterReleaseAssemblyResultContracts.h
+    Source/AdapterRuntimeResultCanonical.cpp
+    Source/AdapterRuntimeResultCanonical.h
     Source/AdapterRuntimeResultContracts.cpp
     Source/AdapterRuntimeResultContracts.h
     Source/AdapterRuntimeResultEvidenceService.cpp
@@ -91,6 +98,7 @@ set(FILES
     Source/AdapterWorkOrderPlanningService.h
     Source/CanonicalFingerprint.cpp
     Source/CanonicalFingerprint.h
+    Source/DeterministicContractJson.h
     Source/CatalogDatabase.cpp
     Source/CatalogDatabase.h
     Source/CatalogDatabaseIntegrity.cpp
@@ -112,6 +120,8 @@ set(FILES
     Source/FoundationModels.h
     Source/FoundationValidationService.cpp
     Source/FoundationValidationService.h
+    Source/PackagePathValidation.cpp
+    Source/PackagePathValidation.h
     Source/ResearchContractValidation.cpp
     Source/ResearchContractValidation.h
     Source/SourceEvidenceRegistry.cpp
