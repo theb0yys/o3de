@@ -107,6 +107,8 @@ set(FILES
     Source/FoundationModels.h
     Source/FoundationValidationService.cpp
     Source/FoundationValidationService.h
+    Source/ResearchContractValidation.cpp
+    Source/ResearchContractValidation.h
     Source/SourceEvidenceRegistry.cpp
     Source/SourceEvidenceRegistry.h
 )
