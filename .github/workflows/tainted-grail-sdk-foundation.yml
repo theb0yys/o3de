@@ -153,6 +153,15 @@ jobs:
       - name: Validate deployment confirmation/work-order contract
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_deployment_work_orders.py
 
+      - name: Test deployment execution-result validator
+        run: >-
+          python -m unittest discover
+          -s Gems/TaintedGrailModdingSDK/Tools/tests
+          -p "test_validate_adapter_deployment_execution_results.py" -v
+
+      - name: Validate deployment execution-result evidence contract
+        run: python Gems/TaintedGrailModdingSDK/Tools/validate_adapter_deployment_execution_results.py
+
       - name: Test Developer Preview 0 command layer
         run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview.py" -v
 
