@@ -50,6 +50,7 @@ set(FILES
     Source/AdapterPostDeploymentVerifierEvidenceServicePart3.inl
     Source/AdapterPostDeploymentVerifierEvidenceServicePart4.inl
     Source/AdapterPostDeploymentVerifierEvidenceServicePart5.inl
+    Source/AdapterPostDeploymentVerifierEvidenceServicePart6.inl
     Source/AdapterPostDeploymentVerifierResultCanonical.cpp
     Source/AdapterPostDeploymentVerifierResultCanonical.h
     Source/AdapterReleaseArtifactContracts.cpp
