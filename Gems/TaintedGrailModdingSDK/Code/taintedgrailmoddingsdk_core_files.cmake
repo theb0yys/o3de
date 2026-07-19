@@ -85,6 +85,8 @@ set(FILES
     Source/AdapterWorkOrderPlanningServicePart8.inl
     Source/AdapterWorkOrderPlanningServicePart9.inl
     Source/AdapterWorkOrderPlanningService.h
+    Source/CanonicalFingerprint.cpp
+    Source/CanonicalFingerprint.h
     Source/CatalogDatabase.cpp
     Source/CatalogDatabase.h
     Source/CatalogGovernanceBlockerService.cpp
