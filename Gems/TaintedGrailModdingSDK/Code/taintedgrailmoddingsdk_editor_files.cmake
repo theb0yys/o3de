@@ -6,6 +6,8 @@
 #
 
 set(FILES
+    Source/AdapterBuildManifestWidget.cpp
+    Source/AdapterBuildManifestWidget.h
     Source/AdapterCapabilityMatrixWidget.cpp
     Source/AdapterCapabilityMatrixWidget.h
     Source/AdapterRuntimeResultEvidenceWidget.cpp

@@ -291,6 +291,42 @@ No actual FoA adapter implementation or execution path is introduced or authoris
 
 ## Phase 8 — Build, package, deploy, and test
 
+Status: active development.
+
+### Reproducible adapter build manifests
+
+Status: implemented, continuing hardening and Windows UI verification.
+
+- Pure Core generation of a reproducible build definition for one exact canonical work-order plan.
+- Exact pack, adapter, profile, game-version, branch, runtime-target, Unity, and BepInEx bindings.
+- Stable builder identity/version, source commit, O3DE revision, configuration, target framework, compiler identity/version, deterministic-build, CI-normalisation, and path-map declarations.
+- BepInEx plugin GUID, name, version, safe `BepInEx/plugins/` package root, and typed hard/soft dependency metadata.
+- Required resolved materials for work-order plan, source tree, dependency lock, toolchain lock, and licence, each with safe relative locators and lowercase SHA-256 fingerprints.
+- Expected plugin binary, readme, changelog, manifest, and licence outputs constrained beneath the package root.
+- Explicit redistribution decisions that keep non-redistributable materials out of package contents.
+- Deterministic `plan_mismatch`, `toolchain_unresolved`, `input_missing`, `fingerprint_missing`, `path_invalid`, `redistribution_blocked`, and `ready` statuses.
+- Canonical JSON with fixed ordering and `BuildAllowed: false`.
+- Read-only **Tainted Grail Adapter Build Manifests** pane.
+- Production-linked tests, focused validator and negative tests, CI integration, public documentation, and twelve-pane Windows UI coverage.
+- No compilation, packaging, deployment, launch, or execution is introduced or authorised.
+
+Exit criteria:
+
+- a manifest cannot reinterpret a canonical plan for another pack, adapter, profile, branch, or runtime target;
+- exact toolchain and source revisions are required before a definition is `ready`;
+- required material roles and fingerprints remain distinct fail-closed gates;
+- all expected outputs remain safe relative paths beneath the declared BepInEx package root;
+- non-redistributable materials never enter declared package contents;
+- equivalent inputs produce byte-identical canonical JSON;
+- `BuildAllowed` remains false for every status, including `ready`;
+- manifest generation does not mutate plans, packs, profiles, declarations, materials, dependencies, or output declarations;
+- the Editor pane remains non-editable and exposes no save, export, build, package, deployment, launch, or execution action;
+- the Windows manual UI checklist includes all twelve panes and the default zero-ready-definition state.
+
+### Next ordered slice — deterministic package assembly preview
+
+Compare a reviewed build manifest with a project-owned staging inventory and derive a deterministic package layout, output digests, omissions, collisions, and redistribution blockers. The preview must not copy files, create archives, deploy content, launch FoA, or execute an adapter.
+
 Controlled pipeline:
 
 ```text

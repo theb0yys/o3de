@@ -6,6 +6,11 @@
 #
 
 set(FILES
+    Source/AdapterBuildManifestService.cpp
+    Source/AdapterBuildManifestService.h
+    Source/AdapterBuildManifestServicePart1.inl
+    Source/AdapterBuildManifestServicePart2.inl
+    Source/AdapterBuildManifestServicePart3.inl
     Source/AdapterCompatibilityService.cpp
     Source/AdapterCompatibilityService.h
     Source/AdapterContractRegistry.cpp
