@@ -7,6 +7,7 @@
 
 set(FILES
     Tests/AdapterContractTests.cpp
+    Tests/CanonicalFingerprintTests.cpp
     Tests/CatalogDatabaseTests.cpp
     Tests/CatalogGovernanceHardeningTests.cpp
     Tests/CatalogGovernanceServiceTests.cpp
