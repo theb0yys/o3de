@@ -7,6 +7,7 @@
 
 #include "AdapterPackageAssemblyPreviewService.h"
 
+#include "CanonicalFingerprint.h"
 #include "PackagePathValidation.h"
 
 #include <AzCore/std/algorithm.h>
