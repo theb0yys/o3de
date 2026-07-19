@@ -16,6 +16,8 @@ set(FILES
     Source/AdapterDeploymentWorkOrderWidget.h
     Source/AdapterPackageAssemblyPreviewWidget.cpp
     Source/AdapterPackageAssemblyPreviewWidget.h
+    Source/AdapterPostDeploymentVerificationWidget.cpp
+    Source/AdapterPostDeploymentVerificationWidget.h
     Source/AdapterRuntimeResultEvidenceWidget.cpp
     Source/AdapterRuntimeResultEvidenceWidget.h
     Source/AdapterStagingDeploymentPreviewWidget.cpp
