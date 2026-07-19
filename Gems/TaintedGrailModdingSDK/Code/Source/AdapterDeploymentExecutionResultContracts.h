@@ -192,6 +192,8 @@ namespace TaintedGrailModdingSDK
         AZStd::vector<AZStd::string> m_logReferenceIds;
     };
 
+    // Reuses Slice 13 enum class AdapterDeploymentRollbackAction with canonical values:
+    // "remove_added", "restore_replaced", and "restore_removed".
     struct AdapterDeploymentRollbackResult
     {
         AZStd::string m_rollbackResultId;
