@@ -42,6 +42,7 @@ VALIDATORS = (
     "validate_adapter_deployment_execution_results.py",
     "validate_release_artifact_contract.py",
     "validate_release_assembly_results.py",
+    "validate_release_signing_results.py",
     "validate_developer_preview.py",
     "validate_developer_preview_project.py",
     "validate_path_policy.py",
