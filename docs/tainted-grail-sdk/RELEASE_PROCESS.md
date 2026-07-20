@@ -26,7 +26,7 @@ Record:
 - supported operating systems, compilers, configuration, and dependency locks;
 - TG SDK schema versions;
 - supported FoA profile, Core, and adapter versions;
-- exact build manifest, package preview, staging/deployment preview, deployment work order, deployment execution-result envelope, **generated package contents**, and test/validation results;
+- exact build manifest, package preview, staging/deployment preview, deployment work order, deployment execution-result envelope, release-artifact envelope, accepted release-assembly/checksum result, release-signing result envelope, **generated package contents**, and test/validation results;
 - exact target-inventory review, additions, replacements, removals, conflicts, backups, rollback steps, confirmation, maintenance window, preflight evidence, operator checklist, backup, restore, target-verification, rollback, and log evidence, licence, notices, and redistribution decisions.
 
 ## Release readiness checklist
@@ -77,7 +77,7 @@ Record:
 
 Developer Preview and later Windows claims require completed **Windows manual UI evidence** for the **exact reviewed `main` commit**.
 
-Confirm every checklist item passed; Editor launch and activation log are confirmed; required screenshots are present; screenshot hashes, dimensions, and sizes verify; the tester completed the privacy attestation and runtime-boundary attestation; no game files, saves, credentials, runner tokens, or private paths are visible; and the verifier passed for the exact commit.
+Confirm every checklist item passed; Editor launch and activation log are confirmed; all twenty-two TG SDK panes are present; required screenshots are present; screenshot hashes, dimensions, and sizes verify; the tester completed the privacy attestation and runtime-boundary attestation; no game files, saves, credentials, runner tokens, or private paths are visible; and the verifier passed for the exact commit.
 
 Screenshots and evidence are review material and **must not be committed**.
 
@@ -106,6 +106,20 @@ After release-artifact metadata is `ready`, the SDK may validate a separately su
 - adverse or incomplete results remain visible and are not converted into successful release claims.
 
 An accepted result proves only that the supplied metadata passed the contract. The SDK does not read or hash package files, assemble or open an archive, generate a checksum, sign, upload, or publish. See [FoA Release Assembly and Checksum Results](FOA_RELEASE_ASSEMBLY_CHECKSUM_RESULTS.md).
+
+### Release-signing result evidence gate
+
+After release-assembly/checksum evidence is contract-valid and accepted, the SDK may validate a separately supplied external signing result only when:
+
+- the exact ready release artifact declares reviewed `sign_externally` intent;
+- the result binds to the exact release-artifact fingerprint, accepted assembly-result identity/fingerprint, successful archive identity/path/format/size/fingerprint, and release context;
+- the external signer has an accepted evidence-backed review with strict tool version, lowercase SHA-256 fingerprint, named reviewer, UTC review time, and archive-signing plus signature-artifact-fingerprint capabilities;
+- the result preserves the exact approved signing-intent identity, identity kind, signer, locator, and identity fingerprint;
+- attempted state, typed outcome, completion/capture timestamps, signature artifacts, failures, and diagnostic references are self-consistent;
+- signature artifacts and diagnostics have stable identities, safe relative references, exact fingerprints, exact archive binding, unique Windows path identities, and reciprocal references;
+- valid failed, skipped, or not-attempted outcomes remain explicit adverse evidence instead of being converted into successful release claims.
+
+An `accepted` release-signing result proves only that the separately supplied metadata passed the exact-binding contract. The SDK does not open the archive, load keys or credentials, resolve or authenticate an identity, sign or verify data, copy or write signature artifacts, upload, publish, launch FoA, call an adapter, mutate deployment, or modify saves. See [FoA Release-Signing Result Evidence](FOA_RELEASE_SIGNING_RESULTS.md).
 
 ### Staging/deployment-preview gate
 
@@ -169,7 +183,7 @@ Until each mutation and verification step has separate reviewed tooling, maintai
 
 Release packages may contain only project-owned or legally redistributable output. Do not package game binaries/assets, extracted proprietary data, private workspace content, personal logs/paths, source trees or work-order plans not intended for distribution, or third-party binaries without redistribution rights.
 
-The current build-manifest, package-preview, staging/deployment-preview, deployment-work-order, and deployment execution-result contracts do not copy, replace, delete, back up, restore, create archives, deploy content, record acknowledgement, invoke an executor, promote candidate evidence, launch FoA, or publish releases.
+The current build-manifest, package-preview, staging/deployment-preview, deployment-work-order, deployment execution-result, release-artifact, release-assembly/checksum-result, and release-signing-result contracts do not copy, replace, delete, back up, restore, create or open archives, load keys, sign or verify, write signature artifacts, deploy content, record acknowledgement, invoke an executor, promote candidate evidence, launch FoA, upload, or publish releases.
 
 ## Artefacts
 
@@ -183,7 +197,9 @@ Publish SHA-256 **checksums** for every distributed binary archive and generated
 
 ## Signing
 
-Do not claim signed releases until signing identity, key custody, verification commands, rotation/revocation, and compromise response are implemented and verifiable.
+The current release-signing result contract records and validates separately supplied signer metadata only. It does not load a key, perform signing, verify a signature, authenticate a signer, or establish cryptographic trust.
+
+Do not claim signed releases until signing identity, key custody, signing and verification commands, rotation/revocation, compromise response, trusted execution, and independently reproducible verification evidence are implemented and verifiable.
 
 ## Publishing
 
