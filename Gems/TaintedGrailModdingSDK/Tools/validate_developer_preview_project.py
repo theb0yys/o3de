@@ -22,6 +22,8 @@ PREVIEW_DISPLAY_NAME = "Tainted Grail Modding Editor"
 PREVIEW_EXECUTABLE_NAME = "TaintedGrailModdingEditor"
 PREVIEW_PNG = "preview.png"
 PREVIEW_ICO = "TaintedGrailModdingEditor.ico"
+PREVIEW_SCENE_SRG = "ShaderLib/scenesrg.srgi"
+PREVIEW_VIEW_SRG = "ShaderLib/viewsrg.srgi"
 AUTOMATED_TESTING_PATH = Path("AutomatedTesting")
 TG_GEM_NAME = "TaintedGrailModdingSDK"
 TG_GEM_PATH = "Gems/TaintedGrailModdingSDK"
@@ -145,6 +147,24 @@ def validate_preview_project(repo_root: Path) -> None:
             raise PreviewProjectContractError(f"Dedicated project build file is missing: {path}")
     validate_png(project_root / PREVIEW_PNG)
     validate_ico(project_root / PREVIEW_ICO)
+    require_fragments(
+        project_root / PREVIEW_SCENE_SRG,
+        (
+            "#pragma once",
+            "SrgSemantics.azsli",
+            "partial ShaderResourceGroup SceneSrg : SRG_PerScene",
+        ),
+        "project scene SRG extension",
+    )
+    require_fragments(
+        project_root / PREVIEW_VIEW_SRG,
+        (
+            "#pragma once",
+            "SrgSemantics.azsli",
+            "partial ShaderResourceGroup ViewSrg : SRG_PerView",
+        ),
+        "project view SRG extension",
+    )
 
     automated = load_json_object(
         repo_root / AUTOMATED_TESTING_PATH / "project.json",
@@ -259,7 +279,7 @@ def main() -> int:
         return 1
     print(
         "Developer Preview project contract passed: dedicated project, repository-derived "
-        "path policy, and trusted source-built clickable entry are complete."
+        "project SRGs, path policy, and trusted source-built clickable entry are complete."
     )
     return 0
 

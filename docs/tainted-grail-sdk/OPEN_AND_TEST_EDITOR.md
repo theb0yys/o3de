@@ -5,7 +5,8 @@ source-built **Tainted Grail Modding Editor**.
 
 The editor is an O3DE project named `TaintedGrailModdingEditor`. It is separate
 from `AutomatedTesting`, enables `TaintedGrailModdingSDK` directly, and owns the
-project and Windows shortcut icons.
+project and Windows shortcut icons. Its `ShaderLib` supplies the required empty
+Scene and View SRG extensions so Atom can compile the project shader registry.
 
 ## Requirements
 
