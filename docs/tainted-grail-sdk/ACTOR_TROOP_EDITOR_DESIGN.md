@@ -1,7 +1,7 @@
 # Actor and Troop Editor Design
 
-Status: active implementation — Core contracts/database and schema-2 migration/persistence are implemented;
-Framework authoring is next
+Status: active implementation — Core contracts/database, schema-2 migration/persistence, and Framework
+evidence-bound candidate publication are implemented; Core and Framework authoring tests are next
 
 Target: first Phase 6 functional-expansion vertical slice
 
@@ -295,9 +295,31 @@ All collection ordering in persisted output must be deterministic by stable iden
 Add Foundation commands:
 
 - `UpsertPopulationActorProfile`;
+- `UpsertPopulationTroopDefinition` for one atomic troop profile and supplied member upserts;
 - `UpsertPopulationTroopProfile`;
 - `UpsertPopulationTroopMember`;
 - later removal commands only with explicit dependency and rollback validation.
+
+`UpsertPopulationTroopDefinition` is the required bootstrap path for a new troop. A complete catalog cannot
+publish a troop profile without at least one typed member, and a member cannot publish without its typed troop
+profile. The compound command therefore upserts the troop profile and supplied members in one candidate before
+integrity validation, persistence, and publication. Existing members omitted from the request remain unchanged;
+this command does not add removal authority. The single-profile and single-member commands remain available
+only for updates that independently preserve complete-catalog integrity.
+
+Membership link identity is immutable across owning troops. Updating an existing `linkId` may change that row's
+authored fields only while retaining its exact `troopRecordId`; moving a link to another troop is rejected as an
+undeclared removal/addition operation.
+
+The active authoring pack must have stable editor-owned identity, keep runtime actions disabled, and target the
+active profile's branch and game version (directly or through its compatible-version set). Pack-owned canonical
+primary actor or troop record being authored must belong to that active pack; native targets remain ownerless.
+Evidence-backed references to template, leader, or member actors may cross pack boundaries and do not transfer
+ownership.
+
+Authoring also requires a stable workspace identity and the canonical workspace root previously resolved and
+validated by the existing save/load path policy. A merely non-empty root supplied through `SetWorkspace` is not
+publication authority.
 
 Each command:
 
@@ -427,16 +449,17 @@ After design approval, implementation proceeds in focused reviewable units:
 2. **Complete** — CatalogDatabase validation, queries, document build/replacement, and integrity;
 3. **Complete** — schema-1 migration, schema-2-only writing, persistence round-trip coverage, malformed-input
    rejection, and focused repository validation;
-4. **Next** — Framework evidence-bound authoring and candidate publication;
-5. Core and Framework positive/negative authoring tests;
+4. **Complete** — Framework evidence-bound authoring, atomic troop-definition bootstrap, candidate validation,
+   save-before-publish persistence, Foundation snapshot counts, and single-change notification;
+5. **Next** — Core and Framework positive/negative authoring tests;
 6. Actor and Troop Editor pane and lifecycle registration;
 7. deterministic synthetic population fixture and full vertical-slice local-validation integration;
 8. remaining public user documentation, changelog, and twenty-three-pane checklist updates;
 9. exact-head configure/build, compiled tests, and Windows UI evidence.
 
-Completion of units 1–3 establishes durable population contracts and persistence only. It does not claim that
-the Framework authoring commands, Actor and Troop Editor pane, action-lane presentation, or complete vertical
-slice exist yet.
+Completion of units 1–4 establishes durable population contracts, persistence, and the Framework authoring
+commands. It does not claim that the complete Core/Framework authoring test matrix, Actor and Troop Editor
+pane, action-lane presentation, or complete vertical slice exist yet.
 
 Every commit receives complete staged-diff self-review, DCO sign-off, relevant focused validation, and
 `FOA-plug-in-development` synchronization before and after publication.

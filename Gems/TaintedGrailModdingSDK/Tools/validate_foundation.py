@@ -239,6 +239,219 @@ def validate_economy_authoring(gem_root: Path) -> None:
             fail(f"Item/recipe editor must not author permission state directly: {forbidden}")
 
 
+def validate_population_authoring(gem_root: Path) -> None:
+    source_root, combined = read_sources(gem_root)
+    for fragment in (
+        "struct PopulationTroopDefinition",
+        "class PopulationAuthoringService final",
+        "BuildActorProfileCandidate",
+        "BuildTroopDefinitionCandidate",
+        "BuildTroopProfileCandidate",
+        "BuildTroopMemberCandidate",
+        "UpsertPopulationActorProfile",
+        "UpsertPopulationTroopDefinition",
+        "UpsertPopulationTroopProfile",
+        "UpsertPopulationTroopMember",
+        "m_populationActorProfileCount",
+        "m_populationTroopProfileCount",
+        "m_populationTroopMemberCount",
+    ):
+        if fragment not in combined:
+            fail(f"Population authoring is missing {fragment!r}")
+
+    authoring_path = source_root / "PopulationAuthoringService.cpp"
+    authoring = require_fragments(
+        authoring_path,
+        (
+            "ValidateAuthoringContext",
+            "!IsStableContractId(workspace.m_workspaceId)",
+            "PackTargetsProfile",
+            "pack.m_targetGameVersion.empty()",
+            "pack.m_targetBranch.empty()",
+            "pack.m_targetGameVersion == profile.m_gameVersion",
+            "pack.m_targetBranch == profile.m_branch",
+            "ValidateAuthoredRecord",
+            "EvidenceIsCompleteAndBound",
+            "ValidateEvidence",
+            "candidate.ValidateIntegrity(",
+            '"population-troop-member:" + member.m_linkId',
+            "definition.m_members.empty()",
+            "member.m_troopRecordId",
+            "!= definition.m_profile.m_recordId",
+            "memberIds",
+            "ValidateMemberLinkOwnership",
+            "existing.m_linkId == member.m_linkId",
+            "existing.m_troopRecordId != member.m_troopRecordId",
+            "link identity cannot move",
+            "CatalogDocument document = catalog.BuildDocument(workspace, profile)",
+            "document.m_troopProfiles",
+            "document.m_troopMembers",
+            "candidate.ReplaceFromBoundDocument(",
+            "A new troop must be authored atomically with its first member",
+        ),
+    )
+    definition_start = authoring.find(
+        "PopulationAuthoringService::BuildTroopDefinitionCandidate(")
+    definition_end = authoring.find(
+        "PopulationAuthoringService::BuildTroopProfileCandidate(",
+        definition_start,
+    )
+    definition = authoring[definition_start:definition_end]
+    required_definition = (
+        "ValidateAuthoringContext(",
+        "definition.m_members.empty()",
+        "member.m_troopRecordId",
+        "ValidateMemberLinkOwnership(",
+        "memberIds.push_back(member.m_linkId)",
+        "AZStd::adjacent_find(memberIds.begin(), memberIds.end())",
+        "definition.m_profile.m_evidenceIds",
+        "member.m_evidenceIds",
+        "CatalogDocument document = catalog.BuildDocument(workspace, profile)",
+        "for (PopulationTroopProfile& existing : document.m_troopProfiles)",
+        "existing.m_recordId == definition.m_profile.m_recordId",
+        "document.m_troopProfiles.push_back(definition.m_profile)",
+        "for (PopulationTroopMember& existing : document.m_troopMembers)",
+        "existing.m_linkId == member.m_linkId",
+        "document.m_troopMembers.push_back(member)",
+        "candidate.ReplaceFromBoundDocument(",
+        "return AZ::Success(AZStd::move(candidate))",
+    )
+    positions = [definition.find(fragment) for fragment in required_definition]
+    if definition_start < 0 or definition_end < 0 or any(position < 0 for position in positions):
+        fail("Atomic troop-definition candidate assembly is incomplete")
+    if positions != sorted(positions):
+        fail("Atomic troop-definition candidate assembly is not ordered before validation")
+    member_loop = "for (const PopulationTroopMember& member : definition.m_members)"
+    if definition.count(member_loop) != 3 or definition.count("ValidateEvidence(") != 2:
+        fail("Atomic troop-definition candidate must bind, evidence-check, and merge every member")
+    if definition.count("ValidateMemberLinkOwnership(") != 1:
+        fail("Atomic troop-definition candidate must preserve membership link ownership")
+    if ".erase(" in definition or "candidate.UpsertPopulationTroopMember(" in definition:
+        fail("Atomic troop-definition upsert must not remove omitted population members")
+
+    member_start = authoring.find(
+        "PopulationAuthoringService::BuildTroopMemberCandidate(")
+    member_candidate = authoring[member_start:]
+    if member_start < 0 or member_candidate.count("ValidateMemberLinkOwnership(") != 1:
+        fail("Single-member authoring must preserve membership link ownership")
+    member_order = (
+        "ValidateAuthoringContext(",
+        "ValidateAuthoredRecord(",
+        "ValidateMemberLinkOwnership(",
+        "ValidateEvidence(",
+        "CatalogDatabase candidate = catalog",
+        "candidate.UpsertPopulationTroopMember(",
+        "return ValidateCandidate(",
+    )
+    member_positions = [member_candidate.find(fragment) for fragment in member_order]
+    if any(position < 0 for position in member_positions) or member_positions != sorted(member_positions):
+        fail("Single-member authoring must validate link ownership before candidate mutation")
+
+    for forbidden in (
+        "RefreshSnapshot",
+        "FoundationNotificationBus",
+        "QProcess",
+        "ProcessLaunchInfo",
+        "BepInEx",
+        "HarmonyLib",
+    ):
+        if forbidden in authoring:
+            fail(f"Population candidate construction contains forbidden authority {forbidden!r}")
+
+    foundation_path = source_root / "FoundationPopulationService.cpp"
+    foundation = require_fragments(
+        foundation_path,
+        (
+            "ResolvePopulationAuthoringContext",
+            "GetActivePack()",
+            "resolvedWorkspaceRoot.empty()",
+            "workspaceRoot = resolvedWorkspaceRoot",
+            "m_populationAuthoring.BuildActorProfileCandidate(",
+            "m_populationAuthoring.BuildTroopDefinitionCandidate(",
+            "m_populationAuthoring.BuildTroopProfileCandidate(",
+            "m_populationAuthoring.BuildTroopMemberCandidate(",
+            "PersistCatalogCandidate(candidate.GetValue(), error)",
+        ),
+    )
+    if "workspace.m_rootPath" in foundation:
+        fail("Population authoring must not fall back to an unvalidated workspace root")
+    commands = (
+        ("UpsertPopulationActorProfile(", "BuildActorProfileCandidate("),
+        ("UpsertPopulationTroopDefinition(", "BuildTroopDefinitionCandidate("),
+        ("UpsertPopulationTroopProfile(", "BuildTroopProfileCandidate("),
+        ("UpsertPopulationTroopMember(", "BuildTroopMemberCandidate("),
+    )
+    for index, (command_marker, builder_marker) in enumerate(commands):
+        start = foundation.find(f"FoundationService::{command_marker}")
+        end = (
+            foundation.find(f"FoundationService::{commands[index + 1][0]}", start)
+            if index + 1 < len(commands)
+            else len(foundation)
+        )
+        command = foundation[start:end]
+        builder_position = command.find(builder_marker)
+        persist_position = command.find(
+            "PersistCatalogCandidate(candidate.GetValue(), error)")
+        if start < 0 or end < 0 or builder_position < 0 or persist_position < 0:
+            fail(f"Population Foundation command {command_marker} is incomplete")
+        if builder_position >= persist_position:
+            fail(f"Population Foundation command {command_marker} must build before persistence")
+        if command.count("PersistCatalogCandidate(candidate.GetValue(), error)") != 1:
+            fail(f"Population Foundation command {command_marker} must persist exactly once")
+    for forbidden in (
+        "m_catalog =",
+        "m_catalogPersistence.Save",
+        "RefreshSnapshot",
+        "FoundationNotificationBus",
+        "QProcess",
+        "ProcessLaunchInfo",
+        "BepInEx",
+        "HarmonyLib",
+    ):
+        if forbidden in foundation:
+            fail(f"Population authoring contains forbidden direct authority {forbidden!r}")
+
+    publication = require_fragments(
+        source_root / "FoundationCatalogService.cpp",
+        (
+            "m_catalogTransaction.Commit(",
+            "m_catalog = AZStd::move(committed.m_catalog)",
+            "RefreshSnapshot();",
+        ),
+    )
+    persist_start = publication.find("FoundationService::PersistCatalogCandidate(")
+    persist = publication[persist_start:]
+    publish_position = persist.find("m_catalog = AZStd::move(committed.m_catalog)")
+    refresh_position = persist.find("RefreshSnapshot();")
+    if persist_start < 0 or publish_position < 0 or refresh_position <= publish_position:
+        fail("Population publication must refresh once after the committed catalog is published")
+    if persist.count("RefreshSnapshot();") != 1:
+        fail("The catalog candidate publication boundary must emit one Foundation refresh")
+
+    models = require_fragments(
+        source_root / "FoundationModels.cpp",
+        (
+            '"PopulationActorProfileCount"',
+            '"PopulationTroopProfileCount"',
+            '"PopulationTroopMemberCount"',
+        ),
+    )
+    snapshot_version = re.search(
+        r"Class<FoundationSnapshot>\(\)\s*->Version\((\d+)\)",
+        models,
+    )
+    if not snapshot_version or int(snapshot_version.group(1)) < 8:
+        fail("FoundationSnapshot must use a population-count-capable reflected version")
+    service = require_fragments(
+        source_root / "FoundationService.cpp",
+        (
+            "m_catalog.GetPopulationActorProfiles().size()",
+            "m_catalog.GetPopulationTroopProfiles().size()",
+            "m_catalog.GetPopulationTroopMembers().size()",
+        ),
+    )
+
+
 def validate_public_project(repo_root: Path) -> None:
     required_files = {
         "README.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SUPPORT.md",
@@ -273,6 +486,7 @@ def main() -> int:
         validate_source_intake(gem_root)
         validate_catalog_and_governance(gem_root)
         validate_economy_authoring(gem_root)
+        validate_population_authoring(gem_root)
         validate_public_project(repo_root)
     except (OSError, RuntimeError) as exc:
         print(f"Tainted Grail SDK foundation validation failed: {exc}", file=sys.stderr)
@@ -282,7 +496,7 @@ def main() -> int:
     print(
         "Validated: Core/Framework/Editor ownership, public governance, workspace and pack editing, "
         "source/evidence intake, canonical catalog, typed atomic governance, item/recipe authoring, "
-        "linked tests, and runtime separation."
+        "evidence-bound population candidates, the existing linked-test graph, and runtime separation."
     )
     return 0
 

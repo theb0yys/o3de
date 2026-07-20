@@ -696,6 +696,12 @@ namespace TaintedGrailModdingSDK
             static_cast<AZ::u64>(m_catalog.GetRecipeIngredients().size());
         m_snapshot.m_recipeOutputCount =
             static_cast<AZ::u64>(m_catalog.GetRecipeOutputs().size());
+        m_snapshot.m_populationActorProfileCount = static_cast<AZ::u64>(
+            m_catalog.GetPopulationActorProfiles().size());
+        m_snapshot.m_populationTroopProfileCount = static_cast<AZ::u64>(
+            m_catalog.GetPopulationTroopProfiles().size());
+        m_snapshot.m_populationTroopMemberCount = static_cast<AZ::u64>(
+            m_catalog.GetPopulationTroopMembers().size());
         for (const CatalogRecord& record : m_catalog.GetRecords())
         {
             if (record.m_stalenessState == "potentially_stale"

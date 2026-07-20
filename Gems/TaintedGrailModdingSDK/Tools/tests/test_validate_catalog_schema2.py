@@ -58,7 +58,8 @@ class CatalogSchema2ValidatorTests(unittest.TestCase):
         )
         self._write(
             "Gems/TaintedGrailModdingSDK/Code/taintedgrailmoddingsdk_framework_files.cmake",
-            "Source/CatalogPersistenceService.cpp\nSource/CatalogPersistenceService.h\n",
+            "Source/CatalogPersistenceService.cpp\n"
+            "Source/CatalogPersistenceService.h\n",
         )
         self._write(
             "Gems/TaintedGrailModdingSDK/Code/taintedgrailmoddingsdk_catalog_tests_files.cmake",
@@ -218,7 +219,8 @@ class CatalogSchema2ValidatorTests(unittest.TestCase):
             "actor/troop contracts, reflection\n"
             "CatalogDatabase validation, queries\n"
             "schema-1 migration, schema-2-only writing\n"
-            "Framework evidence-bound authoring and candidate publication\n"
+            "4. **Complete** \u2014 Framework evidence-bound authoring, atomic troop-definition bootstrap\n"
+            "5. **Next** \u2014 Core and Framework positive/negative authoring tests\n"
             "does not claim that the Editor exists\n"
             "loaded candidate remains schema 1\n"
             "direct save is refused\n"
@@ -229,6 +231,7 @@ class CatalogSchema2ValidatorTests(unittest.TestCase):
             "### Actors and population\n"
             "Status: active development. Core contracts, CatalogDatabase integration\n"
             "Schema-1 catalog migration, schema-2-only catalog writing\n"
+            "evidence-bound Framework candidate publication are implemented; the complete Core\n"
             "Actor and Troop Editor remains pending\n",
         )
         self._write(
@@ -253,7 +256,7 @@ class CatalogSchema2ValidatorTests(unittest.TestCase):
         self._write(
             "docs/tainted-grail-sdk/README.md",
             "Actor and Troop Editor Design ACTOR_TROOP_EDITOR_DESIGN.md "
-            "next Framework authoring boundary\n",
+            "completed Core, schema-2 persistence, and Framework candidate-publication units\n",
         )
 
     def test_valid_contract_passes(self) -> None:
@@ -268,6 +271,16 @@ class CatalogSchema2ValidatorTests(unittest.TestCase):
         )
         path.write_text(text, encoding="utf-8")
         with self.assertRaisesRegex(CatalogSchema2ContractError, "must not remain bound"):
+            validate_catalog_schema2(self.repo_root)
+
+    def test_rejects_stale_framework_implementation_status(self) -> None:
+        path = self.repo_root / "docs/tainted-grail-sdk/ACTOR_TROOP_EDITOR_DESIGN.md"
+        text = path.read_text(encoding="utf-8").replace(
+            "4. **Complete** \u2014 Framework evidence-bound authoring",
+            "4. **Pending** \u2014 Framework evidence-bound authoring",
+        )
+        path.write_text(text, encoding="utf-8")
+        with self.assertRaisesRegex(CatalogSchema2ContractError, r"4\. \*\*Complete"):
             validate_catalog_schema2(self.repo_root)
 
     def test_rejects_non_atomic_catalog_writer(self) -> None:

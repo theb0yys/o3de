@@ -472,13 +472,22 @@ def validate_catalog_schema2(repo_root: Path) -> None:
             "actor/troop contracts, reflection",
             "CatalogDatabase validation, queries",
             "schema-1 migration, schema-2-only writing",
-            "Framework evidence-bound authoring and candidate publication",
+            "4. **Complete** \u2014 Framework evidence-bound authoring, atomic troop-definition bootstrap",
+            "5. **Next** \u2014 Core and Framework positive/negative authoring tests",
             "does not claim that",
             "loaded candidate remains schema 1",
             "direct save is refused",
             "successful bound replacement and `BuildDocument`",
         ),
         "Actor/troop implementation status",
+    )
+    require_order(
+        actor_design,
+        (
+            "4. **Complete** \u2014 Framework evidence-bound authoring, atomic troop-definition bootstrap",
+            "5. **Next** \u2014 Core and Framework positive/negative authoring tests",
+        ),
+        "Actor/troop implementation sequence",
     )
     roadmap = read_text(repo_root / "ROADMAP.md")
     require_fragments(
@@ -487,6 +496,7 @@ def validate_catalog_schema2(repo_root: Path) -> None:
             "### Actors and population",
             "Status: active development. Core contracts, CatalogDatabase integration",
             "Schema-1 catalog migration, schema-2-only catalog writing",
+            "evidence-bound Framework candidate publication are implemented; the complete Core",
             "Actor and Troop Editor remains pending",
         ),
         "Roadmap population status",
@@ -531,7 +541,7 @@ def validate_catalog_schema2(repo_root: Path) -> None:
         (
             "Actor and Troop Editor Design",
             "ACTOR_TROOP_EDITOR_DESIGN.md",
-            "next Framework authoring boundary",
+            "completed Core, schema-2 persistence, and Framework candidate-publication units",
         ),
         "Documentation hub",
     )

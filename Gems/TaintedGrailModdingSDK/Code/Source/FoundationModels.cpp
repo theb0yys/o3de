@@ -549,7 +549,7 @@ namespace TaintedGrailModdingSDK
         if (auto* serializeContext = azrtti_cast<AZ::SerializeContext*>(context))
         {
             serializeContext->Class<FoundationSnapshot>()
-                ->Version(7)
+                ->Version(8)
                 ->Field("WorkspaceName", &FoundationSnapshot::m_workspaceName)
                 ->Field("WorkspaceFilePath", &FoundationSnapshot::m_workspaceFilePath)
                 ->Field("ActiveGameProfile", &FoundationSnapshot::m_activeGameProfile)
@@ -582,6 +582,15 @@ namespace TaintedGrailModdingSDK
                 ->Field("EconomyRecipeCount", &FoundationSnapshot::m_economyRecipeCount)
                 ->Field("RecipeIngredientCount", &FoundationSnapshot::m_recipeIngredientCount)
                 ->Field("RecipeOutputCount", &FoundationSnapshot::m_recipeOutputCount)
+                ->Field(
+                    "PopulationActorProfileCount",
+                    &FoundationSnapshot::m_populationActorProfileCount)
+                ->Field(
+                    "PopulationTroopProfileCount",
+                    &FoundationSnapshot::m_populationTroopProfileCount)
+                ->Field(
+                    "PopulationTroopMemberCount",
+                    &FoundationSnapshot::m_populationTroopMemberCount)
                 ->Field(
                     "StaleCatalogSubjectCount",
                     &FoundationSnapshot::m_staleCatalogSubjectCount)
