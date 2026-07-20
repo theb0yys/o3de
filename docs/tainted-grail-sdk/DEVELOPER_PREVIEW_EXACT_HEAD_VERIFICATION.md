@@ -2,182 +2,158 @@
 
 ## Purpose
 
-This runbook consolidates the repository's existing exact-head build, compiled-test,
-validation-receipt, and Windows UI-evidence process. It does not define a second
-acceptance standard. `developer_preview_verification.py` only coordinates the
-established commands in `developer_preview.py`, `run_local_validation.py`,
-`validation_receipt.py`, CTest, and `developer_preview_ui_evidence.py`.
+`developer_preview_verification.py` coordinates the existing Developer Preview,
+validation-receipt, CTest, and Windows UI-evidence tools. It does not define a
+second acceptance standard, capture screenshots, launch FoA, deploy files, sign
+content, upload evidence, or modify saves.
 
-The coordinator does not capture screenshots, automate Editor input, launch FoA,
-invoke BepInEx or Harmony, deploy files, load keys, sign or verify data, upload
-evidence, or modify saves.
-
-## Required environment
-
-Use a clean Windows x64 checkout at the exact commit under review. The supported
-configuration is Profile, with Visual Studio 2022 C++ tools, CMake, Python, Git,
-and Git LFS available as described in [Developer Preview 0](DEVELOPER_PREVIEW_0.md).
-
-Run every command from the repository root. Before starting:
+A completion result is authoritative only when both existing verifiers succeed
+again against the same clean exact head:
 
 ```powershell
-git checkout FOA-plug-in-development
-git pull --ff-only
-git status --short
-git rev-parse HEAD
+validation_receipt.py verify --require-merge-ready
+developer_preview_ui_evidence.py verify
 ```
 
-`git status --short` must print nothing. The coordinator derives the full
-40-character commit from Git and refuses a dirty tree or a receipt from another
-head.
+Recorded JSON strings such as `passed` and a finalization timestamp are progress
+metadata, not proof.
+
+## Required inputs
+
+Use a clean Windows x64 checkout and identify the full reviewed base commit. The
+base must be an ancestor of `HEAD`, must differ from `HEAD`, and must be the base
+of the exact commit range being reviewed.
+
+```powershell
+git status --short
+git rev-parse HEAD
+git rev-parse <reviewed-base>
+```
+
+Every coordinator command requires:
+
+```text
+--review-base <full-40-character-commit>
+```
 
 ## Storage defaults
 
-For commit `<head>`, the coordinator uses:
+For an exact head `<head>`, the coordinator uses:
 
 ```text
 build/tg-sdk-developer-preview-0-windows-profile
-../tg-sdk-exact-head-receipt-<first-12-characters-of-head>
-build/tg-sdk-developer-preview-0-ui-evidence-<first-12-characters-of-head>
-build/tg-sdk-developer-preview-0-verification-<first-12-characters-of-head>.json
+../tg-sdk-exact-head-receipt-<first-12-of-head>
+build/tg-sdk-developer-preview-0-ui-evidence-<first-12-of-head>
+build/tg-sdk-developer-preview-0-verification-<first-12-of-head>
 ```
 
-The validation receipt and captured gate logs stay outside the repository. UI
-evidence and coordinator status may live inside the checkout only beneath
-`build/`. Do not commit receipts, logs, screenshots, generated build output, or
-verification-state JSON.
+The prerequisite report is written to the separate verification directory as
+`prerequisites.json`. It is never written into the O3DE build directory. This
+preserves the existing fail-closed rule that rejects a non-empty, unconfigured
+build directory.
 
-Custom paths are supported with `--build-dir`, `--receipt-dir`,
-`--ui-evidence-dir`, and `--state-output`. A new exact-head run requires absent or
-empty receipt and UI-evidence directories; existing evidence is never overwritten.
+The receipt and captured logs stay outside the repository. UI evidence and
+verification state may be beneath `build/`, but must remain outside the O3DE
+build directory. Do not commit generated output, receipts, logs, screenshots, or
+verification state.
 
-## 1. Inspect the exact command plan
-
-This prints every established command without running O3DE, validation, CTest, or
-UI verification. It writes only the machine-readable plan state beneath `build/`.
+## 1. Inspect the command plan
 
 ```powershell
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview_verification.py plan `
+  --review-base <reviewed-base> `
   --tester-alias windows-reviewer `
   --windows-version "Windows 11 23H2" `
   --display-scale 125
 ```
 
-Use the actual Windows version and display scale. The display scale must be from
-100 through 200 percent.
+The plan is dry-run output only.
 
-## 2. Prepare exact-head evidence directories
-
-`prepare` first runs the existing Developer Preview prerequisite command. Only
-after required prerequisites pass does it initialize:
-
-- the external exact-head `validation_receipt.py` directory;
-- the commit-bound `developer_preview_ui_evidence.py` directory.
+## 2. Prepare the run
 
 ```powershell
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview_verification.py prepare `
+  --review-base <reviewed-base> `
   --tester-alias windows-reviewer `
   --windows-version "Windows 11 23H2" `
   --display-scale 125
 ```
 
-No build or UI pass is claimed by preparation. No screenshot is captured.
+Preparation checks prerequisites, then creates a new external receipt and a new
+commit-bound UI-evidence directory. Existing non-empty run directories are
+rejected rather than overwritten.
 
-## 3. Run and record all automated gates
-
-```powershell
-python Gems/TaintedGrailModdingSDK/Tools/developer_preview_verification.py automated
-```
-
-The coordinator rechecks prerequisites, then uses `validation_receipt.py record`
-to execute and capture these mandatory gates in the established order:
-
-1. `git-diff-check` — `git diff --check`;
-2. `local-validation` — `run_local_validation.py --keep-going`;
-3. `o3de-configure` — the approved Windows x64 Developer Preview configure command;
-4. `o3de-build` — Profile `Editor` and
-   `TaintedGrailModdingSDK.Catalog.Tests` targets;
-5. `compiled-tests` — CTest filtered to
-   `TaintedGrailModdingSDK.Catalog.Tests` with output on failure.
-
-The local-validation and compiled-test gates remain separate so the receipt proves
-both the repository-owned static/Python gate and the production-linked compiled
-suite without treating one as a substitute for the other.
-
-The command stops at the first non-zero result and preserves that exit code. A
-failed recorded gate requires a new receipt directory after the cause is fixed;
-the receipt tool does not rewrite or reinterpret failed evidence. Already passed
-gates may be resumed in the same unfinalized exact-head receipt.
-
-## 4. Inspect current progress
+## 3. Record automated gates
 
 ```powershell
-python Gems/TaintedGrailModdingSDK/Tools/developer_preview_verification.py status
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_verification.py automated `
+  --review-base <reviewed-base>
 ```
 
-The status report shows:
+A fresh receipt is required. The coordinator records these gates in order:
 
-- current exact HEAD and evidence paths;
-- every receipt gate and its recorded state;
-- Windows checklist pass, pending, blocked, and failed counts;
-- attached screenshot count;
-- the next honest action.
+1. `git diff --check <reviewed-base> HEAD`;
+2. `run_local_validation.py --keep-going`;
+3. approved O3DE configure;
+4. Profile Editor and Catalog-test build;
+5. production-linked Catalog CTest.
 
-It never converts pending UI evidence, a missing gate, or an unfinalized receipt
-into a pass.
+The whitespace gate therefore checks the reviewed commits, not the empty working
+copy diff of an already-clean tree. The exact range command is retained in the
+receipt and must still match the requested base before finalization or completion.
 
-## 5. Perform the Windows twenty-two-pane pass
+A failed gate requires a new receipt after remediation. The coordinator does not
+rewrite failed evidence or implement a second receipt-resume policy.
 
-Follow [Windows Manual UI Smoke](DEVELOPER_PREVIEW_MANUAL_UI_SMOKE.md) using the
-commit-specific UI-evidence directory printed by the coordinator.
-
-All twenty-two TG SDK panes must open from **Tools → Tainted Grail SDK**, including
-**Tainted Grail Release Signing Results**. Confirm the documented synthetic zero
-state, non-editable behavior, exact supplied metadata, `contract status=not
-evaluated`, transient reset behavior, and the complete no-operation boundary.
-
-Record all nine checklist items with `developer_preview_ui_evidence.py record`,
-attach the seven required reviewed PNG coverage groups, and complete the final
-attestation. Screenshot capture and privacy review remain manual; the tools do not
-inspect screenshot pixels or upload anything.
-
-Use `status` at any point to see the remaining checklist IDs.
-
-## 6. Verify UI evidence and finalize the receipt
-
-After every manual checklist item is `pass`, all required screenshots are attached,
-and the attestation is complete:
+## 4. Inspect status
 
 ```powershell
-python Gems/TaintedGrailModdingSDK/Tools/developer_preview_verification.py finalize
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_verification.py status `
+  --review-base <reviewed-base>
 ```
 
-`finalize` does not trust the UI document merely because it exists. It records the
-real `developer_preview_ui_evidence.py verify` command as the `windows-ui` gate,
-then runs the existing receipt `finalize`, merge-ready `verify`, and Markdown
-`summarize` commands against the same exact HEAD.
+For machine-readable output, add `--json`.
 
-A successful result means:
+Status reruns the merge-ready receipt verifier and the UI-evidence verifier. It
+reports `complete_verified: true` only when:
 
-- all five mandatory automated gates executed with exit code zero;
-- the twenty-two-pane Windows evidence verifier passed for the same commit;
-- the receipt was finalized and verified as merge-ready;
-- captured logs and screenshot hashes remain available for review outside tracked
-  source.
+- the receipt verifier succeeds with `--require-merge-ready`;
+- the UI-evidence verifier succeeds for the same head;
+- the receipt contains exactly the requested reviewed-range whitespace command.
 
-## Recovery and reruns
+Gate strings read from the receipt are labelled unverified metadata. Deleted or
+altered logs, changed screenshots, hash mismatches, malformed evidence, missing
+attestations, and a mismatched reviewed range all prevent completion.
 
-Do not edit receipt JSON, captured logs, UI JSON, or screenshot hashes by hand.
+## 5. Complete Windows evidence
 
-- A changed source commit requires new commit-specific receipt and UI-evidence
-  directories.
-- A failed recorded gate requires a new receipt directory after remediation.
-- An incomplete UI checklist may continue in the same unfinalized exact-head
-  evidence directory.
-- A finalized receipt is immutable; use `status` to inspect it rather than rerun
-  finalization.
-- An old or nonempty default evidence directory is rejected instead of overwritten.
+Follow [Windows Manual UI Smoke](DEVELOPER_PREVIEW_MANUAL_UI_SMOKE.md). Record all
+checklist items, attach the required reviewed PNG coverage, and complete the
+privacy and no-operation attestations for the same exact commit.
 
-These rules preserve the repository's existing fail-closed evidence model while
-making the operator sequence reproducible for the evening Windows verification
-session.
+Screenshot capture and review remain manual. The repository tools do not inspect
+screenshot pixels or upload evidence.
+
+## 6. Finalize and reverify
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_verification.py finalize `
+  --review-base <reviewed-base>
+```
+
+For an unfinalized run, this records the authoritative UI verifier as the
+`windows-ui` gate, finalizes the receipt, and then runs both authoritative
+verifiers plus the receipt summary.
+
+For an already-finalized receipt, `finalize` is deliberately not a successful
+no-op. It reruns receipt verification, UI-evidence verification, and summary.
+Both verifiers are attempted so one integrity failure does not hide the other.
+
+## Recovery
+
+- A changed head or reviewed base requires a new run.
+- A failed recorded gate requires a new receipt.
+- Incomplete UI evidence may continue before finalization.
+- Never edit receipt JSON, logs, UI JSON, or hashes by hand.
+- Do not represent planned, pending, raw, or previously verified metadata as a
+  current pass.
