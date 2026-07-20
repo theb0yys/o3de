@@ -304,19 +304,30 @@ namespace TaintedGrailModdingSDK
     EconomyAuthoringService::BuildActionLaneMatrix(
         const CatalogRecord& record) const
     {
-        const AZStd::vector<AZStd::string> lanes = {
-            "existing_item_grant",
-            "existing_recipe_learn",
-            "runtime_recipe_append",
-            "custom_item_registration",
-            "custom_recipe_registration",
-            "vendor_or_loot_injection",
-            "quest_or_contract_reward_injection",
-            "asset_use",
-            "localisation_use",
-        };
-
         AZStd::vector<EconomyActionLaneStatus> results;
+        AZStd::vector<AZStd::string> lanes;
+        if (record.m_recordKind == "item")
+        {
+            lanes = {
+                "existing_item_grant",
+                "existing_item_consume",
+                "custom_item_registration",
+                "asset_localisation_injection",
+                "vendor_or_loot_injection",
+                "quest_or_contract_reward_injection",
+            };
+        }
+        else if (record.m_recordKind == "recipe")
+        {
+            lanes = {
+                "existing_recipe_learn",
+                "runtime_recipe_append",
+                "custom_recipe_registration",
+                "asset_localisation_injection",
+                "quest_or_contract_reward_injection",
+            };
+        }
+
         for (const AZStd::string& lane : lanes)
         {
             EconomyActionLaneStatus result;
@@ -331,7 +342,7 @@ namespace TaintedGrailModdingSDK
             }
             else
             {
-                result.m_status = "unreviewed";
+                result.m_status = "unset";
             }
             results.push_back(AZStd::move(result));
         }

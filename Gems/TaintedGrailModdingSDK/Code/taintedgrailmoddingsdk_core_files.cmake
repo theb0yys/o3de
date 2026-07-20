@@ -114,8 +114,6 @@ set(FILES
     Source/EconomyModels.h
     Source/FoundationModels.cpp
     Source/FoundationModels.h
-    Source/FoundationValidationService.cpp
-    Source/FoundationValidationService.h
     Source/PackagePathValidation.cpp
     Source/PackagePathValidation.h
     Source/ResearchContractValidation.cpp
