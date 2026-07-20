@@ -71,13 +71,24 @@ namespace TaintedGrailModdingSDK
         {
             SourceRecord source;
             source.m_sourceId = "source.test";
-            source.m_fingerprint = "fingerprint.test";
+            source.m_title = "Economy authoring test source";
+            source.m_sourceKind = "structured_test_fixture";
+            source.m_locator = "research/economy-authoring.json";
+            source.m_fingerprint =
+                "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
             source.m_profileId = "profile.test";
             source.m_gameVersion = "version.test";
             source.m_branch = "branch.test";
-            source.m_runtimeTarget = "mono";
+            source.m_runtimeTarget = "Mono";
+            source.m_toolName = "economy-authoring-tests";
+            source.m_toolVersion = "1.0.0";
             source.m_importerId = "importer.test";
             source.m_importerVersion = "1.0.0";
+            source.m_capturedAt = "2026-01-01T00:00:00Z";
+            source.m_importedAt = "2026-01-01T00:00:01Z";
+            source.m_mediaType = "application/json";
+            source.m_byteSize = 512;
+            source.m_importStatus = "imported";
             return source;
         }
 
@@ -86,12 +97,18 @@ namespace TaintedGrailModdingSDK
             EvidenceRecord evidence;
             evidence.m_evidenceId = AZStd::move(evidenceId);
             evidence.m_sourceId = "source.test";
-            evidence.m_sourceFingerprint = "fingerprint.test";
+            evidence.m_sourceFingerprint =
+                "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
             evidence.m_profileId = "profile.test";
             evidence.m_gameVersion = "version.test";
             evidence.m_branch = "branch.test";
             evidence.m_subjectRef = AZStd::move(subjectRef);
             evidence.m_claim = "test claim";
+            evidence.m_evidenceKind = "structured_record";
+            evidence.m_confidence = "documented";
+            evidence.m_locator = "research/economy-authoring.json";
+            evidence.m_recordPath = "/records/0";
+            evidence.m_extractedAt = "2026-01-01T00:00:00Z";
             return evidence;
         }
 
@@ -112,8 +129,21 @@ namespace TaintedGrailModdingSDK
             request.m_relationshipKind = relationshipKind;
             request.m_evidenceIds = evidenceIds;
 
+            SourceEvidenceRegistry registry;
+            AZStd::string error;
+            EXPECT_TRUE(registry.RegisterSource(MakeSource(), &error));
+            for (const AZStd::string& evidenceId : evidenceIds)
+            {
+                EXPECT_TRUE(registry.RegisterEvidence(
+                    MakeEvidence(
+                        evidenceId,
+                        "relationship:" + relationshipId),
+                    &error));
+            }
+
             EconomyAuthoringService service;
-            AZ::Outcome<CatalogRelationship, AZStd::string> result = service.BuildAcquisitionRelationship(request, catalog);
+            AZ::Outcome<CatalogRelationship, AZStd::string> result =
+                service.BuildAcquisitionRelationship(request, registry, catalog);
             EXPECT_TRUE(result.IsSuccess());
             CatalogRelationship relationship = result.TakeValue();
             relationship.m_validationState = "validated";
@@ -207,22 +237,27 @@ namespace TaintedGrailModdingSDK
     {
         CatalogDatabase catalog;
         AZStd::string error;
-        ASSERT_TRUE(catalog.InsertNew(
-            MakeEconomyRecord("item.test", "item", "subject:item:test"),
-            &error));
-        ASSERT_TRUE(catalog.InsertNew(
-            MakeEconomyRecord("recipe.test", "recipe", "subject:recipe:test"),
-            &error));
-        ASSERT_TRUE(catalog.InsertNew(
-            MakeEconomyRecord("station.test", "crafting_station", "subject:station:test"),
-            &error));
+        CatalogRecord itemRecord =
+            MakeEconomyRecord("item.test", "item", "subject:item:test");
+        itemRecord.m_evidenceIds = { "evidence.item" };
+        ASSERT_TRUE(catalog.InsertNew(itemRecord, &error));
+        CatalogRecord recipeRecord =
+            MakeEconomyRecord("recipe.test", "recipe", "subject:recipe:test");
+        recipeRecord.m_evidenceIds = { "evidence.recipe" };
+        ASSERT_TRUE(catalog.InsertNew(recipeRecord, &error));
+        CatalogRecord stationRecord = MakeEconomyRecord(
+            "station.test", "crafting_station", "subject:station:test");
+        stationRecord.m_evidenceIds = { "evidence.station" };
+        ASSERT_TRUE(catalog.InsertNew(stationRecord, &error));
 
         EconomyItemProfile item;
         item.m_recordId = "item.test";
         item.m_category = "material";
-        item.m_evidenceIds = { "evidence.test" };
+        item.m_evidenceIds = { "evidence.item" };
         ASSERT_TRUE(catalog.UpsertEconomyItem(item, &error));
-        ASSERT_TRUE(catalog.UpsertEconomyRecipe(MakeRecipeProfile(), &error));
+        EconomyRecipeProfile recipe = MakeRecipeProfile();
+        recipe.m_evidenceIds = { "evidence.recipe" };
+        ASSERT_TRUE(catalog.UpsertEconomyRecipe(recipe, &error));
 
         EconomyRecipeOutput output;
         output.m_linkId = "output.test";
@@ -230,19 +265,41 @@ namespace TaintedGrailModdingSDK
         output.m_itemRecordId = "item.test";
         output.m_quantity = 2;
         output.m_chance = 1.0;
-        output.m_evidenceIds = { "evidence.test" };
+        output.m_evidenceIds = { "evidence.output" };
         ASSERT_TRUE(catalog.UpsertRecipeOutput(output, &error));
 
         GameProfile profile;
-        profile.m_profileId = "foa.test";
-        profile.m_gameVersion = "test-version";
-        profile.m_branch = "mono";
+        profile.m_profileId = "profile.test";
+        profile.m_displayName = "Economy Test";
+        profile.m_installPath = "/test/foa";
+        profile.m_gameVersion = "version.test";
+        profile.m_branch = "branch.test";
+        profile.m_runtimeTarget = "Mono";
+        profile.m_unityVersion = "2022.3.0";
+        profile.m_bepInExVersion = "6.0.0";
+        profile.m_managedAssembliesPath = "/test/foa/Managed";
+        profile.m_pluginPath = "/test/foa/Plugins";
         WorkspaceModel workspace;
         workspace.m_workspaceId = "workspace.test";
+        workspace.m_activeGameProfileId = profile.m_profileId;
+        workspace.m_gameProfiles = { profile };
+
+        SourceEvidenceRegistry registry;
+        ASSERT_TRUE(registry.RegisterSource(MakeSource(), &error));
+        ASSERT_TRUE(registry.RegisterEvidence(
+            MakeEvidence("evidence.item", "subject:item:test"), &error));
+        ASSERT_TRUE(registry.RegisterEvidence(
+            MakeEvidence("evidence.recipe", "subject:recipe:test"), &error));
+        ASSERT_TRUE(registry.RegisterEvidence(
+            MakeEvidence("evidence.station", "subject:station:test"), &error));
+        ASSERT_TRUE(registry.RegisterEvidence(
+            MakeEvidence("evidence.output", "economy-recipe-output:output.test"),
+            &error));
 
         const CatalogDocument document = catalog.BuildDocument(workspace, profile);
         CatalogDatabase restored;
-        ASSERT_TRUE(restored.ReplaceFromDocument(document, &error));
+        ASSERT_TRUE(restored.ReplaceFromBoundDocument(
+            document, workspace, profile, registry, &error));
         EXPECT_EQ(restored.GetEconomyItems().size(), 1);
         EXPECT_EQ(restored.GetEconomyRecipes().size(), 1);
         EXPECT_EQ(restored.GetRecipeOutputs().size(), 1);
@@ -266,8 +323,17 @@ namespace TaintedGrailModdingSDK
         request.m_relationshipKind = "sold_by";
         request.m_evidenceIds = { "evidence.test" };
 
+        SourceEvidenceRegistry registry;
+        ASSERT_TRUE(registry.RegisterSource(MakeSource(), &error));
+        ASSERT_TRUE(registry.RegisterEvidence(
+            MakeEvidence(
+                "evidence.test",
+                "relationship:relationship.item-vendor"),
+            &error));
+
         EconomyAuthoringService service;
-        AZ::Outcome<CatalogRelationship, AZStd::string> result = service.BuildAcquisitionRelationship(request, catalog);
+        AZ::Outcome<CatalogRelationship, AZStd::string> result =
+            service.BuildAcquisitionRelationship(request, registry, catalog);
         ASSERT_TRUE(result.IsSuccess());
         const CatalogRelationship& relationship = result.GetValue();
         EXPECT_EQ(relationship.m_validationState, "unvalidated");
@@ -317,7 +383,10 @@ namespace TaintedGrailModdingSDK
         EconomyRecipeProfile profile = MakeRecipeProfile();
         profile.m_stationRecordIds = { "station.b", "station.a" };
         profile.m_unlockSubjectRefs = { "subject:learn:source" };
-        profile.m_evidenceIds = { "evidence.recipe" };
+        profile.m_evidenceIds = {
+            "evidence.station.profile.a",
+            "evidence.station.profile.b",
+        };
         ASSERT_TRUE(catalog.UpsertEconomyRecipe(profile, &error));
 
         CatalogRelationship craftedAt = MakeValidatedRelationship(
@@ -342,13 +411,24 @@ namespace TaintedGrailModdingSDK
         SourceEvidenceRegistry registry;
         ASSERT_TRUE(registry.RegisterSource(MakeSource(), &error));
         ASSERT_TRUE(registry.RegisterEvidence(
-            MakeEvidence("evidence.recipe", "subject:recipe:test"),
+            MakeEvidence(
+                "evidence.station.profile.a",
+                "economy-recipe-station:recipe.test:station.a"),
             &error));
         ASSERT_TRUE(registry.RegisterEvidence(
-            MakeEvidence("evidence.station.a", "subject:station:a"),
+            MakeEvidence(
+                "evidence.station.profile.b",
+                "economy-recipe-station:recipe.test:station.b"),
             &error));
         ASSERT_TRUE(registry.RegisterEvidence(
-            MakeEvidence("evidence.learn", "subject:learn:source"),
+            MakeEvidence(
+                "evidence.station.a",
+                "relationship:relationship.crafted-at.a"),
+            &error));
+        ASSERT_TRUE(registry.RegisterEvidence(
+            MakeEvidence(
+                "evidence.learn",
+                "relationship:relationship.learned-from"),
             &error));
 
         EconomyAuthoringService service;

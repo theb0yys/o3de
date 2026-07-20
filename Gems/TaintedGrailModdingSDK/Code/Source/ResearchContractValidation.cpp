@@ -39,14 +39,11 @@ namespace TaintedGrailModdingSDK
         bool ParseUnsignedComponent(
             const AZStd::string& value,
             size_t& offset,
-            bool rejectLeadingZero,
-            int& result)
+            bool rejectLeadingZero)
         {
             const size_t start = offset;
-            result = 0;
             while (offset < value.size() && IsAsciiDigit(value[offset]))
             {
-                result = result * 10 + (value[offset] - '0');
                 ++offset;
             }
             if (offset == start)
@@ -201,13 +198,16 @@ namespace TaintedGrailModdingSDK
 
     bool IsStrictSemanticVersion(const AZStd::string& value)
     {
+        if (value.empty() || value.size() > 256)
+        {
+            return false;
+        }
         size_t offset = 0;
-        int ignored = 0;
-        if (!ParseUnsignedComponent(value, offset, true, ignored)
+        if (!ParseUnsignedComponent(value, offset, true)
             || offset >= value.size() || value[offset++] != '.'
-            || !ParseUnsignedComponent(value, offset, true, ignored)
+            || !ParseUnsignedComponent(value, offset, true)
             || offset >= value.size() || value[offset++] != '.'
-            || !ParseUnsignedComponent(value, offset, true, ignored))
+            || !ParseUnsignedComponent(value, offset, true))
         {
             return false;
         }
@@ -238,11 +238,8 @@ namespace TaintedGrailModdingSDK
 
     bool IsStrictUtcTimestamp(const AZStd::string& value)
     {
-        const bool hasMilliseconds = value.size() == 24
-            && value[19] == '.'
-            && value[23] == 'Z';
-        const bool secondsOnly = value.size() == 20 && value[19] == 'Z';
-        if ((!hasMilliseconds && !secondsOnly)
+        if (value.size() != 20
+            || value[19] != 'Z'
             || value[4] != '-'
             || value[7] != '-'
             || value[10] != 'T'
@@ -261,13 +258,6 @@ namespace TaintedGrailModdingSDK
             {
                 return false;
             }
-        }
-        if (hasMilliseconds
-            && (!IsAsciiDigit(value[20])
-                || !IsAsciiDigit(value[21])
-                || !IsAsciiDigit(value[22])))
-        {
-            return false;
         }
         const int year = ParseFourDigits(value, 0);
         const int month = ParseTwoDigits(value, 5);

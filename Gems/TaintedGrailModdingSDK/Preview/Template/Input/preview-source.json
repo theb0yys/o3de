@@ -55,6 +55,20 @@
       "evidence_id": "preview.evidence.relationship.unresolved",
       "kind": "project-owned-fixture",
       "subject_ref": "subject:preview:learn-source:unresolved"
+    },
+    {
+      "claim": "The preview recipe consumes exactly one synthetic component.",
+      "confidence": "documented",
+      "evidence_id": "preview.evidence.ingredient.synthesis.component",
+      "kind": "project-owned-fixture",
+      "subject_ref": "economy-recipe-ingredient:preview.ingredient.synthesis.component"
+    },
+    {
+      "claim": "The preview recipe produces exactly one synthetic result with probability one.",
+      "confidence": "documented",
+      "evidence_id": "preview.evidence.output.synthesis.result",
+      "kind": "project-owned-fixture",
+      "subject_ref": "economy-recipe-output:preview.output.synthesis.result"
     }
   ]
 }

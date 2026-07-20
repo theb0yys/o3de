@@ -13,8 +13,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
-import shutil
+import shlex
+import stat
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -37,11 +40,11 @@ GATE_NAMES = (
 MANDATORY_PASS_GATES = (
     "git-diff-check",
     "local-validation",
-)
-RISK_ACCEPTABLE_GATES = (
     "o3de-configure",
     "o3de-build",
     "compiled-tests",
+)
+RISK_ACCEPTABLE_GATES = (
     "windows-ui",
 )
 VALID_STATUSES = ("passed", "failed", "not_run")
@@ -79,15 +82,84 @@ def require_commit(value: str) -> str:
     return value
 
 
+def lexical_absolute(path: Path) -> Path:
+    return Path(os.path.abspath(path.expanduser()))
+
+
+def reject_storage_indirection(path: Path, field: str) -> Path:
+    declared = lexical_absolute(path)
+    current = Path(declared.anchor)
+    for component in declared.parts[1:]:
+        current /= component
+        if not current.exists():
+            continue
+        try:
+            mode = current.lstat().st_mode
+        except OSError as exc:
+            raise ValidationReceiptError(f"Unable to inspect {field}: {exc}") from exc
+        if stat.S_ISLNK(mode):
+            raise ValidationReceiptError(f"{field} must not traverse a symlink: {current}")
+    resolved = declared.resolve(strict=False)
+    if os.path.normcase(str(declared)) != os.path.normcase(str(resolved)):
+        raise ValidationReceiptError(
+            f"{field} must not traverse a junction, reparse point, or redirected path."
+        )
+    return declared
+
+
 def resolve_output(path: Path, *, create: bool) -> Path:
-    output = path.expanduser().resolve()
+    output = reject_storage_indirection(path, "Output directory")
     if create:
         output.mkdir(parents=True, exist_ok=True)
+        output = reject_storage_indirection(output, "Output directory")
     if not output.is_dir():
         raise ValidationReceiptError(f"Output directory does not exist: {output}")
-    if output.is_symlink():
-        raise ValidationReceiptError("Output directory must not be a symlink.")
     return output
+
+
+def repository_state(
+    repo_root: Path,
+    *,
+    expected_commit: str | None = None,
+    require_clean: bool = True,
+) -> str:
+    repository = reject_storage_indirection(repo_root, "Repository root")
+    if not repository.is_dir():
+        raise ValidationReceiptError(f"Repository root does not exist: {repository}")
+    try:
+        commit_result = subprocess.run(
+            ["git", "-C", str(repository), "rev-parse", "HEAD"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        status_result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repository),
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:
+        raise ValidationReceiptError(f"Unable to inspect repository state: {exc}") from exc
+    if commit_result.returncode != 0 or status_result.returncode != 0:
+        raise ValidationReceiptError("Repository HEAD and working-tree state are required.")
+    commit = require_commit(commit_result.stdout.strip())
+    if expected_commit is not None and commit != require_commit(expected_commit):
+        raise ValidationReceiptError(
+            f"Repository HEAD {commit} does not match receipt commit {expected_commit}."
+        )
+    if require_clean and status_result.stdout.strip():
+        raise ValidationReceiptError(
+            "Validation receipts require a clean working tree at the exact tested HEAD."
+        )
+    return commit
 
 
 def receipt_path(output: Path) -> Path:
@@ -96,6 +168,7 @@ def receipt_path(output: Path) -> Path:
 
 def load_receipt(output: Path) -> dict[str, Any]:
     path = receipt_path(output)
+    reject_storage_indirection(path, "Receipt path")
     if not path.is_file() or path.is_symlink():
         raise ValidationReceiptError(f"Receipt is missing or unsafe: {path}")
     try:
@@ -110,9 +183,18 @@ def load_receipt(output: Path) -> dict[str, Any]:
 def write_receipt(output: Path, receipt: dict[str, Any]) -> None:
     path = receipt_path(output)
     temporary = path.with_suffix(".json.tmp")
+    reject_storage_indirection(path, "Receipt path")
+    reject_storage_indirection(temporary, "Temporary receipt path")
+    if temporary.exists():
+        raise ValidationReceiptError(
+            f"Temporary receipt path already exists and will not be overwritten: {temporary}"
+        )
     encoded = json.dumps(receipt, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
-    temporary.write_text(encoded, encoding="utf-8")
-    temporary.replace(path)
+    with temporary.open("x", encoding="utf-8", newline="\n") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(temporary, path)
 
 
 def hash_file(path: Path) -> tuple[str, int]:
@@ -133,23 +215,33 @@ def safe_log_name(gate: str, stream_name: str) -> str:
     return f"{gate}.{stream_name}.log"
 
 
-def capture_log(
+def capture_log_bytes(
     output: Path,
     gate: str,
     stream_name: str,
-    source: Path | None,
-) -> dict[str, Any] | None:
-    if source is None:
-        return None
-    source_path = source.expanduser().resolve()
-    if not source_path.is_file() or source_path.is_symlink():
-        raise ValidationReceiptError(
-            f"{stream_name} log must be a regular non-symlink file: {source_path}"
-        )
+    content: bytes,
+) -> dict[str, Any]:
     logs = output / LOG_DIRECTORY
-    logs.mkdir(parents=True, exist_ok=True)
+    if not logs.exists():
+        logs.mkdir(parents=False, exist_ok=False)
+    reject_storage_indirection(logs, "Receipt log directory")
     destination = logs / safe_log_name(gate, stream_name)
-    shutil.copyfile(source_path, destination)
+    reject_storage_indirection(destination, f"{stream_name} log destination")
+    if destination.exists():
+        raise ValidationReceiptError(
+            f"Log destination already exists and will not be overwritten: {destination}"
+        )
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    descriptor = os.open(destination, flags, 0o600)
+    try:
+        with os.fdopen(descriptor, "wb", closefd=False) as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+    finally:
+        os.close(descriptor)
     digest, byte_count = hash_file(destination)
     return {
         "path": destination.relative_to(output).as_posix(),
@@ -182,7 +274,13 @@ def validate_log_reference(output: Path, value: Any, field: str) -> None:
     expected_bytes = value.get("bytes")
     if not isinstance(relative, str) or not relative:
         raise ValidationReceiptError(f"{field}.path is required.")
-    candidate = (output / relative).resolve()
+    relative_path = Path(relative)
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        raise ValidationReceiptError(f"{field}.path escapes the receipt directory.")
+    candidate = reject_storage_indirection(
+        output / relative_path,
+        f"{field}.path",
+    )
     try:
         candidate.relative_to(output)
     except ValueError as exc:
@@ -192,6 +290,15 @@ def validate_log_reference(output: Path, value: Any, field: str) -> None:
     actual_digest, actual_bytes = hash_file(candidate)
     if digest != actual_digest or expected_bytes != actual_bytes:
         raise ValidationReceiptError(f"{field} hash or byte count does not match.")
+
+
+def utc_now() -> str:
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def validate_receipt(
@@ -252,6 +359,8 @@ def validate_receipt(
                 )
             if not notes.strip():
                 raise ValidationReceiptError(f"{name} not_run requires a reason.")
+            if entry.get("stdout_log") is not None or entry.get("stderr_log") is not None:
+                raise ValidationReceiptError(f"{name} not_run must not carry execution logs.")
         else:
             if not isinstance(exit_code, int):
                 raise ValidationReceiptError(f"{name} requires an integer exit code.")
@@ -264,6 +373,10 @@ def validate_receipt(
             if finish_time < start_time:
                 raise ValidationReceiptError(f"{name} finished before it started.")
             latest_time = max(latest_time, finish_time)
+            if entry.get("stdout_log") is None or entry.get("stderr_log") is None:
+                raise ValidationReceiptError(
+                    f"{name} executed state requires tool-captured stdout and stderr logs."
+                )
         validate_log_reference(output, entry.get("stdout_log"), f"{name}.stdout_log")
         validate_log_reference(output, entry.get("stderr_log"), f"{name}.stderr_log")
 
@@ -337,16 +450,15 @@ def initialize(args: argparse.Namespace) -> int:
         )
     receipt = {
         "schema_version": SCHEMA_VERSION,
-        "source_commit": require_commit(args.source_commit),
+        "source_commit": repository_state(args.repo_root),
         "tester_alias": require_token(args.tester_alias, "tester alias"),
         "platform": args.platform.strip(),
         "configuration": args.configuration.strip(),
-        "created_at_utc": args.created_at,
+        "created_at_utc": utc_now(),
         "gates": [],
         "risk_acceptances": [],
         "finalized_at_utc": None,
     }
-    parse_utc(args.created_at, "created_at_utc")
     if not receipt["platform"] or not receipt["configuration"]:
         raise ValidationReceiptError("platform and configuration are required.")
     write_receipt(output, receipt)
@@ -361,43 +473,90 @@ def record_gate(args: argparse.Namespace) -> int:
         raise ValidationReceiptError("Finalized receipts are immutable.")
     if args.name not in GATE_NAMES:
         raise ValidationReceiptError(f"Unknown gate: {args.name}")
-    status = args.status.replace("-", "_")
-    if status not in VALID_STATUSES:
-        raise ValidationReceiptError(f"Unknown status: {args.status}")
-    exit_code = args.exit_code
-    if status == "passed" and exit_code != 0:
-        raise ValidationReceiptError("passed requires --exit-code 0.")
-    if status == "failed" and (exit_code is None or exit_code == 0):
-        raise ValidationReceiptError("failed requires a non-zero --exit-code.")
-    if status == "not_run" and exit_code is not None:
-        raise ValidationReceiptError("not-run must not include --exit-code.")
-    started = args.started_at
-    finished = args.finished_at
-    if status == "not_run":
-        if started or finished:
-            raise ValidationReceiptError("not-run must not include timestamps.")
-        if not args.notes.strip():
-            raise ValidationReceiptError("not-run requires --notes with the reason.")
-    else:
-        if not started or not finished:
-            raise ValidationReceiptError("executed gates require start and finish times.")
-        if parse_utc(finished, "finished_at_utc") < parse_utc(
-            started, "started_at_utc"
-        ):
-            raise ValidationReceiptError("finish time precedes start time.")
+    if find_gate(receipt, args.name) is not None:
+        raise ValidationReceiptError(
+            f"{args.name} is already recorded; initialize a new exact-head receipt to rerun it."
+        )
+    repository = reject_storage_indirection(args.repo_root, "Repository root")
+    repository_state(
+        repository,
+        expected_commit=str(receipt.get("source_commit", "")),
+    )
+    command = list(args.command)
+    if command and command[0] == "--":
+        command.pop(0)
+    if not command:
+        raise ValidationReceiptError(
+            "record requires an executable and arguments after --."
+        )
+    started = utc_now()
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=repository,
+            check=False,
+            capture_output=True,
+        )
+    except OSError as exc:
+        raise ValidationReceiptError(f"Unable to execute validation gate: {exc}") from exc
+    finished = utc_now()
+    repository_state(
+        repository,
+        expected_commit=str(receipt.get("source_commit", "")),
+    )
+    status = "passed" if completed.returncode == 0 else "failed"
+    exit_code = completed.returncode
     entry = {
         "name": args.name,
-        "command": args.command,
+        "command": shlex.join(command),
         "status": status,
         "exit_code": exit_code,
         "started_at_utc": started,
         "finished_at_utc": finished,
         "notes": args.notes,
-        "stdout_log": capture_log(output, args.name, "stdout", args.stdout_log),
-        "stderr_log": capture_log(output, args.name, "stderr", args.stderr_log),
+        "stdout_log": capture_log_bytes(
+            output, args.name, "stdout", completed.stdout
+        ),
+        "stderr_log": capture_log_bytes(
+            output, args.name, "stderr", completed.stderr
+        ),
     }
-    gates = [item for item in receipt.get("gates", []) if item.get("name") != args.name]
+    gates = list(receipt.get("gates", []))
     gates.append(entry)
+    gates.sort(key=lambda item: GATE_NAMES.index(item["name"]))
+    receipt["gates"] = gates
+    write_receipt(output, receipt)
+    print(f"{args.name}: {status} (exit {exit_code})")
+    return 0 if completed.returncode == 0 else 1
+
+
+def skip_gate(args: argparse.Namespace) -> int:
+    output = resolve_output(args.output, create=False)
+    receipt = load_receipt(output)
+    if receipt.get("finalized_at_utc") is not None:
+        raise ValidationReceiptError("Finalized receipts are immutable.")
+    if find_gate(receipt, args.name) is not None:
+        raise ValidationReceiptError(f"{args.name} is already recorded.")
+    repository_state(
+        args.repo_root,
+        expected_commit=str(receipt.get("source_commit", "")),
+    )
+    if not args.reason.strip():
+        raise ValidationReceiptError("skip requires a concrete reason.")
+    gates = list(receipt.get("gates", []))
+    gates.append(
+        {
+            "name": args.name,
+            "command": "not run",
+            "status": "not_run",
+            "exit_code": None,
+            "started_at_utc": None,
+            "finished_at_utc": None,
+            "notes": args.reason.strip(),
+            "stdout_log": None,
+            "stderr_log": None,
+        }
+    )
     gates.sort(key=lambda item: GATE_NAMES.index(item["name"]))
     receipt["gates"] = gates
     write_receipt(output, receipt)
@@ -409,6 +568,10 @@ def accept_risk(args: argparse.Namespace) -> int:
     receipt = load_receipt(output)
     if receipt.get("finalized_at_utc") is not None:
         raise ValidationReceiptError("Finalized receipts are immutable.")
+    repository_state(
+        args.repo_root,
+        expected_commit=str(receipt.get("source_commit", "")),
+    )
     if args.gate not in RISK_ACCEPTABLE_GATES:
         raise ValidationReceiptError(f"Risk cannot be accepted for {args.gate}.")
     gate = find_gate(receipt, args.gate)
@@ -416,11 +579,10 @@ def accept_risk(args: argparse.Namespace) -> int:
         raise ValidationReceiptError(
             "Risk acceptance is allowed only after recording the gate as not_run."
         )
-    parse_utc(args.accepted_at, "accepted_at_utc")
     acceptance = {
         "gate": args.gate,
         "maintainer_alias": require_token(args.maintainer_alias, "maintainer alias"),
-        "accepted_at_utc": args.accepted_at,
+        "accepted_at_utc": utc_now(),
         "rationale": args.rationale.strip(),
     }
     if not acceptance["rationale"]:
@@ -440,7 +602,11 @@ def accept_risk(args: argparse.Namespace) -> int:
 def finalize(args: argparse.Namespace) -> int:
     output = resolve_output(args.output, create=False)
     receipt = load_receipt(output)
-    receipt["finalized_at_utc"] = args.finalized_at
+    repository_state(
+        args.repo_root,
+        expected_commit=str(receipt.get("source_commit", "")),
+    )
+    receipt["finalized_at_utc"] = utc_now()
     validate_receipt(
         output,
         receipt,
@@ -455,6 +621,10 @@ def finalize(args: argparse.Namespace) -> int:
 def verify(args: argparse.Namespace) -> int:
     output = resolve_output(args.output, create=False)
     receipt = load_receipt(output)
+    repository_state(
+        args.repo_root,
+        expected_commit=str(receipt.get("source_commit", "")),
+    )
     validate_receipt(
         output,
         receipt,
@@ -468,6 +638,10 @@ def verify(args: argparse.Namespace) -> int:
 def summarize(args: argparse.Namespace) -> int:
     output = resolve_output(args.output, create=False)
     receipt = load_receipt(output)
+    repository_state(
+        args.repo_root,
+        expected_commit=str(receipt.get("source_commit", "")),
+    )
     validate_receipt(
         output,
         receipt,
@@ -505,32 +679,40 @@ def summarize(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=Path(__file__).resolve().parents[3],
+        help="Git repository whose clean exact HEAD is being validated.",
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     init_parser = subparsers.add_parser("init", help="Create a pending receipt.")
     init_parser.add_argument("--output", type=Path, required=True)
-    init_parser.add_argument("--source-commit", required=True)
     init_parser.add_argument("--tester-alias", required=True)
     init_parser.add_argument("--platform", required=True)
     init_parser.add_argument("--configuration", required=True)
-    init_parser.add_argument("--created-at", required=True)
     init_parser.add_argument("--force", action="store_true")
     init_parser.set_defaults(handler=initialize)
 
     record_parser = subparsers.add_parser("record", help="Record one validation gate.")
     record_parser.add_argument("--output", type=Path, required=True)
     record_parser.add_argument("--name", required=True, choices=GATE_NAMES)
-    record_parser.add_argument("--command", required=True)
-    record_parser.add_argument(
-        "--status", required=True, choices=("passed", "failed", "not-run")
-    )
-    record_parser.add_argument("--exit-code", type=int)
-    record_parser.add_argument("--started-at")
-    record_parser.add_argument("--finished-at")
     record_parser.add_argument("--notes", default="")
-    record_parser.add_argument("--stdout-log", type=Path)
-    record_parser.add_argument("--stderr-log", type=Path)
+    record_parser.add_argument(
+        "command",
+        nargs=argparse.REMAINDER,
+        help="Executable and arguments to run after --.",
+    )
     record_parser.set_defaults(handler=record_gate)
+
+    skip_parser = subparsers.add_parser(
+        "skip", help="Record a gate as not run without inventing execution data."
+    )
+    skip_parser.add_argument("--output", type=Path, required=True)
+    skip_parser.add_argument("--name", required=True, choices=GATE_NAMES)
+    skip_parser.add_argument("--reason", required=True)
+    skip_parser.set_defaults(handler=skip_gate)
 
     accept_parser = subparsers.add_parser(
         "accept-risk", help="Accept one explicitly recorded not-run gate."
@@ -538,7 +720,6 @@ def build_parser() -> argparse.ArgumentParser:
     accept_parser.add_argument("--output", type=Path, required=True)
     accept_parser.add_argument("--gate", required=True, choices=RISK_ACCEPTABLE_GATES)
     accept_parser.add_argument("--maintainer-alias", required=True)
-    accept_parser.add_argument("--accepted-at", required=True)
     accept_parser.add_argument("--rationale", required=True)
     accept_parser.set_defaults(handler=accept_risk)
 
@@ -547,7 +728,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     finalize_parser.add_argument("--output", type=Path, required=True)
     finalize_parser.add_argument("--expected-commit", required=True)
-    finalize_parser.add_argument("--finalized-at", required=True)
     finalize_parser.set_defaults(handler=finalize)
 
     verify_parser = subparsers.add_parser("verify", help="Verify receipt integrity.")

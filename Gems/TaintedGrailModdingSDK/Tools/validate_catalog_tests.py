@@ -96,6 +96,8 @@ def main() -> int:
             "Tests/EconomyCoverageServiceTests.cpp",
             "Tests/EconomyDuplicateDetectionServiceTests.cpp",
             "Tests/FoundationWorkspaceIsolationTests.cpp",
+            "Tests/Main.cpp",
+            "Tests/SourceImportServiceTests.cpp",
         }
         if test_entries != expected_tests:
             fail(

@@ -32,6 +32,13 @@ def require(text: str, fragment: str, label: str) -> None:
         )
 
 
+def forbid(text: str, fragment: str, label: str) -> None:
+    if fragment in text:
+        raise ValidationReceiptContractError(
+            f"{label} retains prohibited fragment {fragment!r}."
+        )
+
+
 def require_all(text: str, fragments: tuple[str, ...], label: str) -> None:
     for fragment in fragments:
         require(text, fragment, label)
@@ -55,16 +62,32 @@ def validate(repo_root: Path) -> None:
             '"o3de-build"',
             '"compiled-tests"',
             '"windows-ui"',
+            "repository_state(",
+            "subprocess.run(",
+            "capture_log_bytes(",
+            "os.O_EXCL",
+            'if hasattr(os, "O_NOFOLLOW")',
+            "reject_storage_indirection(",
+            'nargs=argparse.REMAINDER',
+            "def skip_gate(",
+            '"created_at_utc": utc_now()',
+            '"accepted_at_utc": utc_now()',
+            'receipt["finalized_at_utc"] = utc_now()',
             "hash_file(",
             "validate_log_reference(",
             "Receipt commit",
             "must pass; it cannot be waived",
             "explicit maintainer risk acceptance",
             "Finalized receipts are immutable",
-            'subparsers.add_parser("summarize"',
+            '"summarize", help="Print a Markdown summary for a pull request."',
         ),
         "Validation receipt tool",
     )
+    forbid(tool, 'add_argument("--source-commit"', "Validation receipt tool")
+    forbid(tool, 'add_argument("--status"', "Validation receipt tool")
+    forbid(tool, 'add_argument("--exit-code"', "Validation receipt tool")
+    forbid(tool, 'add_argument("--started-at"', "Validation receipt tool")
+    forbid(tool, 'add_argument("--finished-at"', "Validation receipt tool")
 
     tests = read(
         repo_root,
@@ -79,6 +102,10 @@ def validate(repo_root: Path) -> None:
             "test_mandatory_local_validation_cannot_be_waived",
             "test_skipped_host_gate_requires_maintainer_acceptance",
             "test_finalized_receipt_is_immutable",
+            "test_record_executes_command_and_derives_failure",
+            "test_init_rejects_dirty_repository",
+            "test_mandatory_compiled_gate_cannot_be_waived",
+            "test_output_directory_symlink_is_rejected",
         ),
         "Validation receipt unit tests",
     )
@@ -92,6 +119,7 @@ def validate(repo_root: Path) -> None:
             "--require-merge-ready",
             "validation_receipt.py summarize",
             "Do not commit the receipt or logs",
+            "tester-supplied evidence",
         ),
         "Pull request template",
     )
@@ -110,6 +138,11 @@ def validate(repo_root: Path) -> None:
             "validation_receipt.py finalize",
             "validation_receipt.py verify",
             "validation_receipt.py summarize",
+            "derives the 40-character",
+            "runs that command",
+            "must all have an executed, zero-exit result",
+            "waived. A Windows UI pass",
+            "not a signature",
             "must not be committed",
         ),
         "CI and local validation policy",
@@ -125,7 +158,9 @@ def validate(repo_root: Path) -> None:
             "merge-ready exact-head validation receipt",
             "validation_receipt.py verify",
             "--require-merge-ready",
-            "receipt source commit matches the reviewed head",
+            "its receipt source",
+            "commit matches the reviewed head",
+            "compiled-test gates remain mandatory",
         ),
         "Review and merge policy",
     )

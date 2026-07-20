@@ -10,18 +10,23 @@
 #include "ResearchContractValidation.h"
 
 #include <AzCore/PlatformDef.h>
-#if AZ_TRAIT_OS_PLATFORM_WINDOWS
+#if AZ_TRAIT_USE_WINDOWS_FILE_API
 #   include <AzCore/PlatformIncl.h>
 #endif
 
 #include <atomic>
+#include <algorithm>
+#include <cerrno>
+#include <cctype>
 #include <chrono>
 #include <filesystem>
-#include <fstream>
+#include <string>
 #include <system_error>
 
-#if !AZ_TRAIT_OS_PLATFORM_WINDOWS
+#if !AZ_TRAIT_USE_WINDOWS_FILE_API
+#   include <fcntl.h>
 #   include <sys/stat.h>
+#   include <unistd.h>
 #endif
 
 namespace TaintedGrailModdingSDK
@@ -30,7 +35,7 @@ namespace TaintedGrailModdingSDK
     {
         namespace Filesystem = std::filesystem;
 
-#if AZ_TRAIT_OS_PLATFORM_WINDOWS
+#if AZ_TRAIT_USE_WINDOWS_FILE_API
         constexpr bool PlatformPathsAreCaseInsensitive = true;
 #else
         constexpr bool PlatformPathsAreCaseInsensitive = false;
@@ -40,7 +45,13 @@ namespace TaintedGrailModdingSDK
 
         Filesystem::path FromUtf8(const AZStd::string& value)
         {
+#if defined(__cpp_lib_char8_t)
+            return Filesystem::path(std::u8string(
+                reinterpret_cast<const char8_t*>(value.data()),
+                value.size()));
+#else
             return Filesystem::u8path(value.c_str());
+#endif
         }
 
         AZStd::string ToUtf8(const Filesystem::path& value)
@@ -69,7 +80,7 @@ namespace TaintedGrailModdingSDK
                 {
                     return true;
                 }
-#if AZ_TRAIT_OS_PLATFORM_WINDOWS
+#if AZ_TRAIT_USE_WINDOWS_FILE_API
                 const DWORD attributes = GetFileAttributesW(current.c_str());
                 if (attributes == INVALID_FILE_ATTRIBUTES
                     || (attributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0)
@@ -152,29 +163,72 @@ namespace TaintedGrailModdingSDK
                     ^ s_writeProbeCounter.fetch_add(1);
                 const Filesystem::path probe = directory /
                     (".tg-sdk-write-probe-" + std::to_string(suffix) + ".tmp");
-                std::error_code error;
-                if (Filesystem::exists(probe, error))
+#if AZ_TRAIT_USE_WINDOWS_FILE_API
+                const HANDLE handle = CreateFileW(
+                    probe.c_str(),
+                    GENERIC_WRITE,
+                    0,
+                    nullptr,
+                    CREATE_NEW,
+                    FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_OPEN_REPARSE_POINT,
+                    nullptr);
+                if (handle == INVALID_HANDLE_VALUE)
                 {
-                    continue;
+                    const DWORD createError = GetLastError();
+                    if (createError == ERROR_FILE_EXISTS
+                        || createError == ERROR_ALREADY_EXISTS)
+                    {
+                        continue;
+                    }
+                    return AZ::Failure(
+                        AZStd::string(label)
+                        + " is not writable through exclusive no-follow creation: "
+                        + ToUtf8(directory));
                 }
-
-                std::ofstream stream(probe, std::ios::binary | std::ios::out);
-                if (!stream.is_open())
+                DWORD bytesWritten = 0;
+                constexpr char ProbeContent[] = "tg-sdk-write-probe";
+                const bool writeSucceeded = WriteFile(
+                    handle,
+                    ProbeContent,
+                    static_cast<DWORD>(sizeof(ProbeContent) - 1),
+                    &bytesWritten,
+                    nullptr)
+                    && bytesWritten == sizeof(ProbeContent) - 1
+                    && FlushFileBuffers(handle);
+                const bool closeSucceeded = CloseHandle(handle) != 0;
+                const bool removed = DeleteFileW(probe.c_str()) != 0;
+#else
+                const int descriptor = ::open(
+                    probe.c_str(),
+                    O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW,
+                    S_IRUSR | S_IWUSR);
+                if (descriptor < 0)
+                {
+                    if (errno == EEXIST)
+                    {
+                        continue;
+                    }
+                    return AZ::Failure(
+                        AZStd::string(label)
+                        + " is not writable through exclusive no-follow creation: "
+                        + ToUtf8(directory));
+                }
+                constexpr char ProbeContent[] = "tg-sdk-write-probe";
+                const ssize_t written = ::write(
+                    descriptor,
+                    ProbeContent,
+                    sizeof(ProbeContent) - 1);
+                const bool writeSucceeded =
+                    written == static_cast<ssize_t>(sizeof(ProbeContent) - 1)
+                    && ::fsync(descriptor) == 0;
+                const bool closeSucceeded = ::close(descriptor) == 0;
+                const bool removed = ::unlink(probe.c_str()) == 0;
+#endif
+                if (!writeSucceeded || !closeSucceeded || !removed)
                 {
                     return AZ::Failure(
                         AZStd::string(label)
-                        + " is not writable: " + ToUtf8(directory));
-                }
-                stream.write("tg-sdk-write-probe", 18);
-                stream.flush();
-                const bool writeSucceeded = stream.good();
-                stream.close();
-                const bool removed = Filesystem::remove(probe, error);
-                if (!writeSucceeded || !removed || error)
-                {
-                    return AZ::Failure(
-                        AZStd::string(label)
-                        + " failed the create/write/remove probe: "
+                        + " failed the exclusive create/write/remove probe: "
                         + ToUtf8(directory));
                 }
                 return AZ::Success();
@@ -244,7 +298,7 @@ namespace TaintedGrailModdingSDK
             return resolved;
         }
 
-        bool DirectoryContainsRegularFile(const Filesystem::path& directory)
+        bool DirectoryContainsAssemblyFile(const Filesystem::path& directory)
         {
             std::error_code error;
             size_t inspected = 0;
@@ -256,7 +310,22 @@ namespace TaintedGrailModdingSDK
                 {
                     return false;
                 }
-                if (iterator->is_regular_file(error) && !error)
+                const Filesystem::file_status status =
+                    iterator->symlink_status(error);
+                if (error)
+                {
+                    return false;
+                }
+                std::string extension = iterator->path().extension().string();
+                std::transform(
+                    extension.begin(),
+                    extension.end(),
+                    extension.begin(),
+                    [](unsigned char value)
+                    {
+                        return static_cast<char>(std::tolower(value));
+                    });
+                if (Filesystem::is_regular_file(status) && extension == ".dll")
                 {
                     return true;
                 }
@@ -305,7 +374,7 @@ namespace TaintedGrailModdingSDK
                     AZStd::string("Profile ") + profile.m_profileId
                     + ": ManagedAssembliesPath must be a dedicated directory inside the canonical InstallPath.");
             }
-            if (!DirectoryContainsRegularFile(managedPath.GetValue()))
+            if (!DirectoryContainsAssemblyFile(managedPath.GetValue()))
             {
                 return AZ::Failure(
                     AZStd::string("Profile ") + profile.m_profileId

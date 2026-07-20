@@ -42,3 +42,13 @@ set(FILES
     Source/WorkspaceSchemaService.cpp
     Source/WorkspaceSchemaService.h
 )
+
+# Framework implementation files use file-local helpers with intentionally
+# repeated names. Compile them as separate translation units so those helpers
+# retain normal internal linkage instead of colliding in generated unity files.
+set(SKIP_UNITY_BUILD_INCLUSION_FILES)
+foreach(source_file IN LISTS FILES)
+    if(source_file MATCHES "\\.cpp$")
+        list(APPEND SKIP_UNITY_BUILD_INCLUSION_FILES ${source_file})
+    endif()
+endforeach()

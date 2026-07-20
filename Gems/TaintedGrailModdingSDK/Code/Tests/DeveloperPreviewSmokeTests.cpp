@@ -13,13 +13,16 @@
 
 #include <AzCore/Component/ComponentApplication.h>
 #include <AzCore/IO/ByteContainerStream.h>
-#include <AzCore/Serialization/Json/JsonRegistrationContext.h>
+#include <AzCore/IO/FileIO.h>
+#include <AzCore/Serialization/Json/RegistrationContext.h>
 #include <AzCore/Serialization/Json/JsonSystemComponent.h>
 #include <AzCore/Serialization/Json/JsonUtils.h>
 #include <AzCore/Serialization/SerializeContext.h>
 #include <AzCore/std/algorithm.h>
+#include <AzCore/std/sort.h>
 #include <AzCore/std/utility/move.h>
 #include <AzTest/AzTest.h>
+#include <AzFramework/IO/LocalFileIO.h>
 
 #include <QDir>
 #include <QFileInfo>
@@ -230,7 +233,12 @@ namespace TaintedGrailModdingSDK
                 return AZ::Failure(AZStd::string(
                     "Developer Preview catalog binding does not match the workspace profile."));
             }
-            if (!state.m_catalog.ReplaceFromDocument(catalogDocument, &error))
+            if (!state.m_catalog.ReplaceFromBoundDocument(
+                    catalogDocument,
+                    state.m_workspace,
+                    *profile,
+                    state.m_registry,
+                    &error))
             {
                 return AZ::Failure(error);
             }
@@ -394,6 +402,11 @@ namespace TaintedGrailModdingSDK
                 startup.m_loadSettingsRegistry = false;
                 ASSERT_NE(m_application.Create(descriptor, startup), nullptr);
                 m_created = true;
+                if (!AZ::IO::FileIOBase::GetInstance())
+                {
+                    AZ::IO::FileIOBase::SetInstance(&m_fileIO);
+                    m_installedFileIo = true;
+                }
 
                 AZ::SerializeContext* serializeContext = m_application.GetSerializeContext();
                 AZ::JsonRegistrationContext* jsonRegistrationContext =
@@ -407,14 +420,35 @@ namespace TaintedGrailModdingSDK
 
             void TearDown() override
             {
+                if (AZ::SerializeContext* serializeContext =
+                        m_application.GetSerializeContext())
+                {
+                    serializeContext->EnableRemoveReflection();
+                    ReflectPreviewTypes(*serializeContext);
+                    AZ::JsonSystemComponent::Reflect(serializeContext);
+                    serializeContext->DisableRemoveReflection();
+                }
+                if (AZ::JsonRegistrationContext* jsonRegistrationContext =
+                        m_application.GetJsonRegistrationContext())
+                {
+                    jsonRegistrationContext->EnableRemoveReflection();
+                    AZ::JsonSystemComponent::Reflect(jsonRegistrationContext);
+                    jsonRegistrationContext->DisableRemoveReflection();
+                }
                 if (m_created)
                 {
                     m_application.Destroy();
                 }
+                if (m_installedFileIo)
+                {
+                    AZ::IO::FileIOBase::SetInstance(nullptr);
+                }
             }
 
             AZ::ComponentApplication m_application;
+            AZ::IO::LocalFileIO m_fileIO;
             bool m_created = false;
+            bool m_installedFileIo = false;
         };
     } // namespace
 
@@ -431,7 +465,7 @@ namespace TaintedGrailModdingSDK
 
         ASSERT_EQ(loaded.m_sourceDocuments.size(), 1);
         ASSERT_EQ(loaded.m_registry.GetSources().size(), 1);
-        ASSERT_EQ(loaded.m_registry.GetEvidence().size(), 8);
+        ASSERT_EQ(loaded.m_registry.GetEvidence().size(), 10);
         ASSERT_EQ(loaded.m_catalog.GetRecords().size(), 5);
         ASSERT_EQ(loaded.m_catalog.GetRelationships().size(), 3);
         ASSERT_EQ(loaded.m_catalog.GetGovernanceHistory().size(), 6);

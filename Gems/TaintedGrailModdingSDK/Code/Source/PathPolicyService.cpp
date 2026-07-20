@@ -8,7 +8,7 @@
 #include "PathPolicyService.h"
 
 #include <AzCore/PlatformDef.h>
-#if AZ_TRAIT_OS_PLATFORM_WINDOWS
+#if AZ_TRAIT_USE_WINDOWS_FILE_API
 #   include <AzCore/PlatformIncl.h>
 #endif
 #include <AzCore/std/utility/move.h>
@@ -25,7 +25,7 @@ namespace TaintedGrailModdingSDK
     {
         namespace Filesystem = std::filesystem;
 
-#if AZ_TRAIT_OS_PLATFORM_WINDOWS
+#if AZ_TRAIT_USE_WINDOWS_FILE_API
         constexpr bool PlatformPathsAreCaseInsensitive = true;
 #else
         constexpr bool PlatformPathsAreCaseInsensitive = false;
@@ -33,7 +33,13 @@ namespace TaintedGrailModdingSDK
 
         Filesystem::path FromUtf8(const AZStd::string& value)
         {
+#if defined(__cpp_lib_char8_t)
+            return Filesystem::path(std::u8string(
+                reinterpret_cast<const char8_t*>(value.data()),
+                value.size()));
+#else
             return Filesystem::u8path(value.c_str());
+#endif
         }
 
         AZStd::string ToUtf8(const Filesystem::path& value)
@@ -65,7 +71,7 @@ namespace TaintedGrailModdingSDK
             const Filesystem::path& right,
             bool caseInsensitive)
         {
-#if AZ_TRAIT_OS_PLATFORM_WINDOWS
+#if AZ_TRAIT_USE_WINDOWS_FILE_API
             if (caseInsensitive)
             {
                 const std::wstring& leftNative = left.native();

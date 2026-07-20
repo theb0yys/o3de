@@ -10,6 +10,7 @@
 #include "ResearchContractValidation.h"
 
 #include <AzCore/std/algorithm.h>
+#include <AzCore/std/sort.h>
 #include <AzCore/std/utility/move.h>
 
 namespace TaintedGrailModdingSDK
@@ -65,7 +66,8 @@ namespace TaintedGrailModdingSDK
                 || value == "found_at"
                 || value == "rewarded_by"
                 || value == "granted_by"
-                || value == "learned_from";
+                || value == "learned_from"
+                || value == "crafted_at";
         }
 
         bool IsCurrentValidated(const CatalogRecord& record)
@@ -282,8 +284,8 @@ namespace TaintedGrailModdingSDK
         relationship.m_relationshipKind = request.m_relationshipKind;
         relationship.m_evidenceIds = request.m_evidenceIds;
         relationship.m_attributes = request.m_attributes;
-        relationship.m_researchStage = "observed";
-        relationship.m_confidence = "medium";
+        relationship.m_researchStage = "S2";
+        relationship.m_confidence = "inferred";
         relationship.m_operationalRisk = "unknown";
         relationship.m_validationState = "unvalidated";
         relationship.m_stalenessState = "unknown";
@@ -381,7 +383,18 @@ namespace TaintedGrailModdingSDK
                 AddUnique(
                     row.m_stationEvidenceSubjectRefs,
                     StationAssociationSubject(recipeRecordId, stationRecordId));
-                AddAllUnique(row.m_evidenceIds, recipeProfile->m_evidenceIds);
+                for (const AZStd::string& evidenceId : recipeProfile->m_evidenceIds)
+                {
+                    const EvidenceRecord* evidence =
+                        sourceRegistry.FindEvidence(evidenceId);
+                    if (!evidence
+                        || Contains(
+                            row.m_stationEvidenceSubjectRefs,
+                            evidence->m_subjectRef))
+                    {
+                        AddUnique(row.m_evidenceIds, evidenceId);
+                    }
+                }
                 row.m_unlockMode = recipeProfile->m_unlockMode;
                 row.m_unlockSubjectRefs = recipeProfile->m_unlockSubjectRefs;
             }

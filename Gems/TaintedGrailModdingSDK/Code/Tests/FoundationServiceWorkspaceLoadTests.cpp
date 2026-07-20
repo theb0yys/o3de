@@ -70,13 +70,21 @@ namespace TaintedGrailModdingSDK
             document.m_source.m_title = "Synthetic source";
             document.m_source.m_sourceKind = "test";
             document.m_source.m_locator = "fixture";
-            document.m_source.m_fingerprint = "sha256:fixture-" + workspace.m_workspaceId;
+            document.m_source.m_fingerprint =
+                "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
             document.m_source.m_profileId = mismatched ? "wrong.profile" : profile.m_profileId;
             document.m_source.m_gameVersion = profile.m_gameVersion;
             document.m_source.m_branch = profile.m_branch;
             document.m_source.m_runtimeTarget = profile.m_runtimeTarget;
+            document.m_source.m_toolName = "foundation-workspace-load-tests";
+            document.m_source.m_toolVersion = "1.0.0";
             document.m_source.m_importerId = "test.importer";
             document.m_source.m_importerVersion = "1.0.0";
+            document.m_source.m_capturedAt = "2026-01-01T00:00:00Z";
+            document.m_source.m_importedAt = "2026-01-01T00:00:01Z";
+            document.m_source.m_mediaType = "application/json";
+            document.m_source.m_byteSize = 512;
+            document.m_source.m_importStatus = "imported";
             return document;
         }
 
@@ -89,7 +97,7 @@ namespace TaintedGrailModdingSDK
             EvidenceDocument document;
             document.m_sourceId = source.m_source.m_sourceId;
             document.m_sourceFingerprint = mismatched
-                ? "sha256:wrong"
+                ? "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
                 : source.m_source.m_fingerprint;
             document.m_profileId = profile.m_profileId;
             document.m_gameVersion = profile.m_gameVersion;
@@ -104,6 +112,11 @@ namespace TaintedGrailModdingSDK
             evidence.m_branch = profile.m_branch;
             evidence.m_subjectRef = "subject:test";
             evidence.m_claim = "Synthetic claim";
+            evidence.m_evidenceKind = "structured_record";
+            evidence.m_confidence = "documented";
+            evidence.m_locator = "fixture";
+            evidence.m_recordPath = "/records/0";
+            evidence.m_extractedAt = "2026-01-01T00:00:00Z";
             document.m_evidence.push_back(evidence);
             return document;
         }

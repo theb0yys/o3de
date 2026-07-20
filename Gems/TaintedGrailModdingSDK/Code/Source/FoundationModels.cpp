@@ -10,6 +10,7 @@
 #include "ResearchContractValidation.h"
 
 #include <AzCore/Serialization/SerializeContext.h>
+#include <AzCore/std/sort.h>
 
 namespace TaintedGrailModdingSDK
 {

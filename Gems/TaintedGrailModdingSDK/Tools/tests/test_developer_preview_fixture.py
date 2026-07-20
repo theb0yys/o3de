@@ -175,6 +175,8 @@ class DeveloperPreviewFixtureTests(unittest.TestCase):
             self.assertTrue(relationship["RelationshipId"].startswith("preview.relationship."))
         evidence = documents[fixture.EVIDENCE_DOCUMENT_PATH]["Evidence"]
         self.assertTrue(all(value["EvidenceId"].startswith("preview.evidence.") for value in evidence))
+        self.assertTrue(all(fixture.is_reserved_preview_subject(value["SubjectRef"]) for value in evidence))
+        self.assertFalse(fixture.is_reserved_preview_subject("relationship:outside.preview"))
 
     def test_cli_returns_success_for_generate_and_verify(self) -> None:
         output = self.temp_root / "cli"

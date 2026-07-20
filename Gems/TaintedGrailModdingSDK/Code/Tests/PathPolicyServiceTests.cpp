@@ -15,6 +15,7 @@
 #include <QTemporaryDir>
 
 #include <filesystem>
+#include <string>
 #include <system_error>
 
 namespace TaintedGrailModdingSDK
@@ -25,6 +26,17 @@ namespace TaintedGrailModdingSDK
         {
             const QByteArray utf8 = value.toUtf8();
             return AZStd::string(utf8.constData(), static_cast<size_t>(utf8.size()));
+        }
+
+        std::filesystem::path FromUtf8(const AZStd::string& value)
+        {
+#if defined(__cpp_lib_char8_t)
+            return std::filesystem::path(std::u8string(
+                reinterpret_cast<const char8_t*>(value.data()),
+                value.size()));
+#else
+            return std::filesystem::u8path(value.c_str());
+#endif
         }
 
         bool Touch(const QString& filePath)
@@ -75,6 +87,32 @@ namespace TaintedGrailModdingSDK
             workspace.m_gameProfiles.push_back(ValidatedProfile("test.active", "GameActive"));
             workspace.m_gameProfiles.push_back(ValidatedProfile("test.inactive", "GameInactive"));
             return workspace;
+        }
+
+        bool PrepareValidatedWorkspaceTree(const QString& workspacePath)
+        {
+            const QStringList directories = {
+                "Build",
+                "Staging",
+                "Deployment",
+                "Diagnostics/test.active",
+                "Diagnostics/test.inactive",
+                "Extracted/test.active",
+                "Extracted/test.inactive",
+                "GameActive/Managed",
+                "GameActive/Plugins",
+                "GameInactive/Managed",
+                "GameInactive/Plugins",
+            };
+            for (const QString& directory : directories)
+            {
+                if (!QDir().mkpath(QDir(workspacePath).filePath(directory)))
+                {
+                    return false;
+                }
+            }
+            return Touch(QDir(workspacePath).filePath("GameActive/Managed/Game.dll"))
+                && Touch(QDir(workspacePath).filePath("GameInactive/Managed/Game.dll"));
         }
     } // namespace
 
@@ -167,10 +205,9 @@ namespace TaintedGrailModdingSDK
         ASSERT_TRUE(Touch(documentPath));
         ASSERT_TRUE(Touch(QDir(outsidePath).filePath("escape.tgpack.json")));
 
-        const std::filesystem::path linkPath = std::filesystem::u8path(
-            ToAzString(QDir(workspacePath).filePath("linked-outside")).c_str());
-        const std::filesystem::path targetPath = std::filesystem::u8path(
-            ToAzString(outsidePath).c_str());
+        const std::filesystem::path linkPath = FromUtf8(
+            ToAzString(QDir(workspacePath).filePath("linked-outside")));
+        const std::filesystem::path targetPath = FromUtf8(ToAzString(outsidePath));
         std::error_code error;
         std::filesystem::create_directory_symlink(targetPath, linkPath, error);
         if (error)
@@ -229,10 +266,7 @@ namespace TaintedGrailModdingSDK
         QTemporaryDir temporary;
         ASSERT_TRUE(temporary.isValid());
         const QString workspacePath = QDir(temporary.path()).filePath("workspace");
-        ASSERT_TRUE(QDir().mkpath(QDir(workspacePath).filePath("GameActive/Managed")));
-        ASSERT_TRUE(QDir().mkpath(QDir(workspacePath).filePath("GameActive/Plugins")));
-        ASSERT_TRUE(QDir().mkpath(QDir(workspacePath).filePath("GameInactive/Managed")));
-        ASSERT_TRUE(QDir().mkpath(QDir(workspacePath).filePath("GameInactive/Plugins")));
+        ASSERT_TRUE(PrepareValidatedWorkspaceTree(workspacePath));
 
         const QString canonicalRoot = QFileInfo(workspacePath).canonicalFilePath();
         ASSERT_FALSE(canonicalRoot.isEmpty());
@@ -243,12 +277,32 @@ namespace TaintedGrailModdingSDK
         EXPECT_TRUE(result.IsSuccess()) << result.GetError().c_str();
     }
 
+    TEST(PathPolicyServiceTests, ManagedAssembliesRejectsNonAssemblyFiles)
+    {
+        QTemporaryDir temporary;
+        ASSERT_TRUE(temporary.isValid());
+        const QString workspacePath = QDir(temporary.path()).filePath("workspace");
+        ASSERT_TRUE(PrepareValidatedWorkspaceTree(workspacePath));
+        ASSERT_TRUE(QFile::remove(QDir(workspacePath).filePath("GameActive/Managed/Game.dll")));
+        ASSERT_TRUE(Touch(QDir(workspacePath).filePath("GameActive/Managed/readme.txt")));
+
+        const QString canonicalRoot = QFileInfo(workspacePath).canonicalFilePath();
+        ASSERT_FALSE(canonicalRoot.isEmpty());
+        PathPolicyService policy;
+        const auto result = policy.ValidateWorkspacePaths(
+            ValidatedWorkspace(workspacePath),
+            ToAzString(canonicalRoot));
+
+        EXPECT_FALSE(result.IsSuccess());
+        EXPECT_NE(result.GetError().find("assembly file"), AZStd::string::npos);
+    }
+
     TEST(PathPolicyServiceTests, WorkspaceOwnedPathEscapeIsRejected)
     {
         QTemporaryDir temporary;
         ASSERT_TRUE(temporary.isValid());
         const QString workspacePath = QDir(temporary.path()).filePath("workspace");
-        ASSERT_TRUE(QDir().mkpath(workspacePath));
+        ASSERT_TRUE(PrepareValidatedWorkspaceTree(workspacePath));
 
         WorkspaceModel workspace = ValidatedWorkspace(workspacePath);
         workspace.m_outputPath = "../outside-build";
@@ -265,7 +319,7 @@ namespace TaintedGrailModdingSDK
         QTemporaryDir temporary;
         ASSERT_TRUE(temporary.isValid());
         const QString workspacePath = QDir(temporary.path()).filePath("workspace");
-        ASSERT_TRUE(QDir().mkpath(workspacePath));
+        ASSERT_TRUE(PrepareValidatedWorkspaceTree(workspacePath));
 
         WorkspaceModel workspace = ValidatedWorkspace(workspacePath);
         workspace.m_gameProfiles.front().m_managedAssembliesPath = "Other/Managed";
@@ -283,7 +337,7 @@ namespace TaintedGrailModdingSDK
         QTemporaryDir temporary;
         ASSERT_TRUE(temporary.isValid());
         const QString workspacePath = QDir(temporary.path()).filePath("workspace");
-        ASSERT_TRUE(QDir().mkpath(workspacePath));
+        ASSERT_TRUE(PrepareValidatedWorkspaceTree(workspacePath));
 
         WorkspaceModel workspace = ValidatedWorkspace(workspacePath);
         workspace.m_gameProfiles[1].m_diagnosticsPath = "../outside-diagnostics";
@@ -301,7 +355,7 @@ namespace TaintedGrailModdingSDK
         QTemporaryDir temporary;
         ASSERT_TRUE(temporary.isValid());
         const QString workspacePath = QDir(temporary.path()).filePath("workspace");
-        ASSERT_TRUE(QDir().mkpath(workspacePath));
+        ASSERT_TRUE(PrepareValidatedWorkspaceTree(workspacePath));
 
         WorkspaceModel workspace = ValidatedWorkspace(workspacePath);
         workspace.m_gameProfiles[1].m_managedAssembliesPath = "OtherGame/Managed";
@@ -319,7 +373,7 @@ namespace TaintedGrailModdingSDK
         QTemporaryDir temporary;
         ASSERT_TRUE(temporary.isValid());
         const QString workspacePath = QDir(temporary.path()).filePath("workspace");
-        ASSERT_TRUE(QDir().mkpath(workspacePath));
+        ASSERT_TRUE(PrepareValidatedWorkspaceTree(workspacePath));
 
         WorkspaceModel workspace = ValidatedWorkspace(workspacePath);
         workspace.m_gameProfiles.front().m_pluginPath = "Other/Plugins";

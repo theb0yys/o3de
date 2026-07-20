@@ -91,8 +91,10 @@ A pull request may merge only when:
 - all commits satisfy DCO requirements;
 - the exact reviewed head was tested with the local validation command;
 - the command, exit result, skipped checks, and compiled-test status are recorded;
-- applicable host builds and compiled tests pass, or their absence is explicitly
-  recorded as a limitation accepted by the maintainer;
+- applicable host configure, host build, and compiled tests pass;
+- a merge-ready exact-head validation receipt is verified with
+  `validation_receipt.py verify --require-merge-ready` and its receipt source
+  commit matches the reviewed head;
 - automatic CI checks, when enabled and expected for that head, complete
   successfully;
 - requested changes are addressed;
@@ -110,8 +112,9 @@ While automatic Actions remain suspended:
 - unavailable workflow names must not be configured as required branch checks;
 - pull requests must not claim exact-head CI success;
 - local evidence is mandatory but is identified as tester-supplied evidence;
-- a maintainer makes the explicit risk decision for any missing host build,
-  compiled test, or Windows UI pass.
+- host configure, host build, and compiled-test gates remain mandatory;
+- only a missing Windows UI pass may carry an explicit local maintainer risk
+  declaration, which is not independently authenticated by GitHub.
 
 ## Review depth by risk
 
