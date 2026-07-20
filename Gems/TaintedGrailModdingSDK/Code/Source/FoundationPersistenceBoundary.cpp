@@ -10,6 +10,7 @@
 #include <AzCore/std/utility/move.h>
 
 #include <filesystem>
+#include <string>
 #include <system_error>
 
 namespace TaintedGrailModdingSDK
@@ -19,7 +20,16 @@ namespace TaintedGrailModdingSDK
         AZ::Outcome<void, AZStd::string> EnsureValidatedParentDirectory(
             const AZStd::string& filePath)
         {
-            const std::filesystem::path parent = std::filesystem::u8path(filePath.c_str()).parent_path();
+#if defined(__cpp_lib_char8_t)
+            const std::filesystem::path parent = std::filesystem::path(
+                std::u8string(
+                    reinterpret_cast<const char8_t*>(filePath.data()),
+                    filePath.size()))
+                .parent_path();
+#else
+            const std::filesystem::path parent =
+                std::filesystem::u8path(filePath.c_str()).parent_path();
+#endif
             if (parent.empty())
             {
                 return AZ::Success();

@@ -56,3 +56,13 @@ set(FILES
     Source/TaintedGrailModdingSDKSystemComponent.cpp
     Source/TaintedGrailModdingSDKSystemComponent.h
 )
+
+# Editor implementation files use repeated file-local presentation helpers.
+# Keep each implementation in its own translation unit so unity concatenation
+# cannot merge their anonymous namespaces and create duplicate definitions.
+set(SKIP_UNITY_BUILD_INCLUSION_FILES)
+foreach(source_file IN LISTS FILES)
+    if(source_file MATCHES "\\.cpp$")
+        list(APPEND SKIP_UNITY_BUILD_INCLUSION_FILES ${source_file})
+    endif()
+endforeach()

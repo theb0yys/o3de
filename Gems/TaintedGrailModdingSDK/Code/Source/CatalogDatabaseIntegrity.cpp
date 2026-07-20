@@ -11,6 +11,7 @@
 #include "ResearchContractValidation.h"
 
 #include <AzCore/std/algorithm.h>
+#include <AzCore/std/sort.h>
 
 namespace TaintedGrailModdingSDK
 {
@@ -336,7 +337,14 @@ namespace TaintedGrailModdingSDK
             || validation.m_method.empty()
             || validation.m_validator.empty())
         {
-            SetError(error, "Validation history requires stable identities, supported subject kind, method, validator, and a real UTC date/time.");
+            SetError(
+                error,
+                "Validation history requires stable identities, supported subject kind, "
+                "method, validator, and a real UTC date/time. Received validation='"
+                    + validation.m_validationId + "', subjectKind='" + subjectKind
+                    + "', subjectId='" + subjectId + "', method='"
+                    + validation.m_method + "', validator='" + validation.m_validator
+                    + "', checkedAt='" + validation.m_checkedAt + "'.");
             return false;
         }
         const auto stateResult = ParseValidationState(validation.m_state);
@@ -439,12 +447,19 @@ namespace TaintedGrailModdingSDK
             if (!validation
                 || validation->GetSubjectKind() != event.m_subjectKind
                 || validation->GetSubjectId() != event.m_subjectId
-                || validation->m_state != "validated"
                 || validation->m_profileId != profile.m_profileId
                 || validation->m_gameVersion != profile.m_gameVersion
                 || validation->m_branch != profile.m_branch)
             {
-                SetError(error, "Every governance validation reference must be a validated exact-subject active-profile event.");
+                SetError(error, "Every governance validation reference must be an exact-subject active-profile event.");
+                return false;
+            }
+            if (event.m_axis == "permission"
+                && event.m_newValue == "allow"
+                && (validation->m_state != "validated"
+                    || event.m_decidedAt < validation->m_checkedAt))
+            {
+                SetError(error, "Permission allow validation references must be validated exact-subject events recorded no later than the permission decision.");
                 return false;
             }
         }
@@ -559,6 +574,19 @@ namespace TaintedGrailModdingSDK
                         + record.m_recordId + "/" + usage);
                     return false;
                 }
+                const CatalogValidationEvent* latest =
+                    FindLatestValidationForSubject("record", record.m_recordId);
+                if (!latest
+                    || latest->m_state != "validated"
+                    || effective->m_decidedAt < latest->m_checkedAt
+                    || !Contains(
+                        effective->m_validationIds,
+                        latest->m_validationId))
+                {
+                    SetError(error, "Allowed record usage is not bound to the current effective validated proof: "
+                        + record.m_recordId + "/" + usage);
+                    return false;
+                }
             }
         }
 
@@ -604,6 +632,21 @@ namespace TaintedGrailModdingSDK
                         + relationship.m_relationshipId + "/" + usage);
                     return false;
                 }
+                const CatalogValidationEvent* latest =
+                    FindLatestValidationForSubject(
+                        "relationship",
+                        relationship.m_relationshipId);
+                if (!latest
+                    || latest->m_state != "validated"
+                    || effective->m_decidedAt < latest->m_checkedAt
+                    || !Contains(
+                        effective->m_validationIds,
+                        latest->m_validationId))
+                {
+                    SetError(error, "Allowed relationship usage is not bound to the current effective validated proof: "
+                        + relationship.m_relationshipId + "/" + usage);
+                    return false;
+                }
             }
         }
 
@@ -624,31 +667,71 @@ namespace TaintedGrailModdingSDK
                 return false;
             }
         }
+        struct ReplayEntry
+        {
+            AZStd::string m_timestamp;
+            AZStd::string m_id;
+            const CatalogValidationEvent* m_validation = nullptr;
+            const CatalogGovernanceEvent* m_governance = nullptr;
+        };
+        AZStd::vector<ReplayEntry> history;
+        history.reserve(m_validationHistory.size() + m_governanceHistory.size());
         for (const CatalogValidationEvent& validation : m_validationHistory)
         {
-            if (!replay.AddValidationEventBound(
-                    validation,
+            history.push_back(ReplayEntry{
+                validation.m_checkedAt,
+                validation.m_validationId,
+                &validation,
+                nullptr });
+        }
+        for (const CatalogGovernanceEvent& event : m_governanceHistory)
+        {
+            history.push_back(ReplayEntry{
+                event.m_decidedAt,
+                event.m_eventId,
+                nullptr,
+                &event });
+        }
+        AZStd::sort(
+            history.begin(),
+            history.end(),
+            [](const ReplayEntry& left, const ReplayEntry& right)
+            {
+                if (left.m_timestamp != right.m_timestamp)
+                {
+                    return left.m_timestamp < right.m_timestamp;
+                }
+                if ((left.m_validation != nullptr)
+                    != (right.m_validation != nullptr))
+                {
+                    return left.m_validation != nullptr;
+                }
+                return left.m_id < right.m_id;
+            });
+        for (const ReplayEntry& entry : history)
+        {
+            if (entry.m_validation
+                && !replay.AddValidationEventBound(
+                    *entry.m_validation,
                     workspace,
                     profile,
                     sourceRegistry,
                     &validationError))
             {
                 SetError(error, "Catalog validation-history integrity failed for "
-                    + validation.m_validationId + ": " + validationError);
+                    + entry.m_validation->m_validationId + ": " + validationError);
                 return false;
             }
-        }
-        for (const CatalogGovernanceEvent& event : m_governanceHistory)
-        {
-            if (!replay.AddGovernanceEventBound(
-                    event,
+            if (entry.m_governance
+                && !replay.AddGovernanceEventBound(
+                    *entry.m_governance,
                     workspace,
                     profile,
                     sourceRegistry,
                     &validationError))
             {
                 SetError(error, "Catalog governance-history integrity failed for "
-                    + event.m_eventId + ": " + validationError);
+                    + entry.m_governance->m_eventId + ": " + validationError);
                 return false;
             }
         }

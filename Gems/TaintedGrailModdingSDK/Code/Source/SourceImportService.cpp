@@ -19,13 +19,16 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QSet>
+#include <QStringConverter>
 #include <QStringList>
+#include <QVector>
 
 namespace TaintedGrailModdingSDK
 {
     namespace
     {
         constexpr qint64 MaxStructuredImportBytes = 64 * 1024 * 1024;
+        constexpr qsizetype MaxCsvRows = 100000;
         constexpr const char* GenericImporterId = "tg.generic-artifact";
         constexpr const char* JsonImporterId = "tg.structured-json";
         constexpr const char* CsvImporterId = "tg.structured-csv";
@@ -42,42 +45,131 @@ namespace TaintedGrailModdingSDK
             return QString::fromUtf8(value.c_str());
         }
 
-        QStringList ParseCsvRow(const QString& line)
+        struct CsvRow
         {
+            QStringList m_values;
+            AZ::s64 m_line = 0;
+        };
+
+        bool ParseCsvDocument(
+            const QString& text,
+            QVector<CsvRow>& rows,
+            AZStd::string& errorMessage,
+            AZ::s64& errorLine)
+        {
+            rows.clear();
             QStringList values;
             QString current;
             bool quoted = false;
+            bool quoteClosed = false;
+            AZ::s64 line = 1;
+            AZ::s64 rowLine = 1;
 
-            for (qsizetype index = 0; index < line.size(); ++index)
+            const auto finishField = [&values, &current, &quoteClosed]()
             {
-                const QChar character = line.at(index);
-                if (character == '"')
+                values.push_back(current.trimmed());
+                current.clear();
+                quoteClosed = false;
+            };
+            const auto finishRow = [&]()
+            {
+                finishField();
+                rows.push_back(CsvRow{ values, rowLine });
+                values.clear();
+            };
+
+            for (qsizetype index = 0; index < text.size(); ++index)
+            {
+                const QChar character = text.at(index);
+                if (quoted)
                 {
-                    if (quoted
-                        && index + 1 < line.size()
-                        && line.at(index + 1) == '"')
+                    if (character == '"')
                     {
-                        current.append('"');
-                        ++index;
+                        if (index + 1 < text.size()
+                            && text.at(index + 1) == '"')
+                        {
+                            current.append('"');
+                            ++index;
+                        }
+                        else
+                        {
+                            quoted = false;
+                            quoteClosed = true;
+                        }
                     }
                     else
                     {
-                        quoted = !quoted;
+                        current.append(character);
+                        if (character == '\n')
+                        {
+                            ++line;
+                        }
                     }
+                    continue;
                 }
-                else if (character == ',' && !quoted)
+
+                if (character == '"')
                 {
-                    values.push_back(current.trimmed());
-                    current.clear();
+                    if (!current.isEmpty() || quoteClosed)
+                    {
+                        errorMessage = "A CSV quote may only open at the start of a field.";
+                        errorLine = line;
+                        return false;
+                    }
+                    quoted = true;
+                }
+                else if (character == ',')
+                {
+                    finishField();
+                }
+                else if (character == '\r' || character == '\n')
+                {
+                    if (character == '\r'
+                        && index + 1 < text.size()
+                        && text.at(index + 1) == '\n')
+                    {
+                        ++index;
+                    }
+                    finishRow();
+                    if (rows.size() > MaxCsvRows)
+                    {
+                        errorMessage = "CSV evidence exceeds the 100000-row extraction limit.";
+                        errorLine = line;
+                        return false;
+                    }
+                    ++line;
+                    rowLine = line;
                 }
                 else
                 {
+                    if (quoteClosed)
+                    {
+                        errorMessage =
+                            "Only a delimiter or line ending may follow a closing CSV quote.";
+                        errorLine = line;
+                        return false;
+                    }
                     current.append(character);
                 }
             }
 
-            values.push_back(current.trimmed());
-            return values;
+            if (quoted)
+            {
+                errorMessage = "The CSV document ends inside an unterminated quoted field.";
+                errorLine = line;
+                return false;
+            }
+            if (!current.isEmpty() || !values.isEmpty() || rows.isEmpty())
+            {
+                finishRow();
+            }
+            if (rows.size() > MaxCsvRows)
+            {
+                errorMessage = "CSV evidence exceeds the 100000-row extraction limit.";
+                errorLine = line;
+                return false;
+            }
+            return true;
         }
 
         int ColumnIndex(
@@ -602,9 +694,20 @@ namespace TaintedGrailModdingSDK
         const SourceRecord& source,
         EvidenceDocument& evidenceDocument)
     {
-        QString text = QString::fromUtf8(data);
-        QStringList lines = text.split('\n');
-        if (lines.isEmpty())
+        QStringDecoder decoder(QStringDecoder::Utf8);
+        const QString text = decoder(data);
+        if (decoder.hasError())
+        {
+            AddIssue(
+                evidenceDocument.m_issues,
+                source.m_sourceId,
+                "error",
+                "schema.invalid-utf8",
+                "Structured CSV evidence must be valid UTF-8 without replacement decoding.",
+                source.m_locator);
+            return;
+        }
+        if (text.isEmpty())
         {
             AddIssue(
                 evidenceDocument.m_issues,
@@ -616,7 +719,24 @@ namespace TaintedGrailModdingSDK
             return;
         }
 
-        const QStringList header = ParseCsvRow(lines.takeFirst().remove('\r'));
+        QVector<CsvRow> rows;
+        AZStd::string parseError;
+        AZ::s64 parseErrorLine = 0;
+        if (!ParseCsvDocument(text, rows, parseError, parseErrorLine))
+        {
+            AddIssue(
+                evidenceDocument.m_issues,
+                source.m_sourceId,
+                "error",
+                "schema.invalid-csv-grammar",
+                AZStd::move(parseError),
+                source.m_locator,
+                {},
+                parseErrorLine);
+            return;
+        }
+
+        const QStringList header = rows.takeFirst().m_values;
         QHash<QString, int> columns;
         for (int index = 0; index < header.size(); ++index)
         {
@@ -648,19 +768,19 @@ namespace TaintedGrailModdingSDK
         QSet<QString> evidenceIds;
         const QString fingerprintToken =
             ToQString(source.m_fingerprint).section(':', 1).left(16);
-        for (int lineIndex = 0; lineIndex < lines.size(); ++lineIndex)
+        for (int rowIndex = 0; rowIndex < rows.size(); ++rowIndex)
         {
-            QString line = lines.at(lineIndex);
-            line.remove('\r');
-            if (line.trimmed().isEmpty())
+            const CsvRow& row = rows.at(rowIndex);
+            if (row.m_values.size() == 1
+                && row.m_values.front().trimmed().isEmpty())
             {
                 continue;
             }
 
-            const QStringList values = ParseCsvRow(line);
+            const QStringList& values = row.m_values;
             const QString subjectRef = CsvValue(values, subjectColumn);
             const QString claim = CsvValue(values, claimColumn);
-            const AZ::s64 sourceLine = static_cast<AZ::s64>(lineIndex + 2);
+            const AZ::s64 sourceLine = row.m_line;
             const QString recordPath =
                 QStringLiteral("row[%1]").arg(sourceLine);
             if (subjectRef.isEmpty() || claim.isEmpty())
@@ -682,7 +802,7 @@ namespace TaintedGrailModdingSDK
             {
                 evidenceId = QStringLiteral("evidence.%1.%2")
                     .arg(fingerprintToken)
-                    .arg(lineIndex + 1);
+                    .arg(rowIndex + 1);
             }
             if (evidenceIds.contains(evidenceId))
             {

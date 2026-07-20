@@ -533,6 +533,7 @@ namespace TaintedGrailModdingSDK
         GovernedSubjectState& state)
     {
         state.m_validationState = validationState;
+        state.m_allowedUsages.clear();
         if (validationState == ValidationState::Validated)
         {
             RemoveValue(state.m_forbiddenUsages, "no_unvalidated_runtime_use");
@@ -540,7 +541,6 @@ namespace TaintedGrailModdingSDK
             return;
         }
 
-        state.m_allowedUsages.clear();
         AddUnique(state.m_forbiddenUsages, "no_unvalidated_runtime_use");
         if (validationState == ValidationState::Failed || validationState == ValidationState::Blocked)
         {

@@ -77,7 +77,7 @@
   "GovernanceHistory": [
     {
       "Axis": "permission",
-      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "DecidedAt": "2026-01-01T00:00:00Z",
       "EventId": "preview.governance.item.component.permission",
       "EvidenceIds": [
         "preview.evidence.item.component"
@@ -95,7 +95,7 @@
     },
     {
       "Axis": "permission",
-      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "DecidedAt": "2026-01-01T00:00:00Z",
       "EventId": "preview.governance.item.result.permission",
       "EvidenceIds": [
         "preview.evidence.item.result"
@@ -113,7 +113,7 @@
     },
     {
       "Axis": "permission",
-      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "DecidedAt": "2026-01-01T00:00:00Z",
       "EventId": "preview.governance.recipe.permission",
       "EvidenceIds": [
         "preview.evidence.recipe.synthesis"
@@ -131,7 +131,7 @@
     },
     {
       "Axis": "staleness",
-      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "DecidedAt": "2026-01-01T00:00:00Z",
       "EventId": "preview.governance.station.staleness",
       "EvidenceIds": [
         "preview.evidence.station.workbench"
@@ -149,7 +149,7 @@
     },
     {
       "Axis": "permission",
-      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "DecidedAt": "2026-01-01T00:00:00Z",
       "EventId": "preview.governance.station.permission",
       "EvidenceIds": [
         "preview.evidence.station.workbench"
@@ -167,7 +167,7 @@
     },
     {
       "Axis": "permission",
-      "DecidedAt": "2026-01-01T00:00:00.000Z",
+      "DecidedAt": "2026-01-01T00:00:00Z",
       "EventId": "preview.governance.relationship.unresolved.permission",
       "EvidenceIds": [
         "preview.evidence.relationship.unresolved"
@@ -191,7 +191,7 @@
       "Conditions": [],
       "Consumed": true,
       "EvidenceIds": [
-        "preview.evidence.item.component"
+        "preview.evidence.ingredient.synthesis.component"
       ],
       "ItemRecordId": "preview.item.component",
       "ItemSubjectRef": "",
@@ -206,7 +206,7 @@
       "Chance": 1.0,
       "Conditions": [],
       "EvidenceIds": [
-        "preview.evidence.item.result"
+        "preview.evidence.output.synthesis.result"
       ],
       "ItemRecordId": "preview.item.result",
       "ItemSubjectRef": "",
@@ -223,7 +223,7 @@
       ],
       "Confidence": "documented",
       "ConflictRefs": [],
-      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "CreatedAt": "2026-01-01T00:00:00Z",
       "DisplayName": "Preview Component",
       "Domain": "economy",
       "EvidenceIds": [
@@ -246,7 +246,7 @@
         "preview",
         "synthetic"
       ],
-      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "UpdatedAt": "2026-01-01T00:00:00Z",
       "ValidationState": "validated"
     },
     {
@@ -254,7 +254,7 @@
       "AllowedUsages": [],
       "Confidence": "documented",
       "ConflictRefs": [],
-      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "CreatedAt": "2026-01-01T00:00:00Z",
       "DisplayName": "Preview Result",
       "Domain": "economy",
       "EvidenceIds": [
@@ -279,7 +279,7 @@
         "preview",
         "synthetic"
       ],
-      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "UpdatedAt": "2026-01-01T00:00:00Z",
       "ValidationState": "validated"
     },
     {
@@ -287,7 +287,7 @@
       "AllowedUsages": [],
       "Confidence": "documented",
       "ConflictRefs": [],
-      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "CreatedAt": "2026-01-01T00:00:00Z",
       "DisplayName": "Preview Manual",
       "Domain": "economy",
       "EvidenceIds": [
@@ -310,7 +310,7 @@
         "preview",
         "synthetic"
       ],
-      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "UpdatedAt": "2026-01-01T00:00:00Z",
       "ValidationState": "validated"
     },
     {
@@ -320,7 +320,7 @@
       ],
       "Confidence": "documented",
       "ConflictRefs": [],
-      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "CreatedAt": "2026-01-01T00:00:00Z",
       "DisplayName": "Preview Synthesis",
       "Domain": "economy",
       "EvidenceIds": [
@@ -343,7 +343,7 @@
         "preview",
         "synthetic"
       ],
-      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "UpdatedAt": "2026-01-01T00:00:00Z",
       "ValidationState": "validated"
     },
     {
@@ -351,7 +351,7 @@
       "AllowedUsages": [],
       "Confidence": "documented",
       "ConflictRefs": [],
-      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "CreatedAt": "2026-01-01T00:00:00Z",
       "DisplayName": "Preview Workbench",
       "Domain": "economy",
       "EvidenceIds": [
@@ -376,7 +376,7 @@
         "preview",
         "synthetic"
       ],
-      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "UpdatedAt": "2026-01-01T00:00:00Z",
       "ValidationState": "validated"
     }
   ],
@@ -386,7 +386,7 @@
       "Attributes": [],
       "Confidence": "documented",
       "ConflictRefs": [],
-      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "CreatedAt": "2026-01-01T00:00:00Z",
       "EvidenceIds": [
         "preview.evidence.relationship.crafted-at"
       ],
@@ -401,7 +401,7 @@
       "SupersededByRelationshipId": "",
       "TargetSubjectRef": "",
       "ToRecordId": "preview.station.workbench",
-      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "UpdatedAt": "2026-01-01T00:00:00Z",
       "ValidationState": "validated"
     },
     {
@@ -409,7 +409,7 @@
       "Attributes": [],
       "Confidence": "documented",
       "ConflictRefs": [],
-      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "CreatedAt": "2026-01-01T00:00:00Z",
       "EvidenceIds": [
         "preview.evidence.relationship.learned-from"
       ],
@@ -424,7 +424,7 @@
       "SupersededByRelationshipId": "",
       "TargetSubjectRef": "",
       "ToRecordId": "preview.learn-source.manual",
-      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "UpdatedAt": "2026-01-01T00:00:00Z",
       "ValidationState": "validated"
     },
     {
@@ -432,7 +432,7 @@
       "Attributes": [],
       "Confidence": "documented",
       "ConflictRefs": [],
-      "CreatedAt": "2026-01-01T00:00:00.000Z",
+      "CreatedAt": "2026-01-01T00:00:00Z",
       "EvidenceIds": [
         "preview.evidence.relationship.unresolved"
       ],
@@ -451,7 +451,7 @@
       "SupersededByRelationshipId": "",
       "TargetSubjectRef": "subject:preview:learn-source:unresolved",
       "ToRecordId": "",
-      "UpdatedAt": "2026-01-01T00:00:00.000Z",
+      "UpdatedAt": "2026-01-01T00:00:00Z",
       "ValidationState": "blocked"
     }
   ],
@@ -459,7 +459,7 @@
   "ValidationHistory": [
     {
       "Branch": "preview",
-      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "CheckedAt": "2026-01-01T00:00:00Z",
       "EvidenceIds": [
         "preview.evidence.item.component"
       ],
@@ -476,7 +476,7 @@
     },
     {
       "Branch": "preview",
-      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "CheckedAt": "2026-01-01T00:00:00Z",
       "EvidenceIds": [
         "preview.evidence.item.result"
       ],
@@ -493,7 +493,7 @@
     },
     {
       "Branch": "preview",
-      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "CheckedAt": "2026-01-01T00:00:00Z",
       "EvidenceIds": [
         "preview.evidence.recipe.synthesis"
       ],
@@ -510,7 +510,7 @@
     },
     {
       "Branch": "preview",
-      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "CheckedAt": "2026-01-01T00:00:00Z",
       "EvidenceIds": [
         "preview.evidence.station.workbench"
       ],
@@ -527,7 +527,7 @@
     },
     {
       "Branch": "preview",
-      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "CheckedAt": "2026-01-01T00:00:00Z",
       "EvidenceIds": [
         "preview.evidence.learn-source.manual"
       ],
@@ -544,7 +544,7 @@
     },
     {
       "Branch": "preview",
-      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "CheckedAt": "2026-01-01T00:00:00Z",
       "EvidenceIds": [
         "preview.evidence.relationship.crafted-at"
       ],
@@ -561,7 +561,7 @@
     },
     {
       "Branch": "preview",
-      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "CheckedAt": "2026-01-01T00:00:00Z",
       "EvidenceIds": [
         "preview.evidence.relationship.learned-from"
       ],
@@ -578,7 +578,7 @@
     },
     {
       "Branch": "preview",
-      "CheckedAt": "2026-01-01T00:00:00.000Z",
+      "CheckedAt": "2026-01-01T00:00:00Z",
       "EvidenceIds": [
         "preview.evidence.relationship.unresolved"
       ],

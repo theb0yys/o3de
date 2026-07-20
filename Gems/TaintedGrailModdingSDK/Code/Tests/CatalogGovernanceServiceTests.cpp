@@ -23,7 +23,10 @@ namespace TaintedGrailModdingSDK
             profile.m_gameVersion = "1.0-test";
             profile.m_branch = "mono";
             profile.m_runtimeTarget = "Mono";
+            profile.m_unityVersion = "2022.3.0";
+            profile.m_bepInExVersion = "6.0.0";
             profile.m_managedAssembliesPath = "/test/foa/Managed";
+            profile.m_pluginPath = "/test/foa/Plugins";
 
             WorkspaceModel workspace;
             workspace.m_workspaceId = "test.workspace";
@@ -37,13 +40,21 @@ namespace TaintedGrailModdingSDK
         {
             SourceRecord source;
             source.m_sourceId = "source.test";
-            source.m_fingerprint = "sha256:test";
+            source.m_title = "Catalog governance test source";
+            source.m_sourceKind = "structured_test_fixture";
+            source.m_locator = "research/catalog-governance.json";
+            source.m_fingerprint =
+                "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
             source.m_profileId = "foa.test";
             source.m_gameVersion = "1.0-test";
             source.m_branch = "mono";
             source.m_runtimeTarget = "Mono";
             source.m_importerId = "test.importer";
             source.m_importerVersion = "1.0.0";
+            source.m_capturedAt = "2026-01-01T00:00:00Z";
+            source.m_importedAt = "2026-01-01T00:00:01Z";
+            source.m_mediaType = "application/json";
+            source.m_importStatus = "imported";
 
             EvidenceRecord evidence;
             evidence.m_evidenceId = "evidence.test";
@@ -54,6 +65,11 @@ namespace TaintedGrailModdingSDK
             evidence.m_branch = source.m_branch;
             evidence.m_subjectRef = subjectRef;
             evidence.m_claim = "Test claim";
+            evidence.m_evidenceKind = "structured_record";
+            evidence.m_confidence = "documented";
+            evidence.m_locator = source.m_locator;
+            evidence.m_recordPath = "/records/0";
+            evidence.m_extractedAt = source.m_capturedAt;
 
             SourceEvidenceRegistry registry;
             AZStd::string error;
@@ -232,6 +248,60 @@ namespace TaintedGrailModdingSDK
             record->m_forbiddenUsages.end());
     }
 
+    TEST(TaintedGrailCatalogGovernanceTests, RevalidationRevokesPriorUsageUntilNewPermission)
+    {
+        const WorkspaceModel workspace = MakeWorkspace();
+        const SourceEvidenceRegistry registry = MakeRegistry("subject:test");
+        CatalogDatabase catalog;
+        AZStd::string error;
+        ASSERT_TRUE(catalog.InsertNew(
+            MakeRecord("record.test", "subject:test", "native:test"),
+            &error));
+
+        const CatalogGovernanceService service;
+        CatalogValidationApplyResult validated = ValidateSubject(
+            "record", "record.test", service, workspace, registry, catalog);
+        catalog = validated.m_catalog;
+
+        CatalogGovernanceRequest current;
+        current.m_subjectKind = "record";
+        current.m_subjectId = "record.test";
+        current.m_axis = "staleness";
+        current.m_value = "current";
+        current.m_evidenceIds = { "evidence.test" };
+        current.m_reviewer = "test-reviewer";
+        auto currentResult = service.ApplyDecision(
+            current, workspace, registry, catalog);
+        ASSERT_TRUE(currentResult.IsSuccess());
+        catalog = currentResult.TakeValue().m_catalog;
+
+        CatalogGovernanceRequest permission;
+        permission.m_subjectKind = "record";
+        permission.m_subjectId = "record.test";
+        permission.m_axis = "permission";
+        permission.m_value = "allow";
+        permission.m_usage = "display_only";
+        permission.m_evidenceIds = { "evidence.test" };
+        permission.m_validationIds = { validated.m_event.m_validationId };
+        permission.m_reviewer = "test-reviewer";
+        auto permissionResult = service.ApplyDecision(
+            permission, workspace, registry, catalog);
+        ASSERT_TRUE(permissionResult.IsSuccess());
+        catalog = permissionResult.TakeValue().m_catalog;
+        ASSERT_EQ(
+            catalog.FindByRecordId("record.test")->m_allowedUsages.size(),
+            1);
+
+        CatalogValidationApplyResult revalidated = ValidateSubject(
+            "record", "record.test", service, workspace, registry, catalog);
+        const CatalogRecord* record =
+            revalidated.m_catalog.FindByRecordId("record.test");
+        ASSERT_NE(record, nullptr);
+        EXPECT_EQ(record->m_validationState, "validated");
+        EXPECT_TRUE(record->m_allowedUsages.empty());
+        EXPECT_EQ(revalidated.m_catalog.GetValidationHistory().size(), 2);
+    }
+
     TEST(TaintedGrailCatalogGovernanceTests, SupersessionRevokesUsageAndRecordsReplacement)
     {
         const WorkspaceModel workspace = MakeWorkspace();
@@ -268,7 +338,8 @@ namespace TaintedGrailModdingSDK
     TEST(TaintedGrailCatalogGovernanceTests, RelationshipValidationAndPermissionUseSameProofGates)
     {
         const WorkspaceModel workspace = MakeWorkspace();
-        const SourceEvidenceRegistry registry = MakeRegistry("subject:test");
+        const SourceEvidenceRegistry registry = MakeRegistry(
+            "relationship:relationship.test-child");
         CatalogDatabase catalog;
         AZStd::string error;
         ASSERT_TRUE(catalog.InsertNew(MakeRecord("record.test", "subject:test", "native:test"), &error));

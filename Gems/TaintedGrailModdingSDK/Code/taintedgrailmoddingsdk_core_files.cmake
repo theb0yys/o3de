@@ -125,3 +125,13 @@ set(FILES
     Source/SourceEvidenceRegistry.cpp
     Source/SourceEvidenceRegistry.h
 )
+
+# Core contract implementations deliberately use file-local helper names. Keep
+# each implementation in its own translation unit so unity concatenation cannot
+# merge unrelated anonymous namespaces or hide missing direct includes.
+set(SKIP_UNITY_BUILD_INCLUSION_FILES)
+foreach(source_file IN LISTS FILES)
+    if(source_file MATCHES "\\.cpp$")
+        list(APPEND SKIP_UNITY_BUILD_INCLUSION_FILES ${source_file})
+    endif()
+endforeach()

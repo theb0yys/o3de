@@ -71,11 +71,13 @@ namespace TaintedGrailModdingSDK
     TEST(WorkspaceSchemaServiceTests, ProfileIdsMustBeUnique)
     {
         WorkspaceModel workspace = MakeValidWorkspace();
-        workspace.m_gameProfiles.push_back(workspace.m_gameProfiles.front());
+        const GameProfile duplicate = workspace.m_gameProfiles.front();
+        workspace.m_gameProfiles.push_back(duplicate);
         WorkspaceSchemaService schema;
         const auto result = schema.Validate(workspace);
         EXPECT_FALSE(result.IsSuccess());
-        EXPECT_NE(result.GetError().find("duplicate ProfileId"), AZStd::string::npos);
+        EXPECT_NE(result.GetError().find("duplicate ProfileId"), AZStd::string::npos)
+            << result.GetError().c_str();
     }
 
     TEST(WorkspaceSchemaServiceTests, ActiveProfileMustBindExactly)

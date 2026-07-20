@@ -73,10 +73,16 @@ def validate_workspace_and_persistence(repo_root: Path) -> None:
         persistence,
         (
             "IsSafePersistenceId(sourceDocument.m_source.m_sourceId)",
-            "IsContainedPath(sourcesRoot, finalDirectory)",
+            "IsContainedPath(canonicalSourcesRoot, finalDirectory)",
+            "IsContainedPath(canonicalSourcesRoot, pendingDirectory)",
+            "IsContainedPath(canonicalSourcesRoot, canonicalFinalDirectory)",
+            "ResolveDirectCanonicalDirectory(declaredWorkspacePath)",
+            "ResolveDirectCanonicalDirectory(sourcesRoot)",
+            "IsDirectCanonicalFileWithin(",
             'QStringLiteral(".pending-")',
-            "RemovePendingPair(",
-            "QDir().rename(pendingDirectory, finalDirectory)",
+            "RemovePendingDirectory(",
+            "Stale pending source state could not be safely removed",
+            "QDir().rename(canonicalPendingDirectory, finalDirectory)",
             "Unable to atomically publish the source/evidence document pair.",
         ),
         "Transactional source/evidence persistence",
@@ -316,12 +322,48 @@ def validate_reconciliation_and_release(repo_root: Path) -> None:
     require_all(
         release_registry,
         (
+            "AdapterReleaseArtifactRegistry::RegisterRequest(",
+            "const SourceEvidenceRegistry& sourceRegistry",
             "AdapterReleaseArtifactEnvelopeStatus::Ready",
             "!envelope.m_metadataReady",
             "HasOperationalMutation(envelope)",
-            "service.SerializeCanonicalEnvelope(envelope)",
+            "service.BuildEnvelope(",
+            "envelope.m_canonicalJson.empty()",
         ),
         "Release-artifact registry",
+    )
+
+    release_service = read(
+        repo_root,
+        source_root + "AdapterReleaseArtifactProvenanceServicePart1.inl",
+    )
+    require_all(
+        release_service,
+        (
+            "IsSafeReleaseLocator(",
+            "value.size() > 512",
+            "IsKnownSigningDecision(",
+            "IsKnownSigningIdentityKind(",
+            "IsKnownPublicationTargetKind(",
+            "sourceRegistry.FindEvidence(evidenceId)",
+            "reconciliation.m_inputCandidateEvidenceIds",
+            "IsUsableImportStatus(source->m_importStatus)",
+        ),
+        "Release-artifact fail-closed validation",
+    )
+    release_tests = read(
+        repo_root,
+        "Gems/TaintedGrailModdingSDK/Code/Tests/AdapterReleaseArtifactTests.cpp",
+    )
+    require_all(
+        release_tests,
+        (
+            "InventedReviewEvidenceCannotProduceReadyMetadata",
+            "OutOfRangeSigningAndPublicationEnumsFailClosed",
+            "PublicationLocatorsRejectTraversalCredentialsAndUnboundedInput",
+            "registry.RegisterRequest(",
+        ),
+        "Release-artifact compiled regression tests",
     )
 
     roadmap = read(repo_root, "ROADMAP.md")
@@ -330,7 +372,8 @@ def validate_reconciliation_and_release(repo_root: Path) -> None:
         (
             "### Verifier evidence reconciliation and release-decision envelope",
             "### Release-artifact provenance and signing-intent contract",
-            "### Next ordered slice \u2014 release-assembly and checksum-result envelope",
+            "### Release-assembly and checksum-result envelope",
+            "### Next ordered slice \u2014 release-signing result envelope",
         ),
         "Roadmap state",
     )
@@ -381,6 +424,10 @@ def validate_catalog_planning_and_paths(repo_root: Path) -> None:
             "AddValidationEventBound",
             "AddGovernanceEventBound",
             "IsStrictUtcTimestamp",
+            "struct ReplayEntry",
+            "history.reserve(m_validationHistory.size() + m_governanceHistory.size())",
+            "event.m_decidedAt < validation->m_checkedAt",
+            "Allowed record usage is not bound to the current effective validated proof",
         ),
         "Catalog validation and governance integrity",
     )
@@ -411,7 +458,10 @@ def validate_catalog_planning_and_paths(repo_root: Path) -> None:
             "HasStorageIndirection",
             "FILE_ATTRIBUTE_REPARSE_POINT",
             "is_directory",
-            "s_writeProbeCounter",
+            "CREATE_NEW",
+            "FILE_FLAG_OPEN_REPARSE_POINT",
+            "O_EXCL | O_NOFOLLOW",
+            "DirectoryContainsAssemblyFile",
         ),
         "Workspace path policy",
     )
@@ -425,9 +475,13 @@ def validate_external_toolchain(repo_root: Path) -> None:
     require_all(
         discovery,
         (
-            "MaximumAbandonedProbeThreads",
-            "wait_for(",
-            "worker.detach();",
+            "InspectLocalPathSynchronously(path)",
+            "ElapsedMilliseconds(started) > boundedTimeout",
+            "no worker survives Gem shutdown",
+            "ReadOptionalBool(",
+            "ReadBoundedUInt64(",
+            "ResolveProviderEnabled(",
+            "DiscoveryStatus::Misconfigured",
             "IsAbsoluteHostPath",
             "FILE_ATTRIBUTE_REPARSE_POINT",
             "std::filesystem::canonical",
@@ -438,6 +492,49 @@ def validate_external_toolchain(repo_root: Path) -> None:
         ),
         "ExternalToolchain discovery",
     )
+    forbid(discovery, "worker.detach();", "ExternalToolchain discovery")
+    forbid(discovery, "std::thread", "ExternalToolchain discovery")
+
+
+def validate_import_and_shared_parsers(repo_root: Path) -> None:
+    source_root = "Gems/TaintedGrailModdingSDK/Code/Source/"
+    importer = read(repo_root, source_root + "SourceImportService.cpp")
+    require_all(
+        importer,
+        (
+            "constexpr qsizetype MaxCsvRows = 100000",
+            "ParseCsvDocument(",
+            "QStringDecoder decoder(QStringDecoder::Utf8)",
+            "decoder.hasError()",
+            "unterminated quoted field",
+        ),
+        "Structured source importer",
+    )
+    importer_tests = read(
+        repo_root,
+        "Gems/TaintedGrailModdingSDK/Code/Tests/SourceImportServiceTests.cpp",
+    )
+    require_all(
+        importer_tests,
+        (
+            "QuotedCsvFieldsMayContainNewlines",
+            "UnterminatedQuotedCsvFieldFailsClosed",
+            "InvalidUtf8CsvFailsClosed",
+            "CsvEvidenceRowCountIsBounded",
+        ),
+        "Structured source importer compiled tests",
+    )
+    validation = read(repo_root, source_root + "ResearchContractValidation.cpp")
+    require_all(
+        validation,
+        (
+            "value.size() > 256",
+            "offset - start == 1",
+            "value.size() != 20",
+        ),
+        "Shared SemVer and timestamp validation",
+    )
+    forbid(validation, "result = result * 10", "Shared SemVer validation")
 
 
 def validate(repo_root: Path) -> None:
@@ -447,6 +544,7 @@ def validate(repo_root: Path) -> None:
     validate_reconciliation_and_release(repo_root)
     validate_catalog_planning_and_paths(repo_root)
     validate_external_toolchain(repo_root)
+    validate_import_and_shared_parsers(repo_root)
 
 
 def main() -> int:

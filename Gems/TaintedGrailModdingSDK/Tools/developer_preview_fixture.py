@@ -67,7 +67,7 @@ SUBJECT_UNRESOLVED = "subject:preview:learn-source:unresolved"
 EXPECTED_STATE = {
     "allowed_record_ids": [ITEM_COMPONENT_ID, RECIPE_ID],
     "blocked_record_ids": [ITEM_RESULT_ID, STATION_ID],
-    "evidence_count": 8,
+    "evidence_count": 10,
     "forbidden_record_ids": [ITEM_RESULT_ID, STATION_ID],
     "record_count": 5,
     "relationship_count": 3,
@@ -108,6 +108,17 @@ def require(condition: bool, message: str) -> None:
 def require_string(value: Any, field: str) -> str:
     require(isinstance(value, str) and bool(value), f"{field} must be a non-empty string")
     return value
+
+
+def is_reserved_preview_subject(value: str) -> bool:
+    return value.startswith(
+        (
+            "subject:preview:",
+            "relationship:preview.relationship.",
+            "economy-recipe-ingredient:preview.ingredient.",
+            "economy-recipe-output:preview.output.",
+        )
+    )
 
 
 def require_list(value: Any, field: str) -> list[Any]:
@@ -333,7 +344,7 @@ def validate_source_and_evidence(
         require(record.get("GameVersion") == GAME_VERSION, f"Evidence game version mismatch: {evidence_id}")
         require(record.get("Branch") == BRANCH, f"Evidence branch mismatch: {evidence_id}")
         subject = require_string(record.get("SubjectRef"), f"{evidence_id}.SubjectRef")
-        require(subject.startswith("subject:preview:"), f"Evidence subject outside preview namespace: {subject}")
+        require(is_reserved_preview_subject(subject), f"Evidence subject outside preview namespace: {subject}")
         evidence_by_id[evidence_id] = record
     require(len(evidence_by_id) == EXPECTED_STATE["evidence_count"], "Unexpected evidence count")
     return evidence_by_id

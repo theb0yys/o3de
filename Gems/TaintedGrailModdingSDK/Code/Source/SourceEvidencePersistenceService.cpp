@@ -10,6 +10,7 @@
 #include "PersistenceJsonUtils.h"
 #include "ResearchContractValidation.h"
 
+#include <AzCore/PlatformDef.h>
 #include <AzCore/Serialization/Json/JsonUtils.h>
 
 #include <QDir>
@@ -61,14 +62,50 @@ namespace TaintedGrailModdingSDK
                 && !relative.startsWith(QStringLiteral("..\\"));
         }
 
-        void RemovePendingPair(
-            const QString& pendingDirectory,
-            const QString& sourcePath,
-            const QString& evidencePath)
+        bool PathsIdentifySameLocation(const QString& left, const QString& right)
         {
-            QFile::remove(sourcePath);
-            QFile::remove(evidencePath);
-            QDir().rmdir(pendingDirectory);
+#if AZ_TRAIT_USE_WINDOWS_FILE_API
+            return left.compare(right, Qt::CaseInsensitive) == 0;
+#else
+            return left == right;
+#endif
+        }
+
+        QString ResolveDirectCanonicalDirectory(const QString& path)
+        {
+            const QFileInfo info(path);
+            if (!info.exists() || !info.isDir() || info.isSymLink())
+            {
+                return {};
+            }
+            const QString declared = QDir::cleanPath(info.absoluteFilePath());
+            const QString canonical = QDir::cleanPath(info.canonicalFilePath());
+            return !canonical.isEmpty()
+                    && PathsIdentifySameLocation(declared, canonical)
+                ? canonical
+                : QString();
+        }
+
+        bool IsDirectCanonicalFileWithin(
+            const QString& rootPath,
+            const QString& candidatePath)
+        {
+            const QFileInfo info(candidatePath);
+            if (!info.exists() || !info.isFile() || info.isSymLink())
+            {
+                return false;
+            }
+            const QString declared = QDir::cleanPath(info.absoluteFilePath());
+            const QString canonical = QDir::cleanPath(info.canonicalFilePath());
+            return !canonical.isEmpty()
+                && PathsIdentifySameLocation(declared, canonical)
+                && IsContainedPath(rootPath, canonical);
+        }
+
+        bool RemovePendingDirectory(const QString& pendingDirectory)
+        {
+            return QDir(pendingDirectory).removeRecursively()
+                && !QFileInfo::exists(pendingDirectory);
         }
     } // namespace
 
@@ -102,48 +139,74 @@ namespace TaintedGrailModdingSDK
                 "The evidence document does not match the source identity and fingerprint."));
         }
 
-        const QString workspacePath =
+        const QString declaredWorkspacePath =
             QDir::cleanPath(QFileInfo(ToQString(workspaceRoot)).absoluteFilePath());
-        if (!QFileInfo(workspacePath).exists()
-            || !QFileInfo(workspacePath).isDir())
+        const QString workspacePath =
+            ResolveDirectCanonicalDirectory(declaredWorkspacePath);
+        if (workspacePath.isEmpty())
         {
             return AZ::Failure(AZStd::string(
-                "The workspace root must exist and be a directory before source documents can be saved."));
+                "The workspace root must be an existing canonical directory without storage indirection before source documents can be saved."));
         }
 
         const QString sourcesRoot =
             QDir(workspacePath).filePath(QStringLiteral("Sources"));
-        if (!QDir().mkpath(sourcesRoot) || !IsContainedPath(workspacePath, sourcesRoot))
+        if (!QDir().mkpath(sourcesRoot))
         {
             return AZ::Failure(AZStd::string(
                 "Unable to create a contained Sources directory inside the workspace."));
         }
+        const QString canonicalSourcesRoot =
+            ResolveDirectCanonicalDirectory(sourcesRoot);
+        if (canonicalSourcesRoot.isEmpty()
+            || !IsContainedPath(workspacePath, canonicalSourcesRoot))
+        {
+            return AZ::Failure(AZStd::string(
+                "The workspace Sources directory must not be a symbolic link, junction, reparse point, or redirected storage path."));
+        }
 
         const QString sourceId = ToQString(sourceDocument.m_source.m_sourceId);
-        const QString finalDirectory = QDir(sourcesRoot).filePath(sourceId);
-        const QString pendingDirectory = QDir(sourcesRoot).filePath(
+        const QString finalDirectory = QDir(canonicalSourcesRoot).filePath(sourceId);
+        const QString pendingDirectory = QDir(canonicalSourcesRoot).filePath(
             sourceId + QStringLiteral(".pending-")
                 + ToQString(sourceDocument.m_source.m_fingerprint.substr(7, 12)));
-        if (!IsContainedPath(sourcesRoot, finalDirectory)
-            || !IsContainedPath(sourcesRoot, pendingDirectory))
+        if (!IsContainedPath(canonicalSourcesRoot, finalDirectory)
+            || !IsContainedPath(canonicalSourcesRoot, pendingDirectory))
         {
             return AZ::Failure(AZStd::string(
                 "The source document directory escapes the workspace Sources boundary."));
         }
-        if (QFileInfo::exists(finalDirectory) || QFileInfo::exists(pendingDirectory))
+        if (QFileInfo::exists(finalDirectory))
         {
             return AZ::Failure(AZStd::string(
-                "The source document identity already has durable or pending state."));
+                "The source document identity already has durable state."));
+        }
+        if (QFileInfo::exists(pendingDirectory))
+        {
+            if (ResolveDirectCanonicalDirectory(pendingDirectory).isEmpty()
+                || !RemovePendingDirectory(pendingDirectory))
+            {
+                return AZ::Failure(AZStd::string(
+                    "Stale pending source state could not be safely removed; manual workspace repair is required."));
+            }
         }
         if (!QDir().mkpath(pendingDirectory))
         {
             return AZ::Failure(AZStd::string(
                 "Unable to create a pending source document directory inside the workspace."));
         }
+        const QString canonicalPendingDirectory =
+            ResolveDirectCanonicalDirectory(pendingDirectory);
+        if (canonicalPendingDirectory.isEmpty()
+            || !IsContainedPath(canonicalSourcesRoot, canonicalPendingDirectory))
+        {
+            return AZ::Failure(AZStd::string(
+                "The pending source directory crossed a filesystem indirection boundary."));
+        }
 
-        const QString pendingSourcePath = QDir(pendingDirectory).filePath(
+        const QString pendingSourcePath = QDir(canonicalPendingDirectory).filePath(
             QStringLiteral("source.tgsource.json"));
-        const QString pendingEvidencePath = QDir(pendingDirectory).filePath(
+        const QString pendingEvidencePath = QDir(canonicalPendingDirectory).filePath(
             QStringLiteral("evidence.tgevidence.json"));
         const AZ::Outcome<void, AZStd::string> sourceSave =
             AZ::JsonSerializationUtils::SaveObjectToFile(
@@ -151,10 +214,12 @@ namespace TaintedGrailModdingSDK
                 ToAzString(pendingSourcePath));
         if (!sourceSave.IsSuccess())
         {
-            RemovePendingPair(
-                pendingDirectory,
-                pendingSourcePath,
-                pendingEvidencePath);
+            if (!RemovePendingDirectory(canonicalPendingDirectory))
+            {
+                return AZ::Failure(AZStd::string(
+                    "Source document save failed and pending-state cleanup also failed: ")
+                    + sourceSave.GetError());
+            }
             return AZ::Failure(AZStd::string(sourceSave.GetError()));
         }
 
@@ -164,27 +229,39 @@ namespace TaintedGrailModdingSDK
                 ToAzString(pendingEvidencePath));
         if (!evidenceSave.IsSuccess())
         {
-            RemovePendingPair(
-                pendingDirectory,
-                pendingSourcePath,
-                pendingEvidencePath);
+            if (!RemovePendingDirectory(canonicalPendingDirectory))
+            {
+                return AZ::Failure(AZStd::string(
+                    "Evidence document save failed and pending-state cleanup also failed: ")
+                    + evidenceSave.GetError());
+            }
             return AZ::Failure(AZStd::string(evidenceSave.GetError()));
         }
-        if (!QDir().rename(pendingDirectory, finalDirectory))
+        if (!QDir().rename(canonicalPendingDirectory, finalDirectory))
         {
-            RemovePendingPair(
-                pendingDirectory,
-                pendingSourcePath,
-                pendingEvidencePath);
+            if (!RemovePendingDirectory(canonicalPendingDirectory))
+            {
+                return AZ::Failure(AZStd::string(
+                    "Source/evidence publication failed and pending-state cleanup also failed."));
+            }
             return AZ::Failure(AZStd::string(
                 "Unable to atomically publish the source/evidence document pair."));
         }
 
+        const QString canonicalFinalDirectory =
+            ResolveDirectCanonicalDirectory(finalDirectory);
+        if (canonicalFinalDirectory.isEmpty()
+            || !IsContainedPath(canonicalSourcesRoot, canonicalFinalDirectory))
+        {
+            return AZ::Failure(AZStd::string(
+                "The published source directory does not retain a contained canonical filesystem identity."));
+        }
+
         SourceEvidenceDocumentPaths paths;
         paths.m_sourceDocumentPath = ToAzString(
-            QDir(finalDirectory).filePath(QStringLiteral("source.tgsource.json")));
+            QDir(canonicalFinalDirectory).filePath(QStringLiteral("source.tgsource.json")));
         paths.m_evidenceDocumentPath = ToAzString(
-            QDir(finalDirectory).filePath(QStringLiteral("evidence.tgevidence.json")));
+            QDir(canonicalFinalDirectory).filePath(QStringLiteral("evidence.tgevidence.json")));
         return AZ::Success(AZStd::move(paths));
     }
 
@@ -205,23 +282,32 @@ namespace TaintedGrailModdingSDK
                 "A workspace root is required before source documents can be loaded."));
         }
 
-        const QString workspacePath =
+        const QString declaredWorkspacePath =
             QDir::cleanPath(QFileInfo(ToQString(workspaceRoot)).absoluteFilePath());
+        const QString workspacePath =
+            ResolveDirectCanonicalDirectory(declaredWorkspacePath);
+        if (workspacePath.isEmpty())
+        {
+            return AZ::Failure(AZStd::string(
+                "The workspace root must be an existing canonical directory without storage indirection before source documents can be loaded."));
+        }
         const QString sourcesRoot =
             QDir(workspacePath).filePath(QStringLiteral("Sources"));
         if (!QFileInfo::exists(sourcesRoot))
         {
             return AZ::Success();
         }
-        if (!QFileInfo(sourcesRoot).isDir()
-            || !IsContainedPath(workspacePath, sourcesRoot))
+        const QString canonicalSourcesRoot =
+            ResolveDirectCanonicalDirectory(sourcesRoot);
+        if (canonicalSourcesRoot.isEmpty()
+            || !IsContainedPath(workspacePath, canonicalSourcesRoot))
         {
             return AZ::Failure(AZStd::string(
                 "The workspace Sources path is not a contained directory."));
         }
 
         QDirIterator iterator(
-            sourcesRoot,
+            canonicalSourcesRoot,
             QStringList() << QStringLiteral("source.tgsource.json"),
             QDir::Files,
             QDirIterator::Subdirectories);
@@ -232,9 +318,12 @@ namespace TaintedGrailModdingSDK
             const QString sourceDirectory = sourceInfo.absolutePath();
             const QString sourceId = QFileInfo(sourceDirectory).fileName();
             const QString parentDirectory = QFileInfo(sourceDirectory).absolutePath();
-            if (QDir::cleanPath(parentDirectory) != QDir::cleanPath(sourcesRoot)
+            if (!PathsIdentifySameLocation(
+                    QDir::cleanPath(parentDirectory),
+                    QDir::cleanPath(canonicalSourcesRoot))
                 || !IsSafePersistenceId(ToAzString(sourceId))
-                || !IsContainedPath(sourcesRoot, sourcePath))
+                || ResolveDirectCanonicalDirectory(sourceDirectory).isEmpty()
+                || !IsDirectCanonicalFileWithin(canonicalSourcesRoot, sourcePath))
             {
                 loadIssues.push_back(MakeLoadIssue(
                     "document.source-path-invalid",
@@ -269,11 +358,11 @@ namespace TaintedGrailModdingSDK
             const QString evidencePath = QDir(sourceDirectory).filePath(
                 QStringLiteral("evidence.tgevidence.json"));
             EvidenceDocument evidenceDocument;
-            if (!QFileInfo::exists(evidencePath))
+            if (!IsDirectCanonicalFileWithin(canonicalSourcesRoot, evidencePath))
             {
                 loadIssues.push_back(MakeLoadIssue(
-                    "document.evidence-missing",
-                    "The source document has no matching evidence document.",
+                    "document.evidence-path-invalid",
+                    "The source document has no direct canonical matching evidence document.",
                     ToAzString(evidencePath)));
                 continue;
             }

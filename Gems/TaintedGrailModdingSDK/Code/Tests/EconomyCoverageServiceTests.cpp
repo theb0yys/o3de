@@ -65,13 +65,24 @@ namespace TaintedGrailModdingSDK
         {
             SourceRecord source;
             source.m_sourceId = "source.coverage";
-            source.m_fingerprint = "fingerprint.coverage";
+            source.m_title = "Economy coverage test source";
+            source.m_sourceKind = "structured_test_fixture";
+            source.m_locator = "research/economy-coverage.json";
+            source.m_fingerprint =
+                "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
             source.m_profileId = "profile.coverage";
             source.m_gameVersion = "version.coverage";
             source.m_branch = "branch.coverage";
-            source.m_runtimeTarget = "mono";
+            source.m_runtimeTarget = "Mono";
+            source.m_toolName = "economy-coverage-tests";
+            source.m_toolVersion = "1.0.0";
             source.m_importerId = "importer.coverage";
             source.m_importerVersion = "1.0.0";
+            source.m_capturedAt = "2026-01-01T00:00:00Z";
+            source.m_importedAt = "2026-01-01T00:00:01Z";
+            source.m_mediaType = "application/json";
+            source.m_byteSize = 512;
+            source.m_importStatus = "imported";
             return source;
         }
 
@@ -80,12 +91,18 @@ namespace TaintedGrailModdingSDK
             EvidenceRecord evidence;
             evidence.m_evidenceId = AZStd::move(evidenceId);
             evidence.m_sourceId = "source.coverage";
-            evidence.m_sourceFingerprint = "fingerprint.coverage";
+            evidence.m_sourceFingerprint =
+                "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
             evidence.m_profileId = "profile.coverage";
             evidence.m_gameVersion = "version.coverage";
             evidence.m_branch = "branch.coverage";
             evidence.m_subjectRef = AZStd::move(subjectRef);
             evidence.m_claim = "coverage claim";
+            evidence.m_evidenceKind = "structured_record";
+            evidence.m_confidence = "documented";
+            evidence.m_locator = "research/economy-coverage.json";
+            evidence.m_recordPath = "/records/0";
+            evidence.m_extractedAt = "2026-01-01T00:00:00Z";
             return evidence;
         }
 

@@ -64,6 +64,7 @@ if(PAL_TRAIT_BUILD_TESTS_SUPPORTED AND PAL_TRAIT_TEST_GOOGLE_TEST_SUPPORTED)
     ly_add_target(
         NAME ${gem_name}.Catalog.Tests ${PAL_TRAIT_TEST_TARGET_TYPE}
         NAMESPACE Gem
+        NO_UNITY
         FILES_CMAKE
             taintedgrailmoddingsdk_catalog_tests_files.cmake
             taintedgrailmoddingsdk_path_policy_tests_files.cmake
