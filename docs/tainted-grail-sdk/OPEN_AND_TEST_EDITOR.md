@@ -4,8 +4,11 @@ This is the supported Windows path from a fresh checkout to the dedicated,
 source-built **Tainted Grail Modding Editor**.
 
 The editor is an O3DE project named `TaintedGrailModdingEditor`. It is separate
-from `AutomatedTesting`, enables `TaintedGrailModdingSDK` directly, and owns the
-project and Windows shortcut icons.
+from `AutomatedTesting`, enables `TaintedGrailModdingSDK` and
+`ExternalToolchain` directly, and owns the project and Windows shortcut icons.
+The project also enables O3DE's `Atom` and `DiffuseProbeGrid` Editor host Gems.
+Its `ShaderLib` supplies the required empty Scene and View SRG extensions so
+Atom can compile the project shader registry.
 
 ## Requirements
 

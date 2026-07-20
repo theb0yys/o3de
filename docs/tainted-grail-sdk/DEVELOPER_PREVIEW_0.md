@@ -35,7 +35,8 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview.py configure `
 
 The configure command binds `LY_PROJECTS` to the repository-owned
 `TaintedGrailModdingEditor` project so the generated Editor runtime registry
-loads `ExternalToolchain` and `TaintedGrailModdingSDK` for the supported host.
+loads `Atom`, `DiffuseProbeGrid`, `ExternalToolchain`, and
+`TaintedGrailModdingSDK` for the supported host.
 
 Use `--dry-run` to inspect the exact `windows-vs-unity` x64 CMake command without executing it.
 

@@ -50,6 +50,7 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
         project = repo / "TaintedGrailModdingEditor"
         tools = repo / "Gems/TaintedGrailModdingSDK/Tools"
         (project / "cmake").mkdir(parents=True)
+        (project / "ShaderLib").mkdir(parents=True)
         (repo / "AutomatedTesting").mkdir(parents=True)
         tools.mkdir(parents=True)
         (repo / "docs/tainted-grail-sdk").mkdir(parents=True)
@@ -72,7 +73,12 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
                     "executable_name": "TaintedGrailModdingEditor",
                     "icon_path": "preview.png",
                     "engine": "o3de",
-                    "gem_names": ["TaintedGrailModdingSDK"],
+                    "gem_names": [
+                        "Atom",
+                        "DiffuseProbeGrid",
+                        "ExternalToolchain",
+                        "TaintedGrailModdingSDK",
+                    ],
                 }
             ),
             encoding="utf-8",
@@ -80,6 +86,18 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
         (project / "CMakeLists.txt").write_text("o3de_initialize()\n", encoding="utf-8")
         (project / "cmake/EngineFinder.cmake").write_text(
             "list(APPEND CMAKE_MODULE_PATH engine)\n",
+            encoding="utf-8",
+        )
+        (project / "ShaderLib/scenesrg.srgi").write_text(
+            "#pragma once\n"
+            "#include <Atom/Features/SrgSemantics.azsli>\n"
+            "partial ShaderResourceGroup SceneSrg : SRG_PerScene {};\n",
+            encoding="utf-8",
+        )
+        (project / "ShaderLib/viewsrg.srgi").write_text(
+            "#pragma once\n"
+            "#include <Atom/Features/SrgSemantics.azsli>\n"
+            "partial ShaderResourceGroup ViewSrg : SRG_PerView {};\n",
             encoding="utf-8",
         )
         write_png(project / "preview.png")
@@ -178,6 +196,29 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
             document["display_name"] = "Wrong"
             path.write_text(json.dumps(document), encoding="utf-8")
             with self.assertRaisesRegex(contract.PreviewProjectContractError, "display_name"):
+                contract.validate_preview_project(repo)
+
+    def test_missing_renderer_host_gem_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = self.make_repo(Path(temporary))
+            path = repo / "TaintedGrailModdingEditor/project.json"
+            document = json.loads(path.read_text(encoding="utf-8"))
+            document["gem_names"].remove("DiffuseProbeGrid")
+            path.write_text(json.dumps(document), encoding="utf-8")
+            with self.assertRaisesRegex(contract.PreviewProjectContractError, "DiffuseProbeGrid"):
+                contract.validate_preview_project(repo)
+
+    def test_project_scene_and_view_srgs_are_required(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = self.make_repo(Path(temporary))
+            (repo / "TaintedGrailModdingEditor/ShaderLib/scenesrg.srgi").unlink()
+            with self.assertRaisesRegex(contract.PreviewProjectContractError, "scene SRG"):
+                contract.validate_preview_project(repo)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = self.make_repo(Path(temporary))
+            (repo / "TaintedGrailModdingEditor/ShaderLib/viewsrg.srgi").unlink()
+            with self.assertRaisesRegex(contract.PreviewProjectContractError, "view SRG"):
                 contract.validate_preview_project(repo)
 
     def test_quickstart_must_name_path_policy(self) -> None:
