@@ -39,6 +39,7 @@ FIXTURE_PATHS = (
         "taintedgrailmoddingsdk_release_signing_result_tests_files.cmake"
     ),
     "Gems/TaintedGrailModdingSDK/Tools/run_local_validation.py",
+    "Gems/TaintedGrailModdingSDK/Tools/tests/test_release_signing_results_validator.py",
     "docs/tainted-grail-sdk/FOA_RELEASE_SIGNING_RESULTS.md",
     "docs/tainted-grail-sdk/README.md",
     "docs/tainted-grail-sdk/RELEASE_PROCESS.md",
