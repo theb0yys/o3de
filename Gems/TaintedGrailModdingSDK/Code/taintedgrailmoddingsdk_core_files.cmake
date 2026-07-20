@@ -105,7 +105,13 @@ set(FILES
     Source/DeterministicContractJson.h
     Source/CatalogDatabase.cpp
     Source/CatalogDatabase.h
+    Source/CatalogDatabaseBase.inl
     Source/CatalogDatabaseIntegrity.cpp
+    Source/CatabaseIntegrityBase.inl
+    Source/CatalogDatabasePopulation.cpp
+    Source/CatalogDatabasePopulationPart1.inl
+    Source/CatalogDatabasePopulationPart2.inl
+    Source/CatalogDatabasePopulationPart3.inl
     Source/CatalogGovernanceBlockerService.cpp
     Source/CatalogGovernanceBlockerService.h
     Source/CatalogGovernanceTypes.cpp
@@ -138,6 +144,6 @@ set(FILES
 set(SKIP_UNITY_BUILD_INCLUSION_FILES)
 foreach(source_file IN LISTS FILES)
     if(source_file MATCHES "\\.cpp$")
-        list(APPEND SKIP_UNITY_BUILD_INCLUSION_FILES ${source_file})
+        list(APPEND SKIP_UNITY_BUILD_INCLUSION_FILES ${subce_file})
     endif()
 endforeach()
