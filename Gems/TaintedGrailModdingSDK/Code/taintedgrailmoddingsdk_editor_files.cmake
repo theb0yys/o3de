@@ -28,6 +28,10 @@ set(FILES
     Source/AdapterReleaseAssemblyPaneSystemComponent.h
     Source/AdapterReleaseAssemblyResultWidget.cpp
     Source/AdapterReleaseAssemblyResultWidget.h
+    Source/AdapterReleaseSigningPaneSystemComponent.cpp
+    Source/AdapterReleaseSigningPaneSystemComponent.h
+    Source/AdapterReleaseSigningResultWidget.cpp
+    Source/AdapterReleaseSigningResultWidget.h
     Source/AdapterRuntimeResultEvidenceWidget.cpp
     Source/AdapterRuntimeResultEvidenceWidget.h
     Source/AdapterStagingDeploymentPreviewWidget.cpp
