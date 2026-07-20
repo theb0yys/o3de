@@ -47,6 +47,10 @@ This directory contains the public documentation for the TG SDK layer in this O3
 - [Editor Toolchain and Unity Interchange Design](EDITOR_TOOLCHAIN_UNITY_INTERCHANGE_DESIGN.md) — located O3DE,
   Blender, and Unity components; provider qualification; deterministic interchange; loss reporting; and
   staged delivery gates.
+- [External Tool Interchange Gate 0](EXTERNAL_TOOL_INTERCHANGE_GATE_0.md) — Core-only disabled handoff and
+  result envelopes, canonical binding, fail-closed validation, and the boundary before any process work.
+- [O3DE-to-Unity Bridge Research Archive](../../Research/o3de-to-unity-conversion-and-runtime-bridge/README.md)
+  — supplied report, durable source and claim registers, research areas, and gate reconciliation.
 - [Dedicated Editor Entry Architecture](DEDICATED_EDITOR_ENTRY.md) — product-host project, project-owned icons, trusted generated Windows shortcut, and separation from engine testing projects.
 - [Canonical Path and Executable Trust Policy](PATH_POLICY.md) — canonical resolution, component containment, workspace/pack persistence boundaries, source-build provenance, and diagnostic overrides.
 - [Atomic Workspace Transition and Schema Contract](WORKSPACE_ATOMICITY_AND_SCHEMA.md) — schema-0 migration, durable schema 1, candidate construction, cross-binding validation, atomic publication, rollback, and failure-stage tests.

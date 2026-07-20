@@ -33,6 +33,7 @@ VALIDATORS = (
     "validate_economy_coverage_dashboard.py",
     "validate_economy_duplicate_detection.py",
     "validate_adapter_contracts.py",
+    "validate_external_tool_interchange_contracts.py",
     "validate_adapter_work_order_plans.py",
     "validate_adapter_runtime_results.py",
     "validate_adapter_build_manifests.py",

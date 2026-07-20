@@ -467,7 +467,11 @@ results, and separately reviewed runtime adapters.
 
 ### External authoring tools and engine interchange
 
-Status: proposed for design review.
+Status: Gate 0 contract-only precursor in development; Phase 9 provider and execution work remains proposed.
+
+- Gate 0 adds only inert Core handoff/result envelopes, canonical bindings, validation, tests, and
+  documentation. It introduces no service, process, filesystem, provider, build, deployment, or runtime
+  authority and does not change the active Phase 6 first-party domain order.
 
 - Use ordinary O3DE Tool Gems and the existing `ExternalToolchain` host; do not add another plugin loader.
 - Qualify the in-tree DCCsi Blender integration and Scene Exporter against exact supported Blender versions.
@@ -483,6 +487,8 @@ Status: proposed for design review.
 
 See
 [Editor Toolchain and Unity Interchange Design](docs/tainted-grail-sdk/EDITOR_TOOLCHAIN_UNITY_INTERCHANGE_DESIGN.md).
+The exact Gate 0 boundary is documented in
+[External Tool Interchange Gate 0](docs/tainted-grail-sdk/EXTERNAL_TOOL_INTERCHANGE_GATE_0.md).
 
 ## Cross-cutting requirements
 

@@ -18,6 +18,45 @@ All durable formats follow these rules:
 
 O3DE reflection versions are implementation metadata and are not durable document schema versions.
 
+## External-tool interchange Gate 0 envelopes
+
+Gate 0 defines four canonical Core-only envelopes:
+
+- `ExternalToolHandoffV1` binds one exact provider, application, native extension, command,
+  toolchain lock, and safe relative staging root; future qualification/source bindings are optional and
+  absent-or-complete;
+- `UnityConversionRequestV1` binds the exact canonical handoff and repeats its provider,
+  application, and extension identities without selecting their eventual Gate 8 values;
+- `ExternalToolExecutionResultV1` records only a typed `not_attempted` result;
+- `UnityConversionResultV1` binds the exact request and external-tool result and likewise records
+  only `not_attempted`.
+
+Every envelope uses `ContractVersion` 1 and a lowercase `sha256:<64-hex-digits>` fingerprint over
+its fixed-order canonical JSON projection. An object's own fingerprint is excluded from that
+projection. Embedded upstream canonical JSON and its fingerprint are included and must exactly
+match the supplied upstream object. Set-like evidence, asset, and reason-code arrays are sorted on
+copies for canonical output, and duplicates fail validation.
+
+Provider and extension package versions use strict semantic versions. Native application versions
+use a bounded exact token because application-native values such as Unity `2022.3.22f1` are not
+semantic versions. The only path in the handoff envelope is a contained package-relative staging
+identity; executable paths and Unity project paths are not part of these Core contracts.
+
+Gate 0 does not select the Gate 5 interchange schema: `InterchangeSchemaVersion` is `0`. Empty
+qualification, source-package, source-manifest, and requested-asset sets make no claim that their later
+owners exist or have accepted an input. These envelopes expose canonical projections and bindings only; Gate
+0 adds no JSON parser, persistence service, file suffix, or durable registry.
+
+`ExecutionAllowed`, `BuildAllowed`, and `DeploymentAllowed` are always `false`. Results cannot
+claim an attempted conversion, exit status, process timing, output manifest, output package, loss
+report, project mutation, build, or deployment. A whole-second UTC capture time and typed reason
+code explain the disabled result, but no process is launched, no file is opened or written, and no
+candidate evidence is persisted or promoted.
+
+V1 is permanently inert. A later execution gate must introduce a new contract version and may not
+relax the V1 validators. Provider and extension identities remain exact handoff bindings in V1;
+their final product values are resolved only by the later provider-selection gate.
+
 ## Workspace document
 
 Suffix:

@@ -1,23 +1,32 @@
 # Editor Toolchain and Unity Interchange Design
 
-Status: proposed for design review
+Status: Gate 0 contract-only precursor in development; Phase 9 execution program remains proposed
 
 Target: Phase 9 ecosystem and automation, after ordered capability items 1–7 stabilize and the Phase 9 entry
 gate is accepted
 
-## Decision requested
+## Decision and current authority
 
-Approve an O3DE-hosted tool-provider and interchange program for the unofficial FoA SDK. The program uses the
-existing `ExternalToolchain` Tool Gem rather than adding another plugin loader, qualifies Blender as the first
-external authoring provider, and defines a controlled O3DE-to-Unity authoring interchange for project-owned
-content.
+Gate 0 is approved as the inert contract precursor described below. Approval of the broader program remains
+requested: use the existing `ExternalToolchain` Tool Gem rather than adding another plugin loader, qualify
+Blender as the first external authoring provider, and define a controlled O3DE-to-Unity authoring interchange
+for project-owned content.
 
-Approval authorises the staged design and qualification work described here. It does not authorise process
-launch, arbitrary scripts, direct Unity or FoA API calls, game-project conversion, game-file discovery, asset
-extraction, BepInEx or Harmony execution, deployment, save mutation, or live runtime connectivity.
+Current approval authorises Gate 0 only. The remaining staged design and qualification units are review
+candidates, not authorised work. Gate 0 does not authorise process launch, arbitrary scripts, direct Unity or
+FoA API calls, game-project conversion, game-file discovery, asset extraction, BepInEx or Harmony execution,
+deployment, save mutation, or live runtime connectivity.
 
-The active Actor and Troop slice and all subsequent first-party domain ordering remain unchanged. This record
-may be reviewed now; implementation gates do not begin until the Phase 9 entry prerequisite is satisfied.
+The active Actor and Troop slice and all subsequent first-party domain ordering remain unchanged. The
+contract-only Gate 0 amendment may proceed before Phase 9 because it adds Core value objects, canonical
+serialization, validation, tests, and documentation only. It creates no service, registry, filesystem,
+process, build, deployment, Framework, Editor, or runtime behavior. Gates 1 and later do not begin until the
+Phase 9 entry prerequisite is satisfied.
+
+The supplied bridge report is retained as research input and reconciled through the
+[`Research/o3de-to-unity-conversion-and-runtime-bridge`](../../Research/o3de-to-unity-conversion-and-runtime-bridge/README.md)
+registers. Research claims and conversation-local citation markers do not override this design or grant
+implementation authority.
 
 ## User problem
 
@@ -259,15 +268,17 @@ until the new exact version passes the applicable fixtures.
 
 ## Interchange boundary
 
-The first connection is a file-backed, offline handoff:
+The first connection is a file-backed, offline handoff. Candidate output stays in an isolated staging or
+scratch-project scan root until validation and explicit publication succeed:
 
 ```text
 Blender or Unity test project
     -> immutable staging output
     -> TG interchange manifest and payloads
     -> validation and explicit loss report
-    -> O3DE source-asset scan directory
-    -> Asset Processor and reviewed catalog evidence
+    -> isolated O3DE candidate scan root
+    -> Asset Processor candidate result
+    -> reviewed atomic publication and catalog evidence
 ```
 
 Reverse and round-trip directions use the same contract. Direct in-memory object sharing, sockets, network
@@ -280,7 +291,9 @@ evidence contracts.
 ## Proposed interchange package
 
 The durable package is a contained directory or deterministic archive with one
-`manifest.tginterchange.json`, project-owned payloads, and optional source-native payload references.
+`manifest.tginterchange.json`, project-owned payloads, and optional non-material source-native provenance
+references. A source-native reference cannot satisfy a required payload dependency; it includes an exact
+fingerprint and remains local unless its licence and redistribution state explicitly allow publication.
 
 Schema 1 contains these field groups:
 
@@ -323,8 +336,12 @@ decision. Merge, split, one-to-many, and many-to-one conversions require typed m
 ## Spatial, material, and animation contract
 
 The interchange uses the O3DE authoring basis as its canonical physical space: right-handed, Z-up, metres,
-and seconds. Every adapter still records its complete source and target basis and one explicit conversion
-matrix. Engine or application names never substitute for the matrix.
+and seconds. Schema 1 must also declare an explicit normalized forward vector, column-vector or row-vector
+convention, matrix storage order, multiplication order, and whether each matrix maps source-to-canonical or
+canonical-to-target space. Every adapter records its complete source and target basis and one explicit
+conversion matrix. Engine or application names never substitute for that data. The exact forward vector and
+matrix convention remain unselected until synthetic fixtures prove the convention in O3DE, Blender, and the
+accepted Unity profile.
 
 Validation covers:
 
@@ -336,8 +353,13 @@ Validation covers:
 - a bounded PBR material subset with colour space, channel packing, opacity, and double-sided state;
 - texture transformations, rebakes, recompression, and unsupported shader features.
 
-Application-native graphs, constraints, and procedural rigs may be preserved as source-native references. They
-must be baked or mapped explicitly before another host can claim support.
+Application-native graphs, constraints, and procedural rigs may be preserved as non-material source-native
+provenance references. They must be fingerprint-bound and baked or mapped explicitly before another host can
+claim support.
+
+FBX is the first geometry and animation qualification candidate, not a presumed deterministic container.
+Fixtures distinguish byte-identical output from normalized semantic equivalence and record which level the
+exact exporter/importer lock can reproduce.
 
 ## Loss reporting
 
@@ -391,6 +413,10 @@ Each accepted interchange operation binds one exact lock containing:
 Compatibility ranges guide selection only. Every actual result records exact versions. Updating any locked
 component creates a new qualification result and never rewrites prior interchange evidence.
 
+Provider and extension package versions use strict SemVer where their publishers do. Application versions,
+including Unity Editor values such as `2022.3.22f1`, use bounded exact version tokens and are never coerced to
+SemVer. Every accepted operation still binds the exact observed token.
+
 ## Security, privacy, legal, and runtime boundary
 
 The program must not:
@@ -425,10 +451,12 @@ Required failure paths include:
 - Asset Processor rejection or target-host import mismatch;
 - persistence failure or round-trip non-equivalence.
 
-Failures leave published workspace, catalog, provider qualification, and source assets unchanged. Rollback of
-an implementation is reversion of provider Gems, native extensions, schemas, services, UI, validators,
-fixtures, and docs. Existing interchange packages remain preserved or are rejected explicitly; they are never
-silently downgraded or truncated.
+Failures leave published workspace, catalog, provider qualification, and source assets unchanged. Candidate
+Asset Processor work therefore uses an isolated scratch project or scan root; publishing to a normal source
+root requires an explicit reversible plan and happens only after candidate acceptance. Rollback of an
+implementation is reversion of provider Gems, native extensions, schemas, services, UI, validators, fixtures,
+and docs. Existing interchange packages remain preserved or are rejected explicitly; they are never silently
+downgraded or truncated.
 
 ## Test strategy
 
@@ -460,8 +488,16 @@ No fixture contains FoA assets, private assemblies, extracted metadata, or a pro
 
 ## Ordered implementation gates
 
-After design approval and satisfaction of the Phase 9 entry prerequisite, proceed in focused units that
-preserve the existing `ExternalToolchain` follow-on order:
+Gate 0 is the only implementation unit authorised before the Phase 9 entry prerequisite:
+
+0. Core-only `ExternalToolHandoffV1`, `UnityConversionRequestV1`, `ExternalToolExecutionResultV1`, and
+   `UnityConversionResultV1` envelopes, canonical fingerprints, validators, focused tests, and repository
+   boundary validation. Every authority, attempted, mutation, build, and deployment flag stays false; result
+   outcomes stay `NotAttempted`; no service consumes the contracts. Version 1 stays permanently inert, so a
+   later execution gate must add a separately reviewed version instead of loosening version-1 validation.
+
+After Gate 0 and satisfaction of the Phase 9 entry prerequisite, proceed in focused units that preserve the
+existing `ExternalToolchain` follow-on order:
 
 1. separately reviewed host process supervision, disabled by default and with no provider execution approved;
 2. descriptor-generated provider and command UI over the existing registration and configuration services;
@@ -503,8 +539,9 @@ The program is accepted only when:
 
 ## Review boundary
 
-Approval establishes the provider topology, initial located-component inventory, file-backed interchange
-boundary, qualification model, and ordered delivery gates.
+Gate 0 approval establishes only the inert V1 envelope boundary. The proposed provider topology, located-
+component inventory, file-backed interchange boundary, qualification model, and ordered Gates 1–13 remain
+review inputs until their own prerequisites and approvals are satisfied.
 
 It does not approve a current Blender version, Unity package version, third-party binary, native add-on,
 process supervisor, live bridge, runtime adapter, game mapping, or redistributable bundle until the exact
@@ -522,7 +559,7 @@ component passes its own compatibility, licensing, test, and evidence gate.
 - [Unity glTFast](https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.15/manual/installation.html)
 - [Khronos UnityGLTF](https://github.com/KhronosGroup/UnityGLTF)
 - [Khronos glTF Validator](https://github.com/KhronosGroup/glTF-Validator)
-- [Unity USD package status](https://docs.unity3d.com/Packages/com.unity.exporter.usd@1.0)
+- [Unity USD experimental package 3.0 documentation](https://docs.unity.cn/Packages/com.unity.formats.usd%403.0/manual/index.html)
 - [Community Unity-to-O3DE converter](https://github.com/GenomeStudios/Unity_to_O3DE_Converter/)
 - [Community O3DE Blender bridge](https://github.com/kursad-k/o3de_blender_bridge)
 - [O3DE Blender Whitebox Live Link RFC](https://github.com/o3de/sig-content/issues/149)
