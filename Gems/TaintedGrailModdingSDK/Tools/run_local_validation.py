@@ -52,6 +52,7 @@ VALIDATORS = (
     "validate_foundation.py",
     "validate_governance_hardening.py",
     "validate_catalog_tests.py",
+    "validate_validation_receipt_contract.py",
     "validate_tracked_path_collisions.py",
 )
 

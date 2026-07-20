@@ -111,3 +111,62 @@ Pull requests should record:
 
 Local results are evidence supplied by the tester. They are not independently
 verified by GitHub until automatic CI is safely restored.
+
+## Exact-head validation receipt
+
+After committing the candidate head, create the receipt **outside the
+repository** from a clean working tree. The tool derives the 40-character
+source commit from `git rev-parse HEAD`; it does not accept a caller-supplied
+commit, status, exit code, or execution timestamp.
+
+```shell
+python Gems/TaintedGrailModdingSDK/Tools/validation_receipt.py init \
+  --output ../tg-sdk-receipt \
+  --tester-alias maintainer \
+  --platform "Windows 11 x64" \
+  --configuration profile
+```
+
+Record each gate by placing the real executable and arguments after `--`. The
+tool runs that command from the exact clean repository head, captures stdout
+and stderr into exclusive files, records the observed exit status and UTC
+times, and rejects a dirty tree or changed head before and after execution.
+
+```shell
+python Gems/TaintedGrailModdingSDK/Tools/validation_receipt.py record \
+  --output ../tg-sdk-receipt \
+  --name local-validation \
+  -- python Gems/TaintedGrailModdingSDK/Tools/run_local_validation.py \
+     --keep-going --ctest-build-dir build/tg-sdk-developer-preview-0-windows-profile
+```
+
+`git-diff-check`, `local-validation`, `o3de-configure`, `o3de-build`, and
+`compiled-tests` must all have an executed, zero-exit result. They cannot be
+waived. A Windows UI pass may be recorded with `skip` only when it genuinely
+was not run, followed by a local maintainer declaration with `accept-risk`.
+That alias is a local declaration, not authenticated GitHub identity.
+
+```shell
+python Gems/TaintedGrailModdingSDK/Tools/validation_receipt.py skip \
+  --output ../tg-sdk-receipt --name windows-ui --reason "Exact reason"
+python Gems/TaintedGrailModdingSDK/Tools/validation_receipt.py accept-risk \
+  --output ../tg-sdk-receipt --gate windows-ui \
+  --maintainer-alias maintainer --rationale "Concrete local risk decision"
+```
+
+Finalize, verify, and summarize against the same clean exact head:
+
+```shell
+python Gems/TaintedGrailModdingSDK/Tools/validation_receipt.py finalize \
+  --output ../tg-sdk-receipt --expected-commit <40-character-head>
+python Gems/TaintedGrailModdingSDK/Tools/validation_receipt.py verify \
+  --output ../tg-sdk-receipt --expected-commit <40-character-head> \
+  --require-merge-ready
+python Gems/TaintedGrailModdingSDK/Tools/validation_receipt.py summarize \
+  --output ../tg-sdk-receipt --expected-commit <40-character-head> \
+  --require-merge-ready
+```
+
+The receipt and captured logs must not be committed. Their hashes detect later
+log modification but are not a signature or independently authenticated CI
+attestation; reviewers must treat them as exact-head, tester-supplied evidence.

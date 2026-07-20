@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -23,13 +24,60 @@ OTHER_COMMIT = "b" * 40
 
 
 class ValidationReceiptTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.repository_temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.repository_temporary.cleanup)
+        self.repository = Path(self.repository_temporary.name) / "repo"
+        self.repository.mkdir()
+        subprocess.run(
+            ["git", "-C", str(self.repository), "init"],
+            check=True,
+            capture_output=True,
+        )
+        (self.repository / "tracked.txt").write_text("fixture\n", encoding="utf-8")
+        subprocess.run(
+            ["git", "-C", str(self.repository), "add", "tracked.txt"],
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(self.repository),
+                "-c",
+                "user.name=Receipt Test",
+                "-c",
+                "user.email=receipt@example.invalid",
+                "commit",
+                "-m",
+                "fixture",
+            ],
+            check=True,
+            capture_output=True,
+        )
+        commit = subprocess.run(
+            ["git", "-C", str(self.repository), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        global COMMIT
+        COMMIT = commit
+
     def run_tool(
         self,
         *arguments: str,
         expected: int = 0,
     ) -> subprocess.CompletedProcess[str]:
         completed = subprocess.run(
-            [sys.executable, str(SCRIPT), *arguments],
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--repo-root",
+                str(self.repository),
+                *arguments,
+            ],
             check=False,
             capture_output=True,
             text=True,
@@ -46,16 +94,12 @@ class ValidationReceiptTests(unittest.TestCase):
             "init",
             "--output",
             str(output),
-            "--source-commit",
-            COMMIT,
             "--tester-alias",
             "test-reviewer",
             "--platform",
             "Windows 11 x64",
             "--configuration",
             "profile",
-            "--created-at",
-            "2026-07-19T10:00:00Z",
         )
 
     def record_passed(
@@ -71,39 +115,27 @@ class ValidationReceiptTests(unittest.TestCase):
             str(output),
             "--name",
             gate,
-            "--command",
-            f"synthetic {gate}",
-            "--status",
-            "passed",
-            "--exit-code",
-            "0",
-            "--started-at",
-            f"2026-07-19T10:{minute:02d}:00Z",
-            "--finished-at",
-            f"2026-07-19T10:{minute:02d}:30Z",
             "--notes",
-            "Synthetic unit-test pass.",
+            f"Synthetic unit-test pass at minute {minute}.",
+            "--",
+            sys.executable,
+            "-c",
+            "print('validation passed')",
         ]
-        if log is not None:
-            arguments.extend(["--stdout-log", str(log)])
         self.run_tool(*arguments)
 
     def record_not_run(self, output: Path, gate: str) -> None:
         self.run_tool(
-            "record",
+            "skip",
             "--output",
             str(output),
             "--name",
             gate,
-            "--command",
-            f"synthetic {gate}",
-            "--status",
-            "not-run",
-            "--notes",
+            "--reason",
             "Unavailable in the synthetic unit-test environment.",
         )
 
-    def accept_risk(self, output: Path, gate: str, minute: int) -> None:
+    def accept_risk(self, output: Path, gate: str) -> None:
         self.run_tool(
             "accept-risk",
             "--output",
@@ -112,8 +144,6 @@ class ValidationReceiptTests(unittest.TestCase):
             gate,
             "--maintainer-alias",
             "test-maintainer",
-            "--accepted-at",
-            f"2026-07-19T11:{minute:02d}:00Z",
             "--rationale",
             "Synthetic unit-test acceptance for a deliberately not-run gate.",
         )
@@ -122,31 +152,23 @@ class ValidationReceiptTests(unittest.TestCase):
         self.initialize(output)
         self.record_passed(output, "git-diff-check", 1, log)
         self.record_passed(output, "local-validation", 2)
-        for gate in (
-            "o3de-configure",
-            "o3de-build",
-            "compiled-tests",
-            "windows-ui",
-        ):
-            self.record_not_run(output, gate)
         for minute, gate in enumerate(
             (
                 "o3de-configure",
                 "o3de-build",
                 "compiled-tests",
-                "windows-ui",
             ),
             start=1,
         ):
-            self.accept_risk(output, gate, minute)
+            self.record_passed(output, gate, minute + 2)
+        self.record_not_run(output, "windows-ui")
+        self.accept_risk(output, "windows-ui")
         self.run_tool(
             "finalize",
             "--output",
             str(output),
             "--expected-commit",
             COMMIT,
-            "--finalized-at",
-            "2026-07-19T12:00:00Z",
         )
 
     def test_merge_ready_receipt_verifies_and_summarizes(self) -> None:
@@ -232,8 +254,6 @@ class ValidationReceiptTests(unittest.TestCase):
                 str(output),
                 "--expected-commit",
                 COMMIT,
-                "--finalized-at",
-                "2026-07-19T12:00:00Z",
                 expected=1,
             )
             self.assertIn("local-validation must pass", result.stderr)
@@ -244,21 +264,16 @@ class ValidationReceiptTests(unittest.TestCase):
             self.initialize(output)
             self.record_passed(output, "git-diff-check", 1)
             self.record_passed(output, "local-validation", 2)
-            for gate in (
-                "o3de-configure",
-                "o3de-build",
-                "compiled-tests",
-                "windows-ui",
-            ):
-                self.record_not_run(output, gate)
+            self.record_passed(output, "o3de-configure", 3)
+            self.record_passed(output, "o3de-build", 4)
+            self.record_passed(output, "compiled-tests", 5)
+            self.record_not_run(output, "windows-ui")
             result = self.run_tool(
                 "finalize",
                 "--output",
                 str(output),
                 "--expected-commit",
                 COMMIT,
-                "--finalized-at",
-                "2026-07-19T12:00:00Z",
                 expected=1,
             )
             self.assertIn("explicit maintainer risk acceptance", result.stderr)
@@ -268,24 +283,106 @@ class ValidationReceiptTests(unittest.TestCase):
             output = Path(temporary) / "receipt"
             self.make_merge_ready(output)
             result = self.run_tool(
+                "skip",
+                "--output",
+                str(output),
+                "--name",
+                "windows-ui",
+                "--reason",
+                "Synthetic rerun.",
+                expected=1,
+            )
+            self.assertIn("immutable", result.stderr)
+
+    def test_record_executes_command_and_derives_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "receipt"
+            self.initialize(output)
+            result = self.run_tool(
                 "record",
                 "--output",
                 str(output),
                 "--name",
                 "git-diff-check",
-                "--command",
-                "synthetic rerun",
-                "--status",
-                "passed",
-                "--exit-code",
-                "0",
-                "--started-at",
-                "2026-07-19T13:00:00Z",
-                "--finished-at",
-                "2026-07-19T13:00:01Z",
+                "--",
+                sys.executable,
+                "-c",
+                "import sys; print('failed gate'); sys.exit(7)",
                 expected=1,
             )
-            self.assertIn("immutable", result.stderr)
+            self.assertIn("failed", result.stdout)
+            receipt = json.loads(
+                (output / "validation-receipt.json").read_text(encoding="utf-8")
+            )
+            gate = receipt["gates"][0]
+            self.assertEqual(gate["status"], "failed")
+            self.assertEqual(gate["exit_code"], 7)
+            self.assertIn(sys.executable, gate["command"])
+            self.assertEqual(gate["stdout_log"]["path"], "logs/git-diff-check.stdout.log")
+
+    def test_init_rejects_dirty_repository(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "receipt"
+            (self.repository / "tracked.txt").write_text("dirty\n", encoding="utf-8")
+            result = self.run_tool(
+                "init",
+                "--output",
+                str(output),
+                "--tester-alias",
+                "test-reviewer",
+                "--platform",
+                "Windows 11 x64",
+                "--configuration",
+                "profile",
+                expected=1,
+            )
+            self.assertIn("clean", result.stderr)
+
+    def test_mandatory_compiled_gate_cannot_be_waived(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "receipt"
+            self.initialize(output)
+            self.record_passed(output, "git-diff-check", 1)
+            self.record_passed(output, "local-validation", 2)
+            self.record_passed(output, "o3de-configure", 3)
+            self.record_passed(output, "o3de-build", 4)
+            self.record_not_run(output, "compiled-tests")
+            self.record_not_run(output, "windows-ui")
+            self.accept_risk(output, "windows-ui")
+            result = self.run_tool(
+                "finalize",
+                "--output",
+                str(output),
+                "--expected-commit",
+                COMMIT,
+                expected=1,
+            )
+            self.assertIn("compiled-tests must pass", result.stderr)
+
+    @unittest.skipUnless(os.name == "nt", "Windows reparse-point behavior")
+    def test_output_directory_symlink_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "target"
+            target.mkdir()
+            output = root / "receipt-link"
+            try:
+                output.symlink_to(target, target_is_directory=True)
+            except OSError as error:
+                self.skipTest(f"symlink creation unavailable: {error}")
+            result = self.run_tool(
+                "init",
+                "--output",
+                str(output),
+                "--tester-alias",
+                "test-reviewer",
+                "--platform",
+                "Windows 11 x64",
+                "--configuration",
+                "profile",
+                expected=1,
+            )
+            self.assertIn("storage indirection", result.stderr)
 
     def test_receipt_json_uses_exact_schema(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
