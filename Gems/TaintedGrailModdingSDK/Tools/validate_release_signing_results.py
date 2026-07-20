@@ -22,19 +22,8 @@ ROOT = Path(__file__).resolve().parents[3]
 GEM = ROOT / "Gems" / "TaintedGrailModdingSDK"
 SOURCE = GEM / "Code" / "Source"
 TESTS = GEM / "Code" / "Tests"
-
-REQUIRED_FILES = (
-    SOURCE / "AdapterReleaseSigningResultContracts.h",
-    SOURCE / "AdapterReleaseSigningResultContracts.cpp",
-    SOURCE / "AdapterReleaseSigningEvidenceService.h",
-    SOURCE / "AdapterReleaseSigningEvidenceService.cpp",
-    SOURCE / "AdapterReleaseSigningResultWidget.h",
-    SOURCE / "AdapterReleaseSigningResultWidget.cpp",
-    SOURCE / "AdapterReleaseSigningPaneSystemComponent.h",
-    SOURCE / "AdapterReleaseSigningPaneSystemComponent.cpp",
-    TESTS / "AdapterReleaseSigningResultTests.cpp",
-    GEM / "Code" / "taintedgrailmoddingsdk_release_signing_result_tests_files.cmake",
-)
+TOOLS = GEM / "Tools"
+DOCS = ROOT / "docs" / "tainted-grail-sdk"
 
 
 def read(path: Path) -> str:
@@ -61,11 +50,13 @@ def reject_fragments(text: str, fragments: tuple[str, ...], label: str) -> None:
 
 
 def validate(repo_root: Path) -> None:
-    global ROOT, GEM, SOURCE, TESTS
+    global ROOT, GEM, SOURCE, TESTS, TOOLS, DOCS
     ROOT = repo_root
     GEM = ROOT / "Gems" / "TaintedGrailModdingSDK"
     SOURCE = GEM / "Code" / "Source"
     TESTS = GEM / "Code" / "Tests"
+    TOOLS = GEM / "Tools"
+    DOCS = ROOT / "docs" / "tainted-grail-sdk"
 
     required_files = (
         SOURCE / "AdapterReleaseSigningResultContracts.h",
@@ -78,6 +69,12 @@ def validate(repo_root: Path) -> None:
         SOURCE / "AdapterReleaseSigningPaneSystemComponent.cpp",
         TESTS / "AdapterReleaseSigningResultTests.cpp",
         GEM / "Code" / "taintedgrailmoddingsdk_release_signing_result_tests_files.cmake",
+        TOOLS / "run_local_validation.py",
+        DOCS / "FOA_RELEASE_SIGNING_RESULTS.md",
+        DOCS / "README.md",
+        DOCS / "RELEASE_PROCESS.md",
+        DOCS / "DEVELOPER_PREVIEW_MANUAL_UI_SMOKE.md",
+        ROOT / "ROADMAP.md",
     )
     for path in required_files:
         read(path)
@@ -95,6 +92,12 @@ def validate(repo_root: Path) -> None:
     test_manifest = read(
         GEM / "Code" / "taintedgrailmoddingsdk_release_signing_result_tests_files.cmake"
     )
+    local_validation = read(TOOLS / "run_local_validation.py")
+    documentation = read(DOCS / "FOA_RELEASE_SIGNING_RESULTS.md")
+    docs_index = read(DOCS / "README.md")
+    release_process = read(DOCS / "RELEASE_PROCESS.md")
+    ui_checklist = read(DOCS / "DEVELOPER_PREVIEW_MANUAL_UI_SMOKE.md")
+    roadmap = read(ROOT / "ROADMAP.md")
 
     require_fragments(
         contracts,
@@ -277,6 +280,70 @@ def validate(repo_root: Path) -> None:
             "RegistryRejectsDuplicateResultIdentity",
         ),
         "Release-signing compiled negative coverage",
+    )
+
+    require(
+        '"validate_release_signing_results.py"' in local_validation,
+        "The authoritative local-validation gate does not run the release-signing validator.",
+    )
+
+    documentation_lower = documentation.lower()
+    for phrase in (
+        "separately reviewed external signer",
+        "exact accepted release-assembly/checksum result",
+        "signature artifacts",
+        "candidate evidence",
+        "contract status=not evaluated",
+        "does not load keys",
+        "does not sign or verify",
+        "no upload or publication occurs",
+        "twenty-two-pane manual ui evidence",
+    ):
+        require(
+            phrase in documentation_lower,
+            f"Public release-signing documentation is missing boundary phrase {phrase!r}.",
+        )
+
+    require(
+        docs_index.count("FOA_RELEASE_SIGNING_RESULTS.md") >= 2,
+        "The documentation hub must link release-signing guidance for users and contributors.",
+    )
+    require(
+        "typed transient release-signing result envelopes" in docs_index.lower(),
+        "The documentation hub does not record the implemented release-signing capability.",
+    )
+
+    roadmap_lower = roadmap.lower()
+    require(
+        "### release-signing result envelope" in roadmap_lower
+        and "status: implemented" in roadmap_lower
+        and "twenty-two-pane windows manual ui coverage" in roadmap_lower,
+        "The roadmap does not record the implemented release-signing slice and UI coverage.",
+    )
+    require(
+        "next ordered slice — release-signing result envelope" not in roadmap_lower,
+        "The roadmap still describes the implemented release-signing slice as future work.",
+    )
+
+    release_process_lower = release_process.lower()
+    require(
+        "### release-signing result evidence gate" in release_process_lower
+        and "foa_release_signing_results.md" in release_process_lower
+        and "does not open the archive" in release_process_lower
+        and "sign or verify data" in release_process_lower,
+        "The release process is missing the release-signing evidence gate or safety boundary.",
+    )
+
+    require_fragments(
+        ui_checklist,
+        (
+            "All twenty-two TG SDK panes",
+            "Tainted Grail Release Signing Results",
+            "zero registered release signing-result envelopes",
+            "contract status=not evaluated",
+            "release-signing-result file may appear",
+        ),
+        "Twenty-two-pane Windows manual UI contract",
     )
 
 
