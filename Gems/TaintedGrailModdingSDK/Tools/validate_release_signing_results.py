@@ -70,6 +70,7 @@ def validate(repo_root: Path) -> None:
         TESTS / "AdapterReleaseSigningResultTests.cpp",
         GEM / "Code" / "taintedgrailmoddingsdk_release_signing_result_tests_files.cmake",
         TOOLS / "run_local_validation.py",
+        TOOLS / "tests" / "test_release_signing_results_validator.py",
         DOCS / "FOA_RELEASE_SIGNING_RESULTS.md",
         DOCS / "README.md",
         DOCS / "RELEASE_PROCESS.md",
@@ -93,6 +94,9 @@ def validate(repo_root: Path) -> None:
         GEM / "Code" / "taintedgrailmoddingsdk_release_signing_result_tests_files.cmake"
     )
     local_validation = read(TOOLS / "run_local_validation.py")
+    validator_tests = read(
+        TOOLS / "tests" / "test_release_signing_results_validator.py"
+    )
     documentation = read(DOCS / "FOA_RELEASE_SIGNING_RESULTS.md")
     docs_index = read(DOCS / "README.md")
     release_process = read(DOCS / "RELEASE_PROCESS.md")
@@ -286,6 +290,19 @@ def validate(repo_root: Path) -> None:
         '"validate_release_signing_results.py"' in local_validation,
         "The authoritative local-validation gate does not run the release-signing validator.",
     )
+    require_fragments(
+        validator_tests,
+        (
+            "test_repository_fixture_passes",
+            "test_mutable_widget_control_fails_closed",
+            "test_missing_local_gate_registration_fails_closed",
+            "test_missing_documentation_hub_links_fail_closed",
+            "test_missing_release_process_gate_fails_closed",
+            "test_roadmap_future_marker_fails_closed",
+            "test_twenty_two_pane_contract_fails_closed",
+        ),
+        "Release-signing validator negative coverage",
+    )
 
     documentation_lower = documentation.lower()
     for phrase in (
@@ -314,10 +331,18 @@ def validate(repo_root: Path) -> None:
     )
 
     roadmap_lower = roadmap.lower()
+    roadmap_heading = "### release-signing result envelope"
     require(
-        "### release-signing result envelope" in roadmap_lower
-        and "status: implemented" in roadmap_lower
-        and "twenty-two-pane windows manual ui coverage" in roadmap_lower,
+        roadmap_heading in roadmap_lower,
+        "The roadmap does not contain the release-signing result section.",
+    )
+    roadmap_section = roadmap_lower.split(roadmap_heading, 1)[1].split(
+        "\n### ",
+        1,
+    )[0]
+    require(
+        "status: implemented" in roadmap_section
+        and "twenty-two-pane windows manual ui coverage" in roadmap_section,
         "The roadmap does not record the implemented release-signing slice and UI coverage.",
     )
     require(
