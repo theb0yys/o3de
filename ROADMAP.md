@@ -107,9 +107,10 @@ Status: implemented, continuing hardening and Windows UI verification.
 
 Status: active development. Core contracts, CatalogDatabase integration, durable catalog schema-2
 migration/persistence, evidence-bound Framework candidate publication, and the positive/negative Core and
-Framework population-authoring test sources with compiled-target wiring are implemented.
-The Actor and Troop Editor pane is next; this status does not claim an exact-head compiled test run or a complete
-vertical slice.
+Framework population-authoring test sources with compiled-target wiring are implemented. The immutable
+seven-lane population action contract and registered Actor and Troop Editor pane are also implemented.
+The deterministic synthetic fixture and complete local-validation integration are next; this status does not
+claim an exact-head compiled test run, Windows UI evidence, or a complete vertical slice.
 
 - Typed actor profiles, troop profiles, and troop membership with exact canonical identity and evidence
   boundaries.
@@ -119,7 +120,8 @@ vertical slice.
   persisted candidate without removing omitted members; failed evidence, integrity, or persistence never
   publishes partial population state.
 - Actor and Troop Editor pane, lifecycle registration, and population-specific action-lane
-  derivation/presentation remain the next unit; no population action-lane production contract exists yet.
+  derivation/presentation are implemented without runtime, spawn, deployment, or save-mutation authority.
+- Deterministic synthetic population fixture and complete vertical-slice local-validation integration are next.
 - Spawn and Encounter Editor.
 - Templates, identities, pools, routes, lifecycle, uniqueness, density, cleanup, and rollback research.
 

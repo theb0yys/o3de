@@ -26,6 +26,7 @@
 #include "AdapterVerifierEvidenceReconciliationContracts.h"
 #include "AdapterVerifierEvidenceReconciliationWidget.h"
 #include "AdapterWorkOrderPlanWidget.h"
+#include "ActorTroopEditorWidget.h"
 #include "CatalogBrowserWidget.h"
 #include "CatalogGovernanceWidget.h"
 #include "EconomyCoverageDashboardWidget.h"
@@ -56,6 +57,7 @@ namespace TaintedGrailModdingSDK
         constexpr const char* CatalogBrowserViewPaneName = "Tainted Grail Catalog Browser";
         constexpr const char* CatalogGovernanceViewPaneName = "Tainted Grail Catalog Governance";
         constexpr const char* ItemRecipeEditorViewPaneName = "Tainted Grail Item and Recipe Editor";
+        constexpr const char* ActorTroopEditorViewPaneName = "Tainted Grail Actor and Troop Editor";
         constexpr const char* EconomyCoverageDashboardViewPaneName = "Tainted Grail Economy Acquisition Coverage";
         constexpr const char* EconomyDuplicateReportViewPaneName = "Tainted Grail Economy Cross-Pack Duplicates";
         constexpr const char* AdapterCapabilityMatrixViewPaneName = "Tainted Grail Adapter Capability Matrix";
@@ -143,6 +145,7 @@ namespace TaintedGrailModdingSDK
             AzToolsFramework::UnregisterViewPane(CatalogBrowserViewPaneName);
             AzToolsFramework::UnregisterViewPane(CatalogGovernanceViewPaneName);
             AzToolsFramework::UnregisterViewPane(ItemRecipeEditorViewPaneName);
+            AzToolsFramework::UnregisterViewPane(ActorTroopEditorViewPaneName);
             AzToolsFramework::UnregisterViewPane(EconomyCoverageDashboardViewPaneName);
             AzToolsFramework::UnregisterViewPane(EconomyDuplicateReportViewPaneName);
             AzToolsFramework::UnregisterViewPane(AdapterCapabilityMatrixViewPaneName);
@@ -244,6 +247,17 @@ namespace TaintedGrailModdingSDK
             ItemRecipeEditorViewPaneName,
             "Tainted Grail SDK",
             itemRecipeOptions);
+
+        AzToolsFramework::ViewPaneOptions actorTroopOptions;
+        actorTroopOptions.paneRect = QRect(210, 210, 1280, 1000);
+        actorTroopOptions.preferedDockingArea = Qt::RightDockWidgetArea;
+        actorTroopOptions.isDeletable = true;
+        actorTroopOptions.isPreview = true;
+        actorTroopOptions.saveKeyName = QStringLiteral("TaintedGrailModdingSDK.ActorTroopEditor");
+        AzToolsFramework::RegisterViewPane<ActorTroopEditorWidget>(
+            ActorTroopEditorViewPaneName,
+            "Tainted Grail SDK",
+            actorTroopOptions);
 
         AzToolsFramework::ViewPaneOptions economyCoverageOptions;
         economyCoverageOptions.paneRect = QRect(220, 220, 1280, 900);

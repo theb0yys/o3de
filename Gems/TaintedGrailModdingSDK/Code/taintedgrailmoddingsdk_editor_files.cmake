@@ -6,6 +6,8 @@
 #
 
 set(FILES
+    Source/ActorTroopEditorWidget.cpp
+    Source/ActorTroopEditorWidget.h
     Source/AdapterBuildManifestWidget.cpp
     Source/AdapterBuildManifestWidget.h
     Source/AdapterCapabilityMatrixWidget.cpp
