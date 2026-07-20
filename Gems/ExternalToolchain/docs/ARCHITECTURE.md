@@ -58,6 +58,11 @@ Provider Tool Gems activate
 2. Descriptor-generated Action Manager commands and parameter forms.
 3. Source-artifact manifests and Asset Processor handoff.
 4. Independent Blender and heightmap reference Provider Gems.
-5. Unity interchange, structured IPC, hot-loading, provenance, signing, and third-party trust research gates.
+5. File-backed Unity interchange, provenance, and third-party qualification.
+6. Structured IPC, hot-loading, signing, and third-party trust research gates.
 
 Each follow-on slice requires separate design review and tests. Discovery results are not execution permission.
+
+The FoA-specific provider inventory, Blender qualification, interchange contract, loss model, and ordered
+delivery gates are defined in the
+[FoA editor-toolchain design](../../../docs/tainted-grail-sdk/EDITOR_TOOLCHAIN_UNITY_INTERCHANGE_DESIGN.md).

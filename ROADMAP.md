@@ -465,6 +465,25 @@ results, and separately reviewed runtime adapters.
 - Public schema packages, CI fixtures, compatibility matrices, and migration tooling.
 - Documentation and examples for third-party adapters.
 
+### External authoring tools and engine interchange
+
+Status: proposed for design review.
+
+- Use ordinary O3DE Tool Gems and the existing `ExternalToolchain` host; do not add another plugin loader.
+- Qualify the in-tree DCCsi Blender integration and Scene Exporter against exact supported Blender versions.
+- Add separate `foa.blender` and `foa.unity-editor` provider Gems with discovery-only first slices.
+- Define a deterministic FBX-plus-sidecar interchange for project-owned assets, identities, provenance,
+  transformations, losses, validation evidence, and exact toolchain locks.
+- Add a Unity editor-only interchange package for synthetic or user-owned test projects.
+- Keep the Unity authoring lane separate from FoA runtime adapters, BepInEx/Harmony execution, deployment,
+  game launch, and save mutation.
+- Treat glTF/GLB and USD as later qualification candidates instead of claiming current cross-engine support.
+- Preserve the existing `ExternalToolchain` follow-on order: separately review host process supervision before
+  provider execution, and keep structured IPC or live connection behind later independent gates.
+
+See
+[Editor Toolchain and Unity Interchange Design](docs/tainted-grail-sdk/EDITOR_TOOLCHAIN_UNITY_INTERCHANGE_DESIGN.md).
+
 ## Cross-cutting requirements
 
 Every phase preserves exact identity, pack ownership, evidence provenance, independent governance axes, fail-closed validation and permission, editor/runtime separation, durable schema versioning, legal redistribution boundaries, accessibility, usable errors, public documentation, and executable tests.

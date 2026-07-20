@@ -104,6 +104,11 @@ and blocker rebuilding remains mandatory.
 After the first-party domain contracts stabilize, expose bounded importer extension points, headless
 validation, public schema packages, deterministic fixtures, and documented third-party adapter examples.
 
+Use the existing `ExternalToolchain` Tool Gem as the O3DE provider host. Qualify Blender as the first external
+authoring provider, then add a file-backed O3DE-to-Unity interchange for project-owned content. Provider
+discovery enablement, compatibility, qualification, operation enablement, and execution permission remain
+distinct. See the [Editor Toolchain and Unity Interchange Design](EDITOR_TOOLCHAIN_UNITY_INTERCHANGE_DESIGN.md).
+
 ## Vertical-slice completion standard
 
 A domain is not considered implemented merely because a model, pane, or menu item exists. Every vertical slice
