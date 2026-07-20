@@ -68,6 +68,8 @@ namespace ExternalToolchain
             : public ExternalToolPathProbe
         {
         public:
+            using ExternalToolPathProbe::Inspect;
+
             ExternalToolPathObservation Inspect(
                 const AZStd::string& path) const override
             {
@@ -152,7 +154,6 @@ namespace ExternalToolchain
             true,
             false,
             "File exists." };
-
         const ExternalToolDiscoveryResult result =
             RefreshOne(MakeProvider(), settings, paths);
         EXPECT_EQ(result.m_status, DiscoveryStatus::Installed);
@@ -257,7 +258,7 @@ namespace ExternalToolchain
         EXPECT_EQ(paths.m_inspectionCount, 0);
     }
 
-    TEST(ExternalToolchainDiscoveryTests, DuplicateNormalizedCandidatePathIsInspectedOnce)
+    TEST(ExternalToolchainDiscoveryTests, DuplicateNormalizedCandidatePathIsReportedAndInspectedOnce)
     {
         FakeSettingsSource settings;
         FakePathProbe paths;
@@ -280,11 +281,20 @@ namespace ExternalToolchain
             true,
             false,
             "File exists." };
+        paths.m_observations["c:/tools/tool.exe"] = {
+            true,
+            false,
+            "File exists." };
         const ExternalToolDiscoveryResult result =
             RefreshOne(provider, settings, paths);
-        EXPECT_EQ(result.m_status, DiscoveryStatus::Installed);
+        EXPECT_EQ(result.m_status, DiscoveryStatus::Misconfigured);
         EXPECT_EQ(paths.m_inspectionCount, 1);
-        EXPECT_EQ(result.m_candidates.size(), 1);
+        ASSERT_EQ(result.m_candidates.size(), 2);
+        EXPECT_EQ(result.m_candidates[0].m_status, DiscoveryStatus::Installed);
+        EXPECT_EQ(result.m_candidates[1].m_status, DiscoveryStatus::Misconfigured);
+        EXPECT_EQ(
+            result.m_candidates[1].m_message,
+            "A duplicate candidate path cannot satisfy a distinct discovery probe.");
     }
 
     TEST(ExternalToolchainDiscoveryTests, MultipleCompatibleInstallationsAreAmbiguous)
@@ -362,6 +372,67 @@ namespace ExternalToolchain
         const ExternalToolDiscoveryResult result =
             RefreshOne(MakeProvider(), settings, paths);
         EXPECT_EQ(result.m_status, DiscoveryStatus::Disabled);
+        EXPECT_EQ(paths.m_inspectionCount, 0);
+    }
+
+    TEST(ExternalToolchainDiscoveryTests, WrongTypedHostEnabledSettingFailsClosed)
+    {
+        FakeSettingsSource settings;
+        settings.m_strings[
+            "/O3DE/ExternalToolchain/Host/Discovery/Enabled"] = "true";
+        FakePathProbe paths;
+        ExternalToolchainConfigurationService configuration(settings);
+        ExternalToolchainDiscoveryService discovery(paths, settings);
+
+        const ProviderOperationResult operation = discovery.Refresh(
+            { MakeProvider() },
+            configuration,
+            "windows");
+
+        EXPECT_FALSE(operation.m_success);
+        ASSERT_EQ(discovery.GetResults().size(), 1);
+        EXPECT_EQ(
+            discovery.GetResults().front().m_status,
+            DiscoveryStatus::Misconfigured);
+        EXPECT_EQ(paths.m_inspectionCount, 0);
+    }
+
+    TEST(ExternalToolchainDiscoveryTests, WrongTypedHostLimitFailsClosed)
+    {
+        FakeSettingsSource settings;
+        settings.m_strings[
+            "/O3DE/ExternalToolchain/Host/Discovery/MaximumProviders"] = "64";
+        FakePathProbe paths;
+        ExternalToolchainConfigurationService configuration(settings);
+        ExternalToolchainDiscoveryService discovery(paths, settings);
+
+        const ProviderOperationResult operation = discovery.Refresh(
+            { MakeProvider() },
+            configuration,
+            "windows");
+
+        EXPECT_FALSE(operation.m_success);
+        ASSERT_EQ(discovery.GetResults().size(), 1);
+        EXPECT_EQ(
+            discovery.GetResults().front().m_status,
+            DiscoveryStatus::Misconfigured);
+        EXPECT_EQ(paths.m_inspectionCount, 0);
+    }
+
+    TEST(ExternalToolchainDiscoveryTests, WrongTypedProviderEnabledSettingFailsClosed)
+    {
+        FakeSettingsSource settings;
+        const ExternalToolProviderDescriptor provider = MakeProvider();
+        settings.m_strings[AZStd::string::format(
+            "%s/%s/Enabled",
+            UserConfigurationRoot,
+            provider.m_providerId.c_str())] = "true";
+        FakePathProbe paths;
+
+        const ExternalToolDiscoveryResult result =
+            RefreshOne(provider, settings, paths);
+
+        EXPECT_EQ(result.m_status, DiscoveryStatus::Misconfigured);
         EXPECT_EQ(paths.m_inspectionCount, 0);
     }
 

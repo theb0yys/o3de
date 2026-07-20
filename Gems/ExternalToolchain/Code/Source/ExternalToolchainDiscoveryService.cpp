@@ -7,21 +7,18 @@
 
 #include "ExternalToolchainDiscoveryService.h"
 
+#include <AzCore/PlatformDef.h>
 #include <AzCore/std/algorithm.h>
 #include <AzCore/std/chrono/chrono.h>
 #include <AzCore/std/containers/unordered_set.h>
+#include <AzCore/std/sort.h>
 #include <AzCore/std/string/string_view.h>
 #include <AzCore/std/utility/move.h>
 
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
 #include <filesystem>
-#include <memory>
-#include <mutex>
-#include <thread>
+#include <string>
 
-#if defined(_WIN32)
+#if AZ_TRAIT_USE_WINDOWS_FILE_API
 #   include <Windows.h>
 #else
 #   include <sys/stat.h>
@@ -41,7 +38,6 @@ namespace ExternalToolchain
         constexpr const char* ProviderBudgetMillisecondsPath =
             "/O3DE/ExternalToolchain/Host/Discovery/ProviderBudgetMilliseconds";
         constexpr AZ::u32 HardProbeTimeoutMilliseconds = 250;
-        constexpr size_t MaximumAbandonedProbeThreads = 8;
 
         ProviderOperationResult Success(AZStd::string message)
         {
@@ -129,11 +125,22 @@ namespace ExternalToolchain
             return AZStd::string(text.data(), text.size());
         }
 
+        std::filesystem::path PathFromUtf8(const AZStd::string& value)
+        {
+#if defined(__cpp_lib_char8_t)
+            return std::filesystem::path(std::u8string(
+                reinterpret_cast<const char8_t*>(value.data()),
+                value.size()));
+#else
+            return std::filesystem::u8path(value.c_str());
+#endif
+        }
+
         AZStd::string NormalizeLocalPath(const AZStd::string& value)
         {
             std::error_code error;
             const std::filesystem::path path =
-                std::filesystem::u8path(value.c_str()).lexically_normal();
+                PathFromUtf8(value).lexically_normal();
             (void)error;
             return PathString(path);
         }
@@ -203,16 +210,51 @@ namespace ExternalToolchain
             return value < minimum ? minimum : (value > maximum ? maximum : value);
         }
 
-        AZ::u64 ReadBoundedUInt64(
+        bool ReadBoundedUInt64(
             const ExternalToolchainSettingsSource& settings,
             const char* path,
             AZ::u64 fallback,
             AZ::u64 minimum,
-            AZ::u64 maximum)
+            AZ::u64 maximum,
+            AZ::u64& value)
         {
-            AZ::u64 value = fallback;
-            settings.GetUInt64(path, value);
-            return BoundValue(value, minimum, maximum);
+            value = fallback;
+            const ExternalToolchainSettingValueType type =
+                settings.GetValueType(path);
+            if (type == ExternalToolchainSettingValueType::Missing)
+            {
+                return true;
+            }
+            if (type != ExternalToolchainSettingValueType::UnsignedInteger
+                || !settings.GetUInt64(path, value))
+            {
+                value = fallback;
+                return false;
+            }
+            value = BoundValue(value, minimum, maximum);
+            return true;
+        }
+
+        bool ReadOptionalBool(
+            const ExternalToolchainSettingsSource& settings,
+            const char* path,
+            bool fallback,
+            bool& value)
+        {
+            value = fallback;
+            const ExternalToolchainSettingValueType type =
+                settings.GetValueType(path);
+            if (type == ExternalToolchainSettingValueType::Missing)
+            {
+                return true;
+            }
+            if (type != ExternalToolchainSettingValueType::Boolean
+                || !settings.GetBool(path, value))
+            {
+                value = false;
+                return false;
+            }
+            return true;
         }
 
         AZ::u64 ElapsedMilliseconds(
@@ -304,7 +346,7 @@ namespace ExternalToolchain
         {
             AZStd::string leftText = PathString(left.lexically_normal());
             AZStd::string rightText = PathString(right.lexically_normal());
-#if defined(_WIN32)
+#if AZ_TRAIT_USE_WINDOWS_FILE_API
             leftText = MakePathIdentity(AZStd::move(leftText), "windows");
             rightText = MakePathIdentity(AZStd::move(rightText), "windows");
 #endif
@@ -317,7 +359,7 @@ namespace ExternalToolchain
             ExternalToolPathObservation observation;
             std::error_code error;
             const std::filesystem::path input =
-                std::filesystem::u8path(path.c_str()).lexically_normal();
+                PathFromUtf8(path).lexically_normal();
             const std::filesystem::file_status status =
                 std::filesystem::symlink_status(input, error);
             if (error)
@@ -339,7 +381,7 @@ namespace ExternalToolchain
                 return observation;
             }
 
-#if defined(_WIN32)
+#if AZ_TRAIT_USE_WINDOWS_FILE_API
             const std::wstring root = input.root_name().wstring() + L"\\";
             const UINT driveType = GetDriveTypeW(root.c_str());
             if (driveType != DRIVE_FIXED && driveType != DRIVE_RAMDISK)
@@ -409,15 +451,6 @@ namespace ExternalToolchain
             return observation;
         }
 
-        struct AsyncProbeState
-        {
-            std::mutex m_mutex;
-            std::condition_variable m_condition;
-            bool m_done = false;
-            ExternalToolPathObservation m_observation;
-        };
-
-        std::atomic<size_t> s_outstandingProbeThreads{ 0 };
     } // namespace
 
     ExternalToolPathObservation SystemFileExternalToolPathProbe::Inspect(
@@ -430,55 +463,22 @@ namespace ExternalToolchain
         const AZStd::string& path,
         AZ::u32 timeoutMilliseconds) const
     {
-        ExternalToolPathObservation timeoutObservation;
-        const size_t previous = s_outstandingProbeThreads.fetch_add(1);
-        if (previous >= MaximumAbandonedProbeThreads)
-        {
-            s_outstandingProbeThreads.fetch_sub(1);
-            timeoutObservation.m_timedOut = true;
-            timeoutObservation.m_message =
-                "The bounded discovery worker limit is exhausted by unfinished probes.";
-            return timeoutObservation;
-        }
-
         const AZ::u32 boundedTimeout = AZStd::min(
             AZStd::max<AZ::u32>(timeoutMilliseconds, 1),
             HardProbeTimeoutMilliseconds);
-        const auto state = std::make_shared<AsyncProbeState>();
-        std::thread worker(
-            [state, path]()
-            {
-                ExternalToolPathObservation observation =
-                    InspectLocalPathSynchronously(path);
-                {
-                    std::lock_guard<std::mutex> lock(state->m_mutex);
-                    state->m_observation = AZStd::move(observation);
-                    state->m_done = true;
-                }
-                state->m_condition.notify_one();
-                s_outstandingProbeThreads.fetch_sub(1);
-            });
-
-        std::unique_lock<std::mutex> lock(state->m_mutex);
-        const bool completed = state->m_condition.wait_for(
-            lock,
-            std::chrono::milliseconds(boundedTimeout),
-            [state]()
-            {
-                return state->m_done;
-            });
-        if (!completed)
+        const auto started = AZStd::chrono::steady_clock::now();
+        ExternalToolPathObservation observation =
+            InspectLocalPathSynchronously(path);
+        if (ElapsedMilliseconds(started) > boundedTimeout)
         {
-            worker.detach();
-            timeoutObservation.m_timedOut = true;
-            timeoutObservation.m_message =
-                "Path inspection exceeded the hard non-blocking discovery timeout.";
-            return timeoutObservation;
+            observation.m_exists = false;
+            observation.m_isDirectory = false;
+            observation.m_boundarySafe = false;
+            observation.m_resolvedPath.clear();
+            observation.m_timedOut = true;
+            observation.m_message =
+                "Path inspection exceeded the bounded discovery timeout. The synchronous inspection completed before returning, so no worker survives Gem shutdown.";
         }
-
-        ExternalToolPathObservation observation = state->m_observation;
-        lock.unlock();
-        worker.join();
         return observation;
     }
 
@@ -496,32 +496,35 @@ namespace ExternalToolchain
         const AZStd::string& platformId)
     {
         bool discoveryEnabled = true;
-        m_settingsSource.GetBool(DiscoveryEnabledPath, discoveryEnabled);
-        const AZ::u64 maximumProviders = ReadBoundedUInt64(
+        AZ::u64 maximumProviders = 64;
+        AZ::u64 maximumProbes = 16;
+        AZ::u64 providerBudgetMilliseconds = 250;
+        const bool settingsValid = ReadOptionalBool(
+            m_settingsSource,
+            DiscoveryEnabledPath,
+            true,
+            discoveryEnabled)
+            && ReadBoundedUInt64(
             m_settingsSource,
             MaximumProvidersPath,
             64,
             1,
-            1024);
-        const AZ::u64 maximumProbes = ReadBoundedUInt64(
+            1024,
+            maximumProviders)
+            && ReadBoundedUInt64(
             m_settingsSource,
             MaximumProbesPerProviderPath,
             16,
             1,
-            128);
-        const AZ::u64 providerBudgetMilliseconds = ReadBoundedUInt64(
+            128,
+            maximumProbes)
+            && ReadBoundedUInt64(
             m_settingsSource,
             ProviderBudgetMillisecondsPath,
             250,
             1,
-            5000);
-
-        if (providers.size() > maximumProviders)
-        {
-            m_results.clear();
-            return Failure(
-                "Registered provider count exceeds the configured discovery limit.");
-        }
+            5000,
+            providerBudgetMilliseconds);
 
         AZStd::vector<ExternalToolProviderDescriptor> orderedProviders = providers;
         AZStd::sort(
@@ -532,6 +535,30 @@ namespace ExternalToolchain
             {
                 return left.m_providerId < right.m_providerId;
             });
+
+        if (!settingsValid)
+        {
+            m_results.clear();
+            m_results.reserve(orderedProviders.size());
+            for (const ExternalToolProviderDescriptor& provider : orderedProviders)
+            {
+                ExternalToolDiscoveryResult result;
+                result.m_providerId = provider.m_providerId;
+                result.m_status = DiscoveryStatus::Misconfigured;
+                result.m_diagnostics.push_back(
+                    "A host discovery setting has the wrong value type.");
+                m_results.push_back(AZStd::move(result));
+            }
+            return Failure(
+                "Host discovery settings are malformed and discovery was not run.");
+        }
+
+        if (providers.size() > maximumProviders)
+        {
+            m_results.clear();
+            return Failure(
+                "Registered provider count exceeds the configured discovery limit.");
+        }
 
         m_results.clear();
         m_results.reserve(orderedProviders.size());
@@ -605,10 +632,16 @@ namespace ExternalToolchain
 
         bool providerEnabled = true;
         ConfigurationLayer enabledLayer = ConfigurationLayer::ProviderDefault;
-        configurationService.ResolveProviderEnabled(
+        if (!configurationService.ResolveProviderEnabled(
             provider,
             providerEnabled,
-            enabledLayer);
+            enabledLayer))
+        {
+            result.m_status = DiscoveryStatus::Misconfigured;
+            result.m_diagnostics.push_back(
+                "The provider enabled setting has the wrong value type.");
+            return result;
+        }
         if (!providerEnabled)
         {
             result.m_status = DiscoveryStatus::Disabled;
@@ -889,14 +922,6 @@ namespace ExternalToolchain
 
     AZStd::string GetCurrentHostPlatformId()
     {
-#if defined(_WIN32)
-        return "windows";
-#elif defined(__APPLE__)
-        return "mac";
-#elif defined(__linux__)
-        return "linux";
-#else
-        return "unknown";
-#endif
+        return AZ_TRAIT_OS_PLATFORM_CODENAME_LOWER;
     }
 } // namespace ExternalToolchain

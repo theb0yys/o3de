@@ -69,7 +69,12 @@ The service uses local filesystem metadata only. It performs no recursive scan a
 
 ## Bounded-operation note
 
-Provider count, probes per provider, individual probe time, and provider elapsed time have configured limits. File inspection is synchronous and measured. A slow call is reported after it returns; this API does not claim to pre-empt or cancel an operating-system filesystem call. Network paths are therefore prohibited.
+Provider count, probes per provider, individual probe time, and provider elapsed time have configured limits. Production file inspection is synchronous: the operating-system inspection completes before the service returns, so no detached worker can outlive the service or unloaded Gem. The elapsed time is measured after the call and an over-budget result fails closed. This API does not claim to pre-empt or cancel a blocked operating-system call. Network paths remain prohibited.
+
+Missing host settings use documented defaults. Present settings with the wrong
+type, unreadable values, and wrong-typed provider `Enabled` overrides are
+reported as `Misconfigured`; malformed configuration never silently enables
+discovery or a provider.
 
 ## Security and authority
 

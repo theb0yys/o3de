@@ -10,6 +10,7 @@
 #include <AzCore/Interface/Interface.h>
 #include <AzCore/Settings/SettingsRegistry.h>
 #include <AzCore/std/algorithm.h>
+#include <AzCore/std/sort.h>
 #include <AzCore/std/utility/move.h>
 
 namespace ExternalToolchain
@@ -58,14 +59,15 @@ namespace ExternalToolchain
             }
 
             value.m_layer = layer;
-            value.m_configured = true;
             value.m_value.clear();
             if (type != ExternalToolchainSettingValueType::String
                 || !source.GetString(path, value.m_value))
             {
+                value.m_configured = true;
                 value.m_valueValid = false;
                 return;
             }
+            value.m_configured = !value.m_value.empty();
             value.m_valueValid = ValidateConfiguredValue(descriptor, value.m_value);
         }
 
@@ -269,7 +271,7 @@ namespace ExternalToolchain
         {
             value.m_layer = ConfigurationLayer::Session;
             value.m_value = session->second;
-            value.m_configured = true;
+            value.m_configured = !value.m_value.empty();
             value.m_valueValid = ValidateConfiguredValue(*descriptor, value.m_value);
         }
         return true;

@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+#
+# Copyright (c) Contributors to the Open 3D Engine Project.
+# For complete copyright and license terms please see the LICENSE at the root of this distribution.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+
 """Validate the ExternalToolchain registration, configuration, and discovery contract."""
 
 from __future__ import annotations
@@ -146,14 +153,19 @@ def main() -> int:
 
     discovery = read(SOURCE / "ExternalToolchainDiscoveryService.cpp")
     for token in (
-        "AZ::IO::SystemFile::Exists",
-        "AZ::IO::SystemFile::IsDirectory",
-        "Network and URI paths are prohibited",
-        "Discovery paths must be absolute local paths",
-        "parent traversal segments",
+        "InspectLocalPathSynchronously(path)",
+        "ElapsedMilliseconds(started) > boundedTimeout",
+        "no worker survives Gem shutdown",
+        "ReadOptionalBool(",
+        "ReadBoundedUInt64(",
+        "ResolveProviderEnabled(",
+        "DiscoveryStatus::Misconfigured",
+        "std::filesystem::canonical",
+        "FILE_ATTRIBUTE_REPARSE_POINT",
+        "Discovery paths must be host-native absolute local paths",
         "configured semantic tool version",
         "Multiple distinct compatible installations",
-        "best-effort probe timeout",
+        "bounded discovery timeout",
         "Provider discovery budget",
         "AZStd::sort",
     ):
@@ -165,6 +177,9 @@ def main() -> int:
         "system(",
         "RemoteTools",
         "AssetProcessor",
+        "worker.detach();",
+        "std::thread",
+        "future.wait_for(",
     ):
         require(forbidden not in discovery, f"discovery service contains prohibited execution token: {forbidden}")
 
