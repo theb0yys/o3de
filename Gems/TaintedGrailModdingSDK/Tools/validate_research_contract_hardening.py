@@ -262,7 +262,7 @@ def validate_pipeline_handoffs_and_evidence(repo_root: Path) -> None:
             '"post-deployment-verifier:" + review.m_verifierId',
             "PostDeploymentVerifierResultFingerprintMatches(envelope)",
             "AdapterPostDeploymentVerifierCheckOutcome::NotRun",
-            "flags.m_observationMismatch = true;",
+            "flags.m_observationMismatch,",
         ),
         "Independent-verifier evidence path",
     )
