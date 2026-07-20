@@ -73,7 +73,12 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
                     "executable_name": "TaintedGrailModdingEditor",
                     "icon_path": "preview.png",
                     "engine": "o3de",
-                    "gem_names": ["TaintedGrailModdingSDK"],
+                    "gem_names": [
+                        "Atom",
+                        "DiffuseProbeGrid",
+                        "ExternalToolchain",
+                        "TaintedGrailModdingSDK",
+                    ],
                 }
             ),
             encoding="utf-8",
@@ -191,6 +196,16 @@ class DeveloperPreviewProjectContractTests(unittest.TestCase):
             document["display_name"] = "Wrong"
             path.write_text(json.dumps(document), encoding="utf-8")
             with self.assertRaisesRegex(contract.PreviewProjectContractError, "display_name"):
+                contract.validate_preview_project(repo)
+
+    def test_missing_renderer_host_gem_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = self.make_repo(Path(temporary))
+            path = repo / "TaintedGrailModdingEditor/project.json"
+            document = json.loads(path.read_text(encoding="utf-8"))
+            document["gem_names"].remove("DiffuseProbeGrid")
+            path.write_text(json.dumps(document), encoding="utf-8")
+            with self.assertRaisesRegex(contract.PreviewProjectContractError, "DiffuseProbeGrid"):
                 contract.validate_preview_project(repo)
 
     def test_project_scene_and_view_srgs_are_required(self) -> None:

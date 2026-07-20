@@ -25,6 +25,12 @@ PREVIEW_ICO = "TaintedGrailModdingEditor.ico"
 PREVIEW_SCENE_SRG = "ShaderLib/scenesrg.srgi"
 PREVIEW_VIEW_SRG = "ShaderLib/viewsrg.srgi"
 AUTOMATED_TESTING_PATH = Path("AutomatedTesting")
+REQUIRED_PREVIEW_GEMS = (
+    "Atom",
+    "DiffuseProbeGrid",
+    "ExternalToolchain",
+    "TaintedGrailModdingSDK",
+)
 TG_GEM_NAME = "TaintedGrailModdingSDK"
 TG_GEM_PATH = "Gems/TaintedGrailModdingSDK"
 
@@ -136,10 +142,11 @@ def validate_preview_project(repo_root: Path) -> None:
             )
 
     gem_names = require_string_list(project, "gem_names", "Developer Preview project manifest")
-    if gem_names.count(TG_GEM_NAME) != 1:
-        raise PreviewProjectContractError(
-            f"{project_path} must enable {TG_GEM_NAME!r} exactly once."
-        )
+    for required_gem in REQUIRED_PREVIEW_GEMS:
+        if gem_names.count(required_gem) != 1:
+            raise PreviewProjectContractError(
+                f"{project_path} must enable {required_gem!r} exactly once."
+            )
 
     for required in ("CMakeLists.txt", "cmake/EngineFinder.cmake"):
         path = project_root / required
