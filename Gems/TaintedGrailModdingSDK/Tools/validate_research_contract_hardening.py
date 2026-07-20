@@ -379,7 +379,7 @@ def validate_reconciliation_and_release(repo_root: Path) -> None:
     )
     forbid(
         roadmap,
-        "### Next ordered slice \u2014 verifier evidence reconciliation",
+        "### Next ordered slice \u2014 release-assembly and checksum-result envelope",
         "Roadmap state",
     )
 
