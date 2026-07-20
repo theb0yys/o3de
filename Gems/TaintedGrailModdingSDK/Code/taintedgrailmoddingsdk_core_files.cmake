@@ -103,6 +103,10 @@ set(FILES
     Source/CanonicalFingerprint.cpp
     Source/CanonicalFingerprint.h
     Source/DeterministicContractJson.h
+    Source/ExternalToolInterchangeCanonical.cpp
+    Source/ExternalToolInterchangeCanonical.h
+    Source/ExternalToolInterchangeContracts.cpp
+    Source/ExternalToolInterchangeContracts.h
     Source/CatalogDatabase.cpp
     Source/CatalogDatabase.h
     Source/CatalogDatabaseBase.inl

@@ -328,7 +328,7 @@ namespace TaintedGrailModdingSDK
         static void Reflect(AZ::ReflectContext* context);
         bool UsesSupportedSchema() const;
 
-        AZ::u32 m_schemaVersion = LegacyCatalogSchemaVersion;
+        AZ::u32 m_schemaVersion = CurrentCatalogSchemaVersion;
         AZStd::string m_workspaceId;
         AZStd::string m_profileId;
         AZStd::string m_gameVersion;
@@ -469,6 +469,9 @@ namespace TaintedGrailModdingSDK
         AZ::u64 m_economyRecipeCount = 0;
         AZ::u64 m_recipeIngredientCount = 0;
         AZ::u64 m_recipeOutputCount = 0;
+        AZ::u64 m_populationActorProfileCount = 0;
+        AZ::u64 m_populationTroopProfileCount = 0;
+        AZ::u64 m_populationTroopMemberCount = 0;
         AZ::u64 m_staleCatalogSubjectCount = 0;
         AZ::u64 m_allowedUsageCount = 0;
         AZ::u64 m_forbiddenUsageCount = 0;

@@ -12,7 +12,6 @@ set(FILES
     Source/CatalogPersistenceService.h
     Source/CatalogPromotionService.cpp
     Source/CatalogPromotionService.h
-    Source/CatalogSchemaPersistenceService.h
     Source/EconomyAuthoringService.cpp
     Source/EconomyAuthoringService.h
     Source/FoundationCatalogService.cpp

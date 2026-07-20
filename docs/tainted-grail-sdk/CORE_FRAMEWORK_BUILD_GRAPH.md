@@ -10,7 +10,7 @@ Accepted correction contract for Slice 5 and extended by Slices 6–15. The buil
 
 Owns shared domain state and services that are free of Qt and host-tool dependencies:
 
-- workspace, pack, source, evidence, catalog, governance, and economy models;
+- workspace, pack, source, evidence, catalog, governance, economy, and population models;
 - catalog database, transactions, governance types, blockers, and validation;
 - immutable economy acquisition coverage and cross-pack duplicate analysis;
 - typed transient adapter declarations, semantic-version compatibility, capability and proof evaluation;
@@ -30,7 +30,8 @@ Core depends publicly on `AZ::AzCore`. Core must not depend on Framework, Editor
 Owns editor-side orchestration and services that require host-tool or Qt facilities:
 
 - `FoundationService` composition and domain commands;
-- governance, promotion, and economy authoring services with Qt-backed timestamps or normalisation;
+- governance, promotion, economy authoring, and evidence-bound population candidate services;
+- atomic population save-before-publish orchestration and Foundation snapshot counts;
 - atomic workspace candidate loading;
 - workspace schema, canonical path, pack, catalog, source/evidence, and workspace persistence;
 - source import and the Foundation notification contract.

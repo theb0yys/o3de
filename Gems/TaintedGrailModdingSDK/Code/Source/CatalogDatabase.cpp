@@ -124,7 +124,9 @@ namespace TaintedGrailModdingSDK
         {
             if (error)
             {
-                *error = "Unsupported canonical catalog schema version.";
+                *error = AZStd::string::format(
+                    "Catalog schema version %u is unsupported; this editor supports schema 1 migration and schema 2.",
+                    document.m_schemaVersion);
             }
             return false;
         }

@@ -6,7 +6,10 @@ This document records the corrective hardening applied after professional review
 
 ## Persisted documents and typed domain logic
 
-The schema-1 catalog remains string-compatible so existing `catalog.tgcatalog.json` documents do not require a breaking migration merely to adopt compiler-safe logic.
+The governance values remain string-compatible across the catalog schema-1 to schema-2 migration. Existing
+schema-1 `catalog.tgcatalog.json` documents remain read-only migration inputs, while current catalog saves
+write schema 2. The schema change adds population collections and does not reinterpret the established
+governance vocabulary.
 
 Strings are accepted only at persistence and user-interface boundaries. Before a governance transition executes, values are parsed into strong internal types:
 

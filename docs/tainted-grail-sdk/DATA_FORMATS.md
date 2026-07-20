@@ -18,6 +18,45 @@ All durable formats follow these rules:
 
 O3DE reflection versions are implementation metadata and are not durable document schema versions.
 
+## External-tool interchange Gate 0 envelopes
+
+Gate 0 defines four canonical Core-only envelopes:
+
+- `ExternalToolHandoffV1` binds one exact provider, application, native extension, command,
+  toolchain lock, and safe relative staging root; future qualification/source bindings are optional and
+  absent-or-complete;
+- `UnityConversionRequestV1` binds the exact canonical handoff and repeats its provider,
+  application, and extension identities without selecting their eventual Gate 8 values;
+- `ExternalToolExecutionResultV1` records only a typed `not_attempted` result;
+- `UnityConversionResultV1` binds the exact request and external-tool result and likewise records
+  only `not_attempted`.
+
+Every envelope uses `ContractVersion` 1 and a lowercase `sha256:<64-hex-digits>` fingerprint over
+its fixed-order canonical JSON projection. An object's own fingerprint is excluded from that
+projection. Embedded upstream canonical JSON and its fingerprint are included and must exactly
+match the supplied upstream object. Set-like evidence, asset, and reason-code arrays are sorted on
+copies for canonical output, and duplicates fail validation.
+
+Provider and extension package versions use strict semantic versions. Native application versions
+use a bounded exact token because application-native values such as Unity `2022.3.22f1` are not
+semantic versions. The only path in the handoff envelope is a contained package-relative staging
+identity; executable paths and Unity project paths are not part of these Core contracts.
+
+Gate 0 does not select the Gate 5 interchange schema: `InterchangeSchemaVersion` is `0`. Empty
+qualification, source-package, source-manifest, and requested-asset sets make no claim that their later
+owners exist or have accepted an input. These envelopes expose canonical projections and bindings only; Gate
+0 adds no JSON parser, persistence service, file suffix, or durable registry.
+
+`ExecutionAllowed`, `BuildAllowed`, and `DeploymentAllowed` are always `false`. Results cannot
+claim an attempted conversion, exit status, process timing, output manifest, output package, loss
+report, project mutation, build, or deployment. A whole-second UTC capture time and typed reason
+code explain the disabled result, but no process is launched, no file is opened or written, and no
+candidate evidence is persisted or promoted.
+
+V1 is permanently inert. A later execution gate must introduce a new contract version and may not
+relax the V1 validators. Provider and extension identities remain exact handoff bindings in V1;
+their final product values are resolved only by the later provider-selection gate.
+
 ## Workspace document
 
 Suffix:
@@ -248,7 +287,7 @@ The document is bound to one workspace and exact game profile:
 
 ```json
 {
-  "SchemaVersion": 1,
+  "SchemaVersion": 2,
   "WorkspaceId": "owner.workspace",
   "ProfileId": "foa.mono.current",
   "GameVersion": "exact-version",
@@ -260,11 +299,37 @@ The document is bound to one workspace and exact game profile:
   "EconomyItems": [],
   "EconomyRecipes": [],
   "RecipeIngredients": [],
-  "RecipeOutputs": []
+  "RecipeOutputs": [],
+  "ActorProfiles": [],
+  "TroopProfiles": [],
+  "TroopMembers": []
 }
 ```
 
-The four economy arrays are optional schema-1 extensions. Older schema-1 documents without them load as empty economy collections.
+Schema 2 is the current writable catalog format. The four economy arrays remain compatible with schema 1;
+older schema-1 documents without them load as empty economy collections. Schema 2 adds the three population
+arrays shown above.
+
+Schema-1 migration is read-only and fail-closed:
+
+1. the original schema version is detected before migration;
+2. the existing catalog fields load and the three population collections initialise empty;
+3. a schema-1 document with non-empty population collections is rejected rather than reinterpreted;
+4. legacy validation and governance compatibility rules run without changing the detected schema version;
+5. the complete candidate is validated against the active workspace, profile, evidence registry, and catalog
+   integrity rules before successful bound replacement;
+6. only successful bound replacement followed by `BuildDocument` produces a schema-2 document;
+7. the next successful catalog save writes that schema-2 document, including when every population collection
+   is empty.
+
+A loaded schema-1 candidate remains schema 1 after compatibility normalization.
+Directly saving that load result is refused.
+Catalog saving does not publish schema 1. Unknown versions, malformed schema-version values, failed migration,
+and failed persistence are rejected without replacing the published catalog. Migration preserves existing
+records, relationships, validation history, governance history, economy collections, and their stable order.
+Plain catalog documents require an explicit `SchemaVersion`. A legacy O3DE `JsonSerialization` envelope that
+predates a nested catalog schema is treated only as a schema-1 migration input. Current saves always emit the
+plain schema-2 document with explicit empty collections, not a new O3DE envelope.
 
 Reload rejects a mismatched workspace ID, profile ID, game version, or branch.
 
@@ -498,6 +563,108 @@ Rules:
 - quantity is positive;
 - chance is greater than `0` and no greater than `1`;
 - evidence exists and belongs to the recipe, output item, or explicit unresolved subject.
+
+## Population actor profile
+
+Array: `ActorProfiles`
+
+```json
+{
+  "RecordId": "population.actor.example",
+  "ActorKind": "npc",
+  "Archetype": "guard",
+  "TemplateRecordId": "population.template.guard",
+  "TemplateSubjectRef": "subject:population:template:guard",
+  "MinimumLevel": 5,
+  "MaximumLevel": 10,
+  "UniqueActor": false,
+  "EssentialActor": false,
+  "PersistentActor": false,
+  "LocalisationNameRef": "loc.actor.example.name",
+  "LocalisationDescriptionRef": "loc.actor.example.description",
+  "PortraitAssetRef": "asset:portrait:actor:example",
+  "ModelAssetRef": "asset:model:actor:example",
+  "Tags": ["guard"],
+  "EvidenceIds": ["evidence.population.actor.example"]
+}
+```
+
+Rules:
+
+- `RecordId` references an existing canonical `population/actor` record;
+- `ActorKind` is `npc`, `creature`, `animal`, `construct`, or `other`;
+- `Archetype` is required and bounded;
+- a level range is either absent as two zero values or ordered, positive, and no greater than `1000`;
+- a resolved template references a canonical `population/template` or `population/actor_template` record;
+- resolved and unresolved template bindings may coexist only when their exact subject references agree;
+- tags and evidence IDs are non-empty, bounded, unique, and emitted in deterministic order.
+
+Lifecycle flags and asset or localisation references are authoring and planning metadata. They do not grant
+spawn, runtime, deployment, or save-mutation authority.
+
+## Population troop profile
+
+Array: `TroopProfiles`
+
+```json
+{
+  "RecordId": "population.troop.example",
+  "TroopKind": "patrol",
+  "LeaderActorRecordId": "population.actor.example",
+  "LeaderActorSubjectRef": "subject:population:actor:example",
+  "MinimumSize": 2,
+  "MaximumSize": 4,
+  "Formation": "line",
+  "Tags": ["patrol"],
+  "EvidenceIds": ["evidence.population.troop.example"]
+}
+```
+
+Rules:
+
+- `RecordId` references an existing canonical `population/troop` record;
+- `TroopKind` is `party`, `patrol`, `encounter_group`, `reinforcement`, or `other`;
+- size bounds are positive, ordered, and no greater than `1000`;
+- an optional resolved leader references a canonical `population/actor` record;
+- resolved and unresolved leader bindings may coexist only when their exact subject references agree;
+- tags and evidence IDs are bounded, unique, and emitted in deterministic order;
+- a troop has at least one typed member, and a declared leader has exactly one matching `leader` member row.
+
+## Population troop member
+
+Array: `TroopMembers`
+
+```json
+{
+  "LinkId": "population.member.example.leader",
+  "TroopRecordId": "population.troop.example",
+  "ActorRecordId": "population.actor.example",
+  "ActorSubjectRef": "subject:population:actor:example",
+  "Role": "leader",
+  "MinimumCount": 1,
+  "MaximumCount": 1,
+  "Weight": 1.0,
+  "Required": true,
+  "Conditions": ["daytime"],
+  "EvidenceIds": ["evidence.population.member.example.leader"]
+}
+```
+
+Rules:
+
+- `LinkId` is the stable membership identity and `TroopRecordId` binds an existing typed troop;
+- at least one exact actor record or unresolved actor subject is present;
+- resolved actor IDs reference canonical `population/actor` records, and dual bindings must agree;
+- `Role` is `leader`, `melee`, `ranged`, `support`, `specialist`, or `other`;
+- count bounds are positive, ordered, and no greater than `1000`;
+- weight is finite and non-negative;
+- conditions and evidence IDs are bounded, unique, and emitted in deterministic order;
+- one troop cannot contain duplicate rows for the same exact actor subject or more than one typed leader row;
+- the combined member ranges overlap the troop's declared size range.
+
+Every population profile and member row remains evidence-bound during complete-catalog validation. Population
+data is authoring state only; no population contract invokes FoA, spawns an actor, mutates a save, or grants a
+runtime permission.
 
 ## Compatibility and migration
 

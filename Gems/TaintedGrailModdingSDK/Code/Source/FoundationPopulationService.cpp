@@ -39,18 +39,16 @@ namespace TaintedGrailModdingSDK
                 }
                 return false;
             }
-            workspaceRoot = resolvedWorkspaceRoot.empty()
-                ? workspace.m_rootPath
-                : resolvedWorkspaceRoot;
-            if (workspace.m_workspaceId.empty() || workspaceRoot.empty())
+            if (resolvedWorkspaceRoot.empty())
             {
                 if (error)
                 {
-                    *error = "Population authoring requires one canonical "
-                        "workspace root.";
+                    *error = "Population authoring requires a saved or loaded "
+                        "path-policy-validated workspace root.";
                 }
                 return false;
             }
+            workspaceRoot = resolvedWorkspaceRoot;
             return true;
         }
 

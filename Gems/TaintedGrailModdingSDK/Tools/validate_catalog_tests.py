@@ -88,6 +88,7 @@ def main() -> int:
             "Tests/AdapterContractTests.cpp",
             "Tests/CanonicalFingerprintTests.cpp",
             "Tests/CatalogDatabaseTests.cpp",
+            "Tests/CatalogSchemaMigrationPersistenceTests.cpp",
             "Tests/CatalogGovernanceHardeningTests.cpp",
             "Tests/CatalogGovernanceServiceTests.cpp",
             "Tests/CatalogGovernanceTypesTests.cpp",
@@ -131,6 +132,8 @@ def main() -> int:
             "Source/AdapterContractRegistry.cpp",
             "Source/AdapterWorkOrderPlanningService.cpp",
             "Source/CatalogDatabase.cpp",
+            "Source/CatalogDatabaseIntegrity.cpp",
+            "Source/CatalogDatabasePopulation.cpp",
             "Source/CatalogGovernanceBlockerService.cpp",
             "Source/CatalogGovernanceTypes.cpp",
             "Source/CatalogTransactionService.cpp",
@@ -139,6 +142,7 @@ def main() -> int:
             "Source/EconomyDuplicateDetectionService.cpp",
             "Source/EconomyModels.cpp",
             "Source/FoundationModels.cpp",
+            "Source/PopulationModels.cpp",
             "Source/SourceEvidenceRegistry.cpp",
         }
         if not required_core.issubset(core_entries):
@@ -186,6 +190,19 @@ def main() -> int:
                 "SyntheticRecordRequiresOwningPack",
                 "QueryFiltersEvidencePermissionAndBlockedState",
                 "RelationshipRequiresKnownRecordsAndEvidence",
+            ),
+            "CatalogSchemaMigrationPersistenceTests.cpp": (
+                "SchemaOnePreviewMigratesToSchemaTwoWithEmptyPopulationAndPreservesLegacyProjection",
+                "PlainCatalogRejectsMissingMalformedAndFutureSchemaVersions",
+                "LegacySerializationEnvelopeWithoutSchemaVersionMigratesAsSchemaOne",
+                "SchemaOnePopulationCollectionsAreRejectedWithoutReplacement",
+                "WriterRejectsSchemaOneAndWritesPlainSchemaTwoWithExplicitPopulationArrays",
+                "SchemaTwoSaveLoadSaveIsByteStable",
+                "SchemaTwoSaveClearLoadAndReplacePreservesCanonicalState",
+                "MalformedSchemaTwoDocumentDoesNotReplacePublishedCatalog",
+                "PopulationCandidateSaveFailureDoesNotPublish",
+                "PopulationCatalogSchemaVersion",
+                "LegacyCatalogSchemaVersion",
             ),
             "CatalogGovernanceServiceTests.cpp": (
                 "ValidationDoesNotGrantUsagePermission",
@@ -414,8 +431,35 @@ def main() -> int:
         )
         del compatibility
         require_fragments(
+            source_root / "PopulationModels.h",
+            (
+                "LegacyCatalogSchemaVersion = 1",
+                "PopulationCatalogSchemaVersion = 2",
+                "CurrentCatalogSchemaVersion =",
+                "PopulationCatalogSchemaVersion;",
+            ),
+        )
+        require_fragments(
+            source_root / "CatalogDatabase.cpp",
+            (
+                "document.m_actorProfiles = m_populationActorProfiles",
+                "document.m_troopProfiles = m_populationTroopProfiles",
+                "document.m_troopMembers = m_populationTroopMembers",
+                "document.m_schemaVersion = CurrentCatalogSchemaVersion",
+            ),
+        )
+        require_fragments(
             source_root / "CatalogPersistenceService.cpp",
             (
+                "ReadCatalogSchemaVersion",
+                "DetectCatalogSchemaVersion",
+                "SerializePlainCatalog",
+                "Plain canonical catalog documents require an explicit SchemaVersion.",
+                "Catalog schema 1 cannot contain population collections.",
+                "Canonical catalog saves require schema 2; schema 1 is a load-only migration input.",
+                "settings.m_keepDefaults = true",
+                "QSaveFile file",
+                "file.setDirectWriteFallback(false)",
                 "HasProofBackedAllowance",
                 "FindLatestPermissionEvent",
                 "HasValidatedPermissionBasis",

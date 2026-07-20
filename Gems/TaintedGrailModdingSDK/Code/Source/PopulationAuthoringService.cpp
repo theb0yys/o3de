@@ -49,16 +49,18 @@ namespace TaintedGrailModdingSDK
             const PackManifest& pack,
             const GameProfile& profile)
         {
+            if (pack.m_targetGameVersion.empty()
+                || pack.m_targetBranch.empty())
+            {
+                return false;
+            }
             const bool gameVersionMatches =
-                (pack.m_targetGameVersion.empty()
-                    && pack.m_compatibleGameVersions.empty())
-                || pack.m_targetGameVersion == profile.m_gameVersion
+                pack.m_targetGameVersion == profile.m_gameVersion
                 || Contains(
                     pack.m_compatibleGameVersions,
                     profile.m_gameVersion);
             return gameVersionMatches
-                && (pack.m_targetBranch.empty()
-                    || pack.m_targetBranch == profile.m_branch);
+                && pack.m_targetBranch == profile.m_branch;
         }
 
         bool ValidateAuthoringContext(
@@ -70,7 +72,7 @@ namespace TaintedGrailModdingSDK
         {
             const GameProfile* workspaceProfile =
                 workspace.FindActiveGameProfile();
-            if (workspace.m_workspaceId.empty()
+            if (!IsStableContractId(workspace.m_workspaceId)
                 || workspaceRoot.empty()
                 || !profile.IsConfigured()
                 || !workspaceProfile
@@ -276,6 +278,25 @@ namespace TaintedGrailModdingSDK
             return subjects;
         }
 
+        bool ValidateMemberLinkOwnership(
+            const PopulationTroopMember& member,
+            const CatalogDatabase& catalog,
+            AZStd::string& error)
+        {
+            for (const PopulationTroopMember& existing :
+                 catalog.GetPopulationTroopMembers())
+            {
+                if (existing.m_linkId == member.m_linkId
+                    && existing.m_troopRecordId != member.m_troopRecordId)
+                {
+                    error = "Population troop-member link identity cannot move "
+                        "between owning troops: " + member.m_linkId;
+                    return false;
+                }
+            }
+            return true;
+        }
+
         AZ::Outcome<CatalogDatabase, AZStd::string> ValidateCandidate(
             CatalogDatabase candidate,
             const WorkspaceModel& workspace,
@@ -386,6 +407,13 @@ namespace TaintedGrailModdingSDK
                     "Every troop-definition member must bind to the exact troop "
                     "profile record."));
             }
+            if (!ValidateMemberLinkOwnership(
+                    member,
+                    catalog,
+                    validationError))
+            {
+                return AZ::Failure(AZStd::move(validationError));
+            }
             memberIds.push_back(member.m_linkId);
         }
         AZStd::sort(memberIds.begin(), memberIds.end());
@@ -421,31 +449,38 @@ namespace TaintedGrailModdingSDK
         }
 
         CatalogDocument document = catalog.BuildDocument(workspace, profile);
-        document.m_troopProfiles.erase(
-            AZStd::remove_if(
-                document.m_troopProfiles.begin(),
-                document.m_troopProfiles.end(),
-                [&definition](const PopulationTroopProfile& troop)
+        bool replacedProfile = false;
+        for (PopulationTroopProfile& existing : document.m_troopProfiles)
+        {
+            if (existing.m_recordId == definition.m_profile.m_recordId)
+            {
+                existing = definition.m_profile;
+                replacedProfile = true;
+                break;
+            }
+        }
+        if (!replacedProfile)
+        {
+            document.m_troopProfiles.push_back(definition.m_profile);
+        }
+
+        for (const PopulationTroopMember& member : definition.m_members)
+        {
+            bool replacedMember = false;
+            for (PopulationTroopMember& existing : document.m_troopMembers)
+            {
+                if (existing.m_linkId == member.m_linkId)
                 {
-                    return troop.m_recordId
-                        == definition.m_profile.m_recordId;
-                }),
-            document.m_troopProfiles.end());
-        document.m_troopMembers.erase(
-            AZStd::remove_if(
-                document.m_troopMembers.begin(),
-                document.m_troopMembers.end(),
-                [&definition](const PopulationTroopMember& member)
-                {
-                    return member.m_troopRecordId
-                        == definition.m_profile.m_recordId;
-                }),
-            document.m_troopMembers.end());
-        document.m_troopProfiles.push_back(definition.m_profile);
-        document.m_troopMembers.insert(
-            document.m_troopMembers.end(),
-            definition.m_members.begin(),
-            definition.m_members.end());
+                    existing = member;
+                    replacedMember = true;
+                    break;
+                }
+            }
+            if (!replacedMember)
+            {
+                document.m_troopMembers.push_back(member);
+            }
+        }
 
         CatalogDatabase candidate;
         AZStd::string catalogError;
@@ -514,6 +549,10 @@ namespace TaintedGrailModdingSDK
                 catalog.FindByRecordId(member.m_troopRecordId),
                 "troop",
                 activePack,
+                validationError)
+            || !ValidateMemberLinkOwnership(
+                member,
+                catalog,
                 validationError)
             || !ValidateEvidence(
                 member.m_evidenceIds,
