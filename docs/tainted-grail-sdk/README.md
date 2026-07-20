@@ -8,7 +8,9 @@ This directory contains the public documentation for the TG SDK layer in this O3
 
 - [Open and Test the Actual Editor](OPEN_AND_TEST_EDITOR.md) — shortest Windows path from a fresh pull to the dedicated O3DE project, source build, trusted clickable entry, native log, and synthetic workspace.
 - [Developer Preview 0](DEVELOPER_PREVIEW_0.md) — Windows x64 prerequisites, configure/build/validate commands, deterministic fixture, persistence smoke, controlled Editor launch, redacted diagnostics, manual UI evidence tooling, and current limitations.
-- [Developer Preview Exact-Head Verification](DEVELOPER_PREVIEW_EXACT_HEAD_VERIFICATION.md) — synchronized-ref checks, committed-range whitespace validation, exact-head build and CTest coordination, and authoritative receipt/UI reverification.
+- [Developer Preview Exact-Head Verification](DEVELOPER_PREVIEW_EXACT_HEAD_VERIFICATION.md) — explicit
+  reviewed-range whitespace checking, external receipts, O3DE configure/build, compiled tests, authoritative
+  receipt/UI re-verification, and Windows evidence finalization.
 - [Windows Manual UI Smoke](DEVELOPER_PREVIEW_MANUAL_UI_SMOKE.md) — real Windows checklist, screenshot-evidence initializer/verifier, exact-commit binding, privacy attestation, and evidence handling.
 - [Developer Preview Troubleshooting](DEVELOPER_PREVIEW_TROUBLESHOOTING.md) — missing Editor output, path-policy and clickable-entry failures, absent TG SDK panes, native log locations, diagnostics failures, and verification guidance.
 - [User Guide](USER_GUIDE.md) — build, open, configure, and use the foundation editor tools.
@@ -46,9 +48,8 @@ This directory contains the public documentation for the TG SDK layer in this O3
 - [CI, Runner, and Local Validation Policy](CI_AND_LOCAL_VALIDATION.md) — current manual-only workflow state, authoritative local command, self-hosted runner boundary, token handling, and restoration conditions.
 - [Developer Preview 0 Design](DEVELOPER_PREVIEW_0_DESIGN.md) — approved scope, acceptance criteria, safety boundary, and implementation sequence.
 - [Actor and Troop Editor Design](ACTOR_TROOP_EDITOR_DESIGN.md) — active population implementation,
-  completed Core, schema-2 persistence, Framework candidate-publication, and population-authoring test-source
-  units, with the Actor/Troop pane and population action-lane contract next and runtime or spawn authority
-  still deferred.
+  completed Core, schema-2 persistence, and Framework candidate-publication units, the next authoring-test
+  boundary, and deferred runtime or spawn authority.
 - [Editor Toolchain and Unity Interchange Design](EDITOR_TOOLCHAIN_UNITY_INTERCHANGE_DESIGN.md) — located O3DE,
   Blender, and Unity components; provider qualification; deterministic interchange; loss reporting; and
   staged delivery gates.
