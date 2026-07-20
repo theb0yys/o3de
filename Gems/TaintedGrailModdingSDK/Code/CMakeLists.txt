@@ -95,6 +95,7 @@ if(PAL_TRAIT_BUILD_TESTS_SUPPORTED AND PAL_TRAIT_TEST_GOOGLE_TEST_SUPPORTED)
 
     ly_add_source_properties(
         SOURCES
+            Tests/CatalogSchemaMigrationPersistenceTests.cpp
             Tests/DeveloperPreviewSmokeTests.cpp
             Tests/WorkspaceSchemaServiceTests.cpp
         PROPERTY COMPILE_DEFINITIONS

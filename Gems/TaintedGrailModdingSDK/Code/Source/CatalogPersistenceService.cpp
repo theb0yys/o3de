@@ -9,6 +9,7 @@
 
 #include "PersistenceJsonUtils.h"
 
+#include <AzCore/Serialization/Json/JsonSerialization.h>
 #include <AzCore/Serialization/Json/JsonUtils.h>
 #include <AzCore/std/algorithm.h>
 #include <AzCore/std/utility/move.h>
@@ -16,8 +17,10 @@
 #include <QByteArray>
 #include <QDir>
 #include <QFileInfo>
+#include <QSaveFile>
 
 #include <cstddef>
+#include <limits>
 
 namespace TaintedGrailModdingSDK
 {
@@ -32,6 +35,99 @@ namespace TaintedGrailModdingSDK
         QString ToQString(const AZStd::string& value)
         {
             return QString::fromUtf8(value.c_str());
+        }
+
+        AZ::Outcome<AZ::u32, AZStd::string> ReadCatalogSchemaVersion(
+            const rapidjson::Value& object,
+            bool allowMissingLegacyVersion)
+        {
+            const auto schemaVersion = object.FindMember("SchemaVersion");
+            if (schemaVersion == object.MemberEnd())
+            {
+                if (allowMissingLegacyVersion)
+                {
+                    return AZ::Success(LegacyCatalogSchemaVersion);
+                }
+                return AZ::Failure(AZStd::string(
+                    "Plain canonical catalog documents require an explicit SchemaVersion."));
+            }
+            if (!schemaVersion->value.IsUint())
+            {
+                return AZ::Failure(AZStd::string(
+                    "Catalog SchemaVersion must be an unsigned 32-bit integer."));
+            }
+
+            const AZ::u32 version = schemaVersion->value.GetUint();
+            if (version != LegacyCatalogSchemaVersion
+                && version != CurrentCatalogSchemaVersion)
+            {
+                return AZ::Failure(AZStd::string::format(
+                    "Catalog schema version %u is unsupported; this editor supports schema 1 migration and schema 2.",
+                    version));
+            }
+            return AZ::Success(version);
+        }
+
+        AZ::Outcome<AZ::u32, AZStd::string> DetectCatalogSchemaVersion(
+            const rapidjson::Document& root)
+        {
+            if (!root.IsObject())
+            {
+                return AZ::Failure(AZStd::string(
+                    "Canonical catalog JSON root must be an object."));
+            }
+
+            const auto type = root.FindMember("Type");
+            if (type == root.MemberEnd())
+            {
+                return ReadCatalogSchemaVersion(root, false);
+            }
+            if (!type->value.IsString()
+                || AZStd::string(
+                    type->value.GetString(),
+                    type->value.GetStringLength()) != "JsonSerialization")
+            {
+                return AZ::Failure(AZStd::string(
+                    "Catalog Type must identify an O3DE JsonSerialization envelope."));
+            }
+
+            const auto classData = root.FindMember("ClassData");
+            if (classData == root.MemberEnd() || !classData->value.IsObject())
+            {
+                return AZ::Failure(AZStd::string(
+                    "Catalog JsonSerialization envelopes require an object ClassData payload."));
+            }
+            return ReadCatalogSchemaVersion(classData->value, true);
+        }
+
+        AZ::Outcome<AZStd::string, AZStd::string> SerializePlainCatalog(
+            const CatalogDocument& document)
+        {
+            AZ::JsonSerializerSettings settings;
+            settings.m_keepDefaults = true;
+
+            rapidjson::Document serialized;
+            const AZ::JsonSerializationResult::ResultCode storeResult =
+                AZ::JsonSerialization::Store(
+                    serialized,
+                    serialized.GetAllocator(),
+                    document,
+                    settings);
+            if (storeResult.GetProcessing()
+                != AZ::JsonSerializationResult::Processing::Completed)
+            {
+                return AZ::Failure(storeResult.ToString("canonical catalog"));
+            }
+
+            AZStd::string output;
+            const AZ::Outcome<void, AZStd::string> writeResult =
+                AZ::JsonSerializationUtils::WriteJsonString(serialized, output);
+            if (!writeResult.IsSuccess())
+            {
+                return AZ::Failure(AZStd::string(writeResult.GetError()));
+            }
+            output += "\n";
+            return AZ::Success(AZStd::move(output));
         }
 
         bool Contains(const AZStd::vector<AZStd::string>& values, const AZStd::string& value)
@@ -425,9 +521,10 @@ namespace TaintedGrailModdingSDK
         {
             return AZ::Failure(AZStd::string("A workspace root is required before the canonical catalog can be saved."));
         }
-        if (!document.UsesSupportedSchema())
+        if (document.m_schemaVersion != CurrentCatalogSchemaVersion)
         {
-            return AZ::Failure(AZStd::string("Unsupported canonical catalog schema version."));
+            return AZ::Failure(AZStd::string(
+                "Canonical catalog saves require schema 2; schema 1 is a load-only migration input."));
         }
         if (document.m_workspaceId.empty() || document.m_profileId.empty()
             || document.m_gameVersion.empty() || document.m_branch.empty())
@@ -441,6 +538,20 @@ namespace TaintedGrailModdingSDK
             return AZ::Failure(AZStd::string(identityResult.GetError()));
         }
 
+        AZ::Outcome<AZStd::string, AZStd::string> serializationResult =
+            SerializePlainCatalog(document);
+        if (!serializationResult.IsSuccess())
+        {
+            return AZ::Failure(AZStd::string(serializationResult.GetError()));
+        }
+        const AZStd::string serialized = serializationResult.TakeValue();
+        if (serialized.size()
+            > static_cast<size_t>(std::numeric_limits<qint64>::max()))
+        {
+            return AZ::Failure(AZStd::string(
+                "Canonical catalog serialization exceeds the supported file size."));
+        }
+
         const AZStd::string path = GetCatalogPath(workspaceRoot);
         const QString directory = QFileInfo(ToQString(path)).absolutePath();
         if (!QDir().mkpath(directory))
@@ -448,10 +559,24 @@ namespace TaintedGrailModdingSDK
             return AZ::Failure(AZStd::string("Unable to create the catalog directory inside the workspace."));
         }
 
-        const AZ::Outcome<void, AZStd::string> saveResult = AZ::JsonSerializationUtils::SaveObjectToFile(&document, path);
-        if (!saveResult.IsSuccess())
+        QSaveFile file(ToQString(path));
+        file.setDirectWriteFallback(false);
+        if (!file.open(QIODevice::WriteOnly))
         {
-            return AZ::Failure(AZStd::string(saveResult.GetError()));
+            return AZ::Failure(AZStd::string(
+                "Unable to open the pending canonical catalog file for writing."));
+        }
+        const qint64 expectedBytes = static_cast<qint64>(serialized.size());
+        if (file.write(serialized.data(), expectedBytes) != expectedBytes)
+        {
+            file.cancelWriting();
+            return AZ::Failure(AZStd::string(
+                "Unable to write the complete pending canonical catalog file."));
+        }
+        if (!file.commit())
+        {
+            return AZ::Failure(AZStd::string(
+                "Unable to atomically commit the canonical catalog file."));
         }
         return AZ::Success(path);
     }
@@ -469,16 +594,40 @@ namespace TaintedGrailModdingSDK
             return AZ::Failure(AZStd::string("The workspace does not contain a canonical catalog document."));
         }
 
+        const AZ::Outcome<rapidjson::Document, AZStd::string> jsonResult =
+            AZ::JsonSerializationUtils::ReadJsonFile(path);
+        if (!jsonResult.IsSuccess())
+        {
+            return AZ::Failure(AZStd::string(jsonResult.GetError()));
+        }
+        const AZ::Outcome<AZ::u32, AZStd::string> schemaResult =
+            DetectCatalogSchemaVersion(jsonResult.GetValue());
+        if (!schemaResult.IsSuccess())
+        {
+            return AZ::Failure(AZStd::string(schemaResult.GetError()));
+        }
+        const AZ::u32 detectedSchemaVersion = schemaResult.GetValue();
+
         CatalogDocument document;
+        document.m_schemaVersion = detectedSchemaVersion;
         const AZ::Outcome<void, AZStd::string> loadResult =
             PersistenceJsonUtils::LoadObjectFromFile(document, path);
         if (!loadResult.IsSuccess())
         {
             return AZ::Failure(AZStd::string(loadResult.GetError()));
         }
-        if (!document.UsesSupportedSchema())
+        if (document.m_schemaVersion != detectedSchemaVersion)
         {
-            return AZ::Failure(AZStd::string("Unsupported canonical catalog schema version."));
+            return AZ::Failure(AZStd::string(
+                "Catalog SchemaVersion changed during deserialization; the document was not loaded."));
+        }
+        if (detectedSchemaVersion == LegacyCatalogSchemaVersion
+            && (!document.m_actorProfiles.empty()
+                || !document.m_troopProfiles.empty()
+                || !document.m_troopMembers.empty()))
+        {
+            return AZ::Failure(AZStd::string(
+                "Catalog schema 1 cannot contain population collections."));
         }
         const AZ::Outcome<void, AZStd::string> identityResult = ValidatePersistedIdentity(document);
         if (!identityResult.IsSuccess())
@@ -486,8 +635,11 @@ namespace TaintedGrailModdingSDK
             return AZ::Failure(AZStd::string(identityResult.GetError()));
         }
 
-        NormalizeLegacyValidationHistory(document);
-        NormalizeLegacyGovernanceState(document);
+        if (detectedSchemaVersion == LegacyCatalogSchemaVersion)
+        {
+            NormalizeLegacyValidationHistory(document);
+            NormalizeLegacyGovernanceState(document);
+        }
         return AZ::Success(AZStd::move(document));
     }
 } // namespace TaintedGrailModdingSDK

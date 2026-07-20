@@ -39,12 +39,23 @@ Catalog/catalog.tgcatalog.json
 
 The file contains:
 
+- explicit catalog schema version 2;
 - canonical records;
 - first-class relationships;
 - validation history;
+- governance history;
+- economy profiles and joins;
+- typed population actor profiles, troop profiles, and troop-member rows;
 - document-level workspace and game-profile binding.
 
 The in-memory catalog is published only after a successful save.
+
+Catalog schema 1 is a read-only compatibility input. A valid schema-1 document loads with empty population
+collections, and compatibility normalization leaves its detected version unchanged.
+The loaded candidate remains schema 1.
+Directly saving it is refused; only successful bound replacement followed by `BuildDocument` produces the
+schema-2 document accepted by the writer. A schema-1 document cannot carry non-empty population collections.
+Newer, malformed, or unsafe versions fail without replacing the published catalog.
 
 ## Search
 
@@ -297,9 +308,15 @@ The superseding record ID must exist. Supersession does not silently delete evid
 
 Use **Save Catalog** to persist the current canonical document.
 
+Catalog saves write explicit schema 2 even when all population collections are empty. Saving does not publish
+a new schema-1 document. A loaded schema-1 compatibility candidate must first pass bound replacement; direct
+save remains refused until `BuildDocument` emits the validated schema-2 projection.
+
 Use **Reload Catalog** to reload and validate the workspace document. Reload rejects:
 
 - unsupported schema versions;
+- malformed or missing schema versions in plain catalog documents;
+- schema-1 documents with non-empty population collections;
 - mismatched workspace ID;
 - mismatched active profile ID;
 - mismatched game version or branch;
@@ -309,6 +326,10 @@ Use **Reload Catalog** to reload and validate the workspace document. Reload rej
 - records or relationships without required evidence;
 - relationships with missing record targets;
 - validation events for missing records.
+
+Legacy O3DE catalog envelopes that predate an explicit nested catalog schema remain a bounded schema-1
+migration input. They retain schema 1 after loading and normalization, just like plain schema-1 input. Current
+saves use the plain schema-2 durable document produced only after successful bound replacement.
 
 ## Safe workflow
 

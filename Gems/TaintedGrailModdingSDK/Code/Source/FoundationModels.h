@@ -328,7 +328,7 @@ namespace TaintedGrailModdingSDK
         static void Reflect(AZ::ReflectContext* context);
         bool UsesSupportedSchema() const;
 
-        AZ::u32 m_schemaVersion = LegacyCatalogSchemaVersion;
+        AZ::u32 m_schemaVersion = CurrentCatalogSchemaVersion;
         AZStd::string m_workspaceId;
         AZStd::string m_profileId;
         AZStd::string m_gameVersion;

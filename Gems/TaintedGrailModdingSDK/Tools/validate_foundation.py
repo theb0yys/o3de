@@ -103,7 +103,11 @@ def validate_cmake(gem_root: Path) -> None:
 
 def read_sources(gem_root: Path) -> tuple[Path, str]:
     source_root = gem_root / "Code/Source"
-    files = sorted(source_root.glob("*.[ch]pp")) + sorted(source_root.glob("*.h"))
+    files = (
+        sorted(source_root.glob("*.[ch]pp"))
+        + sorted(source_root.glob("*.h"))
+        + sorted(source_root.glob("*.inl"))
+    )
     return source_root, "\n".join(path.read_text(encoding="utf-8") for path in files)
 
 

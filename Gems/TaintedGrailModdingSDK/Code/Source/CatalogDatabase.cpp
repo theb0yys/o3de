@@ -124,7 +124,9 @@ namespace TaintedGrailModdingSDK
         {
             if (error)
             {
-                *error = "Unsupported canonical catalog schema version.";
+                *error = AZStd::string::format(
+                    "Catalog schema version %u is unsupported; this editor supports schema 1 migration and schema 2.",
+                    document.m_schemaVersion);
             }
             return false;
         }
@@ -228,12 +230,7 @@ namespace TaintedGrailModdingSDK
                 return left.m_linkId < right.m_linkId;
             });
 
-        const bool hasPopulationData = !document.m_actorProfiles.empty()
-            || !document.m_troopProfiles.empty()
-            || !document.m_troopMembers.empty();
-        document.m_schemaVersion = hasPopulationData
-            ? PopulationCatalogSchemaVersion
-            : LegacyCatalogSchemaVersion;
+        document.m_schemaVersion = CurrentCatalogSchemaVersion;
         return document;
     }
 } // namespace TaintedGrailModdingSDK

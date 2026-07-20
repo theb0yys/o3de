@@ -8,6 +8,7 @@
 #include "CatalogPersistenceService.h"
 #include "EconomyAuthoringService.h"
 #include "PackPersistenceService.h"
+#include "PersistenceJsonUtils.h"
 #include "SourceEvidencePersistenceService.h"
 #include "WorkspacePersistenceService.h"
 
@@ -21,6 +22,7 @@
 #include <AzCore/std/algorithm.h>
 #include <AzCore/std/sort.h>
 #include <AzCore/std/utility/move.h>
+#include <AzCore/Utils/Utils.h>
 #include <AzTest/AzTest.h>
 #include <AzFramework/IO/LocalFileIO.h>
 
@@ -541,10 +543,14 @@ namespace TaintedGrailModdingSDK
 
     TEST_F(DeveloperPreviewSmokeTests, LegacyUnprovenAllowanceStillFailsClosed)
     {
-        CatalogPersistenceService persistence;
-        auto fixture = persistence.Load(TG_SDK_PREVIEW_TEMPLATE_ROOT);
+        CatalogDocument document;
+        const auto fixture = PersistenceJsonUtils::LoadObjectFromFile(
+            document,
+            FilePath(
+                TG_SDK_PREVIEW_TEMPLATE_ROOT,
+                "Catalog/catalog.tgcatalog.json"));
         ASSERT_TRUE(fixture.IsSuccess()) << fixture.GetError().c_str();
-        CatalogDocument document = fixture.TakeValue();
+        ASSERT_EQ(document.m_schemaVersion, LegacyCatalogSchemaVersion);
         auto resultRecord = AZStd::find_if(
             document.m_records.begin(),
             document.m_records.end(),
@@ -558,11 +564,21 @@ namespace TaintedGrailModdingSDK
         QTemporaryDir outputDirectory;
         ASSERT_TRUE(outputDirectory.isValid());
         const AZStd::string outputRoot = ToAzString(outputDirectory.path());
-        auto saved = persistence.Save(document, outputRoot);
-        ASSERT_TRUE(saved.IsSuccess()) << saved.GetError().c_str();
+        const AZStd::string catalogPath = FilePath(
+            outputRoot,
+            "Catalog/catalog.tgcatalog.json");
+        ASSERT_TRUE(QDir().mkpath(QFileInfo(ToQString(catalogPath)).absolutePath()));
+        auto serialized = SerializeObject(document);
+        ASSERT_TRUE(serialized.IsSuccess()) << serialized.GetError().c_str();
+        auto written = AZ::Utils::WriteFile(serialized.GetValue(), catalogPath);
+        ASSERT_TRUE(written.IsSuccess()) << written.GetError().c_str();
 
+        CatalogPersistenceService persistence;
         auto reloaded = persistence.Load(outputRoot);
         ASSERT_TRUE(reloaded.IsSuccess()) << reloaded.GetError().c_str();
+        EXPECT_EQ(
+            reloaded.GetValue().m_schemaVersion,
+            LegacyCatalogSchemaVersion);
         const auto reloadedRecord = AZStd::find_if(
             reloaded.GetValue().m_records.begin(),
             reloaded.GetValue().m_records.end(),

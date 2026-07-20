@@ -105,7 +105,14 @@ Status: implemented, continuing hardening and Windows UI verification.
 
 ### Actors and population
 
-- Actor and Troop Editor.
+Status: active development. Core contracts, CatalogDatabase integration, and durable catalog schema-2
+migration/persistence are implemented; Framework authoring is next.
+
+- Typed actor profiles, troop profiles, and troop membership with exact canonical identity and evidence
+  boundaries.
+- Schema-1 catalog migration, schema-2-only catalog writing, deterministic population ordering, malformed
+  input rejection, and save/reopen equivalence.
+- Actor and Troop Editor remains pending Framework authoring services and the Editor vertical slice.
 - Spawn and Encounter Editor.
 - Templates, identities, pools, routes, lifecycle, uniqueness, density, cleanup, and rollback research.
 
