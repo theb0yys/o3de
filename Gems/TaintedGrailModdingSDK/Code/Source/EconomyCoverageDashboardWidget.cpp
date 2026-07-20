@@ -182,7 +182,7 @@ namespace TaintedGrailModdingSDK
             QString record = ToQString(row.m_recordId);
             if (!row.m_displayName.empty())
             {
-                record += QStringLiteral(" — ") + ToQString(row.m_displayName);
+                record += QStringLiteral(" - ") + ToQString(row.m_displayName);
             }
             const QString owner = row.m_ownerPackId.empty()
                 ? tr("native / no pack owner")

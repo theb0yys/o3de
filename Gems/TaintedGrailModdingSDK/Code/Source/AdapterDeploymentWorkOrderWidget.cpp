@@ -101,7 +101,7 @@ namespace TaintedGrailModdingSDK
         QString WindowSummary(
             const AdapterDeploymentWorkOrder& workOrder)
         {
-            return QObject::tr("%1 | %2 → %3 | operators=%4 | evaluated=%5")
+            return QObject::tr("%1 | %2 -> %3 | operators=%4 | evaluated=%5")
                 .arg(
                     ToQString(workOrder.m_maintenanceWindowId),
                     ToQString(workOrder.m_maintenanceStartAtUtc),

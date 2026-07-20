@@ -185,9 +185,9 @@ namespace TaintedGrailModdingSDK
         auto* buttonLayout = new QHBoxLayout();
         auto* newButton = new QPushButton(tr("New Pack"), this);
         auto* applyButton = new QPushButton(tr("Apply"), this);
-        auto* openButton = new QPushButton(tr("Open…"), this);
+        auto* openButton = new QPushButton(tr("Open..."), this);
         auto* saveButton = new QPushButton(tr("Save"), this);
-        auto* saveAsButton = new QPushButton(tr("Save As…"), this);
+        auto* saveAsButton = new QPushButton(tr("Save As..."), this);
         buttonLayout->addWidget(newButton);
         buttonLayout->addWidget(applyButton);
         buttonLayout->addStretch(1);
@@ -368,7 +368,7 @@ namespace TaintedGrailModdingSDK
     {
         const FoundationSnapshot& snapshot = FoundationService::Get().GetSnapshot();
         m_activePackValue->setText(
-            tr("%1 — %2 (%3)")
+            tr("%1 - %2 (%3)")
                 .arg(ToQString(snapshot.m_activePackId), ToQString(snapshot.m_activePackName), ToQString(snapshot.m_activePackVersion)));
         m_manifestPathValue->setText(ToQString(snapshot.m_activePackFilePath));
     }

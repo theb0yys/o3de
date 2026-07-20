@@ -185,7 +185,7 @@ namespace TaintedGrailModdingSDK
         itemProfileLayout->addRow(saveItemButton);
         itemLayout->addWidget(itemProfileGroup);
 
-        auto* itemLaneGroup = new QGroupBox(tr("Item Action Lanes — Governed Read-only Status"), itemContent);
+        auto* itemLaneGroup = new QGroupBox(tr("Item Action Lanes - Governed Read-only Status"), itemContent);
         auto* itemLaneLayout = new QVBoxLayout(itemLaneGroup);
         m_itemLaneTable = new QTableWidget(0, 2, itemLaneGroup);
         m_itemLaneTable->setHorizontalHeaderLabels({ tr("Lane"), tr("Status") });
@@ -235,7 +235,7 @@ namespace TaintedGrailModdingSDK
         recipeProfileLayout->addRow(saveRecipeButton);
         recipeLayout->addWidget(recipeProfileGroup);
 
-        auto* recipeLaneGroup = new QGroupBox(tr("Recipe Action Lanes — Governed Read-only Status"), recipeContent);
+        auto* recipeLaneGroup = new QGroupBox(tr("Recipe Action Lanes - Governed Read-only Status"), recipeContent);
         auto* recipeLaneLayout = new QVBoxLayout(recipeLaneGroup);
         m_recipeLaneTable = new QTableWidget(0, 2, recipeLaneGroup);
         m_recipeLaneTable->setHorizontalHeaderLabels({ tr("Lane"), tr("Status") });
@@ -244,7 +244,7 @@ namespace TaintedGrailModdingSDK
         recipeLayout->addWidget(recipeLaneGroup);
 
         auto* recipeEvidenceGroup = new QGroupBox(
-            tr("Station Visibility and Learnability Evidence — Read-only Research"),
+            tr("Station Visibility and Learnability Evidence - Read-only Research"),
             recipeContent);
         auto* recipeEvidenceLayout = new QVBoxLayout(recipeEvidenceGroup);
         auto* recipeEvidenceDescription = new QLabel(
@@ -332,7 +332,7 @@ namespace TaintedGrailModdingSDK
         outputForm->addWidget(m_outputSubjectRef, 1, 1);
         outputForm->addWidget(new QLabel(tr("Quantity"), outputGroup), 1, 2);
         outputForm->addWidget(m_outputQuantity, 1, 3);
-        outputForm->addWidget(new QLabel(tr("Chance (0–1)"), outputGroup), 2, 0);
+        outputForm->addWidget(new QLabel(tr("Chance (0-1)"), outputGroup), 2, 0);
         outputForm->addWidget(m_outputChance, 2, 1);
         outputForm->addWidget(m_outputByProduct, 2, 2);
         outputForm->addWidget(new QLabel(tr("Conditions"), outputGroup), 3, 0);
@@ -442,9 +442,9 @@ namespace TaintedGrailModdingSDK
         m_ingredientItemRecord->clear();
         m_outputItemRecord->clear();
         m_relationshipTargetRecord->clear();
-        m_itemRecord->addItem(tr("Select canonical item…"), QString());
-        m_recipeRecord->addItem(tr("Select canonical recipe…"), QString());
-        m_relationshipSource->addItem(tr("Select item or recipe…"), QString());
+        m_itemRecord->addItem(tr("Select canonical item..."), QString());
+        m_recipeRecord->addItem(tr("Select canonical recipe..."), QString());
+        m_relationshipSource->addItem(tr("Select item or recipe..."), QString());
         m_ingredientItemRecord->addItem(tr("Use unresolved subject ref"), QString());
         m_outputItemRecord->addItem(tr("Use unresolved subject ref"), QString());
         m_relationshipTargetRecord->addItem(tr("Use unresolved target subject"), QString());
@@ -455,7 +455,7 @@ namespace TaintedGrailModdingSDK
             QString label = id;
             if (!record.m_displayName.empty())
             {
-                label += QStringLiteral(" — ") + ToQString(record.m_displayName);
+                label += QStringLiteral(" - ") + ToQString(record.m_displayName);
             }
             m_relationshipTargetRecord->addItem(label, id);
             if (record.m_domain == "economy" && record.m_recordKind == "item")

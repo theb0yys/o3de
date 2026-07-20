@@ -143,7 +143,7 @@ namespace TaintedGrailModdingSDK
         auto* filterGroup = new QGroupBox(tr("Search and Filters"), this);
         auto* filterLayout = new QGridLayout(filterGroup);
         m_searchEdit = new QLineEdit(filterGroup);
-        m_searchEdit->setPlaceholderText(tr("Display name, alias, GUID, exact ref, subject, tag…"));
+        m_searchEdit->setPlaceholderText(tr("Display name, alias, GUID, exact ref, subject, tag..."));
         m_recordIdFilter = new QLineEdit(filterGroup);
         m_exactRefFilter = new QLineEdit(filterGroup);
         m_subjectFilter = new QLineEdit(filterGroup);
@@ -462,13 +462,13 @@ namespace TaintedGrailModdingSDK
         {
             QSignalBlocker blocker(m_promotionEvidence);
             m_promotionEvidence->clear();
-            m_promotionEvidence->addItem(tr("Select evidence…"), QString());
+            m_promotionEvidence->addItem(tr("Select evidence..."), QString());
             for (const EvidenceRecord& evidence : service.GetSourceRegistry().GetEvidence())
             {
                 QString label = ToQString(evidence.m_evidenceId);
-                label += QStringLiteral(" — ");
+                label += QStringLiteral(" - ");
                 label += ToQString(evidence.m_subjectRef);
-                label += QStringLiteral(" — ");
+                label += QStringLiteral(" - ");
                 label += ToQString(evidence.m_claim).left(80);
                 m_promotionEvidence->addItem(label, ToQString(evidence.m_evidenceId));
             }
@@ -599,7 +599,7 @@ namespace TaintedGrailModdingSDK
             const EvidenceRecord* evidence = service.GetSourceRegistry().FindEvidence(evidenceId);
             if (!evidence)
             {
-                evidenceLines << tr("%1 — missing from active evidence registry").arg(ToQString(evidenceId));
+                evidenceLines << tr("%1 - missing from active evidence registry").arg(ToQString(evidenceId));
                 continue;
             }
             evidenceLines << tr("%1\n  Source: %2\n  Claim: %3\n  Confidence: %4\n  Locator: %5")
@@ -617,7 +617,7 @@ namespace TaintedGrailModdingSDK
             const QString target = relationship.m_toRecordId.empty()
                 ? ToQString(relationship.m_targetSubjectRef)
                 : ToQString(relationship.m_toRecordId);
-            relationshipLines << tr("%1 | %2 | %3 → %4\n  Maturity: %5 | Confidence: %6 | Risk: %7 | Validation: %8 | Staleness: %9\n  Allowed: %10 | Prohibited: %11 | Evidence: %12")
+            relationshipLines << tr("%1 | %2 | %3 -> %4\n  Maturity: %5 | Confidence: %6 | Risk: %7 | Validation: %8 | Staleness: %9\n  Allowed: %10 | Prohibited: %11 | Evidence: %12")
                 .arg(ToQString(relationship.m_relationshipId))
                 .arg(ToQString(relationship.m_relationshipKind))
                 .arg(ToQString(relationship.m_fromRecordId))
@@ -650,7 +650,7 @@ namespace TaintedGrailModdingSDK
         QStringList governanceLines;
         for (const CatalogGovernanceEvent& event : service.GetCatalog().FindGovernanceForSubject("record", record->m_recordId))
         {
-            governanceLines << tr("%1 | %2 | %3 → %4 | usage: %5 | reviewer: %6\n  Evidence: %7 | Validation proof: %8\n  %9")
+            governanceLines << tr("%1 | %2 | %3 -> %4 | usage: %5 | reviewer: %6\n  Evidence: %7 | Validation proof: %8\n  %9")
                 .arg(ToQString(event.m_decidedAt))
                 .arg(ToQString(event.m_axis))
                 .arg(ToQString(event.m_previousValue))

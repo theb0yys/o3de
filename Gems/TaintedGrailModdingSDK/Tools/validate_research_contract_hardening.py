@@ -330,13 +330,13 @@ def validate_reconciliation_and_release(repo_root: Path) -> None:
         (
             "### Verifier evidence reconciliation and release-decision envelope",
             "### Release-artifact provenance and signing-intent contract",
-            "### Next ordered slice — release-assembly and checksum-result envelope",
+            "### Next ordered slice \u2014 release-assembly and checksum-result envelope",
         ),
         "Roadmap state",
     )
     forbid(
         roadmap,
-        "### Next ordered slice — verifier evidence reconciliation",
+        "### Next ordered slice \u2014 verifier evidence reconciliation",
         "Roadmap state",
     )
 
