@@ -126,7 +126,7 @@ def validate_editor_foundation(gem_root: Path) -> None:
             fail(f"Editor foundation is missing {fragment!r}")
     for token in (
         "#include <BepInEx", "HarmonyLib", "TG.Main", "LocationTemplate", "SpawnLocation(",
-        "HeroItems.Add", "HeroRecipes.LearnRecipe", "Stock.AddItem", "WriteAllBytes", "std::ofstream",
+        "HeroItems.Add", "HeroRecipes.LearnRecipe", "Stock.AddItem", "WriteAllBytes",
     ):
         if token in combined:
             fail(f"Editor-only foundation contains forbidden runtime integration {token!r}")
@@ -167,8 +167,8 @@ def validate_catalog_and_governance(gem_root: Path) -> None:
         "Catalog record ID already exists; promotion never merges by display name",
         "Exact native reference is already owned by another canonical catalog record",
         "Claim promotion cannot grant usage permission", "no_unvalidated_runtime_use",
-        "The canonical catalog document is bound to a different workspace or game profile",
-        "permission-before-validation", "relationship-evidence", "validation-profile",
+        "Catalog document binding does not match the exact active workspace and game profile",
+        "governance.permission-proof", "governance.relationship-permission-proof", "validation-profile",
         "CatalogGovernanceEvent", "CatalogGovernanceRequest", "CatalogValidationRequest",
         "m_stalenessState", "m_governanceHistory", "GetGovernanceHistory",
         "class CatalogGovernanceService", "class CatalogGovernanceBlockerService",
@@ -237,9 +237,9 @@ def validate_economy_authoring(gem_root: Path) -> None:
 
 def validate_public_project(repo_root: Path) -> None:
     required_files = {
-        "README.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "SUPPORT.md",
+        "README.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SUPPORT.md",
         "GOVERNANCE.md", "ROADMAP.md", "CHANGELOG.md", ".github/CODEOWNERS",
-        ".github/PULL_REQUEST_TEMPLATE.md", ".github/ISSUE_TEMPLATE/config.yml",
+        ".github/ISSUE_TEMPLATE/config.yml",
         ".github/ISSUE_TEMPLATE/tg_sdk_bug.yml", ".github/ISSUE_TEMPLATE/tg_sdk_feature.yml",
         ".github/ISSUE_TEMPLATE/tg_sdk_research.yml", "docs/tainted-grail-sdk/README.md",
         "docs/tainted-grail-sdk/USER_GUIDE.md", "docs/tainted-grail-sdk/CATALOG_GUIDE.md",

@@ -94,7 +94,7 @@ namespace TaintedGrailModdingSDK
         auto* inputLayout = new QHBoxLayout(inputRow);
         inputLayout->setContentsMargins(0, 0, 0, 0);
         m_inputPathEdit = new QLineEdit(inputRow);
-        auto* browseButton = new QPushButton(tr("Browse…"), inputRow);
+        auto* browseButton = new QPushButton(tr("Browse..."), inputRow);
         inputLayout->addWidget(m_inputPathEdit, 1);
         inputLayout->addWidget(browseButton);
         intakeLayout->addRow(tr("Input file"), inputRow);

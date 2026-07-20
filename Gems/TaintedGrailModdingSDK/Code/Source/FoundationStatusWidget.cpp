@@ -95,7 +95,7 @@ namespace TaintedGrailModdingSDK
             layout->setContentsMargins(0, 0, 0, 0);
 
             lineEdit = new QLineEdit(container);
-            auto* browseButton = new QPushButton(QObject::tr("Browse…"), container);
+            auto* browseButton = new QPushButton(QObject::tr("Browse..."), container);
             layout->addWidget(lineEdit, 1);
             layout->addWidget(browseButton);
 
@@ -128,7 +128,7 @@ namespace TaintedGrailModdingSDK
         scrollArea->setWidget(content);
         rootLayout->addWidget(scrollArea);
 
-        auto* heading = new QLabel(tr("Tainted Grail Modding SDK — Foundation Status"), content);
+        auto* heading = new QLabel(tr("Tainted Grail Modding SDK - Foundation Status"), content);
         QFont headingFont = heading->font();
         headingFont.setPointSize(headingFont.pointSize() + 3);
         headingFont.setBold(true);
@@ -203,9 +203,9 @@ namespace TaintedGrailModdingSDK
         auto* actionLayout = new QHBoxLayout(actionRow);
         actionLayout->setContentsMargins(0, 0, 0, 0);
         auto* applyButton = new QPushButton(tr("Apply Configuration"), actionRow);
-        auto* openButton = new QPushButton(tr("Open Workspace…"), actionRow);
+        auto* openButton = new QPushButton(tr("Open Workspace..."), actionRow);
         auto* saveButton = new QPushButton(tr("Save Workspace"), actionRow);
-        auto* saveAsButton = new QPushButton(tr("Save Workspace As…"), actionRow);
+        auto* saveAsButton = new QPushButton(tr("Save Workspace As..."), actionRow);
         actionLayout->addWidget(applyButton);
         actionLayout->addWidget(openButton);
         actionLayout->addWidget(saveButton);
@@ -231,7 +231,7 @@ namespace TaintedGrailModdingSDK
         m_runtimeTargetValue = new QLabel(workspaceGroup);
         m_unityVersionValue = new QLabel(workspaceGroup);
         m_bepInExVersionValue = new QLabel(workspaceGroup);
-        m_boundaryValue = new QLabel(tr("Editor authoring only — FoA runtime execution disabled"), workspaceGroup);
+        m_boundaryValue = new QLabel(tr("Editor authoring only - FoA runtime execution disabled"), workspaceGroup);
         m_workspaceFileValue->setWordWrap(true);
         m_boundaryValue->setWordWrap(true);
         workspaceLayout->addRow(tr("Workspace"), m_workspaceValue);

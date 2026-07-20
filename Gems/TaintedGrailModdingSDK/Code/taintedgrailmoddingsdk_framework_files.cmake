@@ -23,6 +23,8 @@ set(FILES
     Source/FoundationService.cpp
     Source/FoundationService.h
     Source/FoundationServiceConstruction.cpp
+    Source/FoundationValidationService.cpp
+    Source/FoundationValidationService.h
     Source/FoundationWorkspaceLoadService.cpp
     Source/FoundationWorkspaceLoadService.h
     Source/PackPersistenceService.cpp

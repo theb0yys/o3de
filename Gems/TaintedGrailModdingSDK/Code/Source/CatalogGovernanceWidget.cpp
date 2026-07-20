@@ -318,7 +318,7 @@ namespace TaintedGrailModdingSDK
         {
             if (const CatalogRecord* record = catalog.FindByRecordId(subjectId))
             {
-                identity = tr("%1 · %2 · %3")
+                identity = tr("%1 | %2 | %3")
                     .arg(ToQString(record->m_identityKind), ToQString(record->m_domain), ToQString(record->m_subjectRef));
                 maturity = record->m_researchStage;
                 confidence = record->m_confidence;
@@ -332,7 +332,7 @@ namespace TaintedGrailModdingSDK
         }
         else if (const CatalogRelationship* relationship = catalog.FindRelationshipById(subjectId))
         {
-            identity = tr("%1 → %2 · %3")
+            identity = tr("%1 -> %2 | %3")
                 .arg(
                     ToQString(relationship->m_fromRecordId),
                     relationship->m_toRecordId.empty()

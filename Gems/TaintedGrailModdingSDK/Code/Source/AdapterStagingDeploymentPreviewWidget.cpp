@@ -42,7 +42,7 @@ namespace TaintedGrailModdingSDK
             for (const AdapterDeploymentChange& change : changes)
             {
                 values.push_back(
-                    QObject::tr("%1 [%2 → %3]")
+                    QObject::tr("%1 [%2 -> %3]")
                         .arg(
                             ToQString(change.m_targetPath),
                             ToQString(change.m_previousFingerprint),
@@ -79,7 +79,7 @@ namespace TaintedGrailModdingSDK
             for (const AdapterDeploymentBackupRequirement& backup : backups)
             {
                 values.push_back(
-                    QObject::tr("%1 → %2 [%3]")
+                    QObject::tr("%1 -> %2 [%3]")
                         .arg(
                             ToQString(backup.m_targetPath),
                             ToQString(backup.m_backupPath),
