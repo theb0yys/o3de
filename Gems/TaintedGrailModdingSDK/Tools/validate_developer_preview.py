@@ -17,6 +17,10 @@ from pathlib import Path
 
 
 PINNED_O3DE_COMMIT = "68683f23fb747380d3efa2424bd5f30242e9c5a2"
+EXPECTED_PROJECT_EXTERNAL_SUBDIRECTORIES = (
+    "../Gems/ExternalToolchain",
+    "../Gems/TaintedGrailModdingSDK",
+)
 
 
 def fail(message: str) -> None:
@@ -68,6 +72,43 @@ def validate_engine_lock(path: Path) -> None:
         fail("Pinned O3DE commit must be a full lowercase SHA.")
 
 
+def validate_project_external_boundary(product_root: Path) -> None:
+    project_path = product_root / "TaintedGrailModdingEditor/project.json"
+    try:
+        project = json.loads(require_file(project_path))
+    except json.JSONDecodeError as exc:
+        fail(f"Invalid Developer Preview project JSON in {project_path}: {exc}")
+    if not isinstance(project, dict):
+        fail(f"Developer Preview project manifest must be a JSON object: {project_path}")
+
+    external_subdirectories = project.get("external_subdirectories")
+    if external_subdirectories != list(EXPECTED_PROJECT_EXTERNAL_SUBDIRECTORIES):
+        fail(
+            "Developer Preview project must register exactly the two product-owned Gem "
+            f"directories in deterministic order: {EXPECTED_PROJECT_EXTERNAL_SUBDIRECTORIES}"
+        )
+
+    gem_names = project.get("gem_names")
+    if not isinstance(gem_names, list):
+        fail(f"Developer Preview project must declare gem_names: {project_path}")
+    for gem_name in ("ExternalToolchain", "TaintedGrailModdingSDK"):
+        if gem_names.count(gem_name) != 1:
+            fail(f"Developer Preview project must enable {gem_name!r} exactly once.")
+
+    require_fragments(
+        product_root / "TaintedGrailModdingEditor/cmake/EngineFinder.cmake",
+        (
+            "FOA_O3DE_ROOT",
+            "o3de.lock.json",
+            "checkout_directory",
+            "tg_editor_product_root",
+            "tg_editor_engine_root",
+            "o3deConfigVersion.cmake",
+            "place the checkout beside FOA-SDK",
+        ),
+    )
+
+
 def main() -> int:
     product_root = Path(__file__).resolve().parents[3]
     tools_root = product_root / "Gems/TaintedGrailModdingSDK/Tools"
@@ -80,6 +121,7 @@ def main() -> int:
 
     try:
         validate_engine_lock(lock_path)
+        validate_project_external_boundary(product_root)
         script = require_fragments(
             script_path,
             (
