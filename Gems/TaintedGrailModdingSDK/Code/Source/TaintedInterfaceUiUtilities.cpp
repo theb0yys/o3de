@@ -129,19 +129,19 @@ namespace TaintedGrailModdingSDK::TaintedInterfaceUi
             if (descriptor.m_category == "ui-action")
             {
                 asset.m_sha256 =
-                    "sha256:ae578f23276bcb3f98b2c53a3bfc684b290b22363bb2c2ef0a94a42c3f2ff23d";
+                    "sha256:963322ddbef505d6d513b96dedfd3f9f267f64da3c5177a56d4f0cb5844c2c93";
                 asset.m_utf8Bytes = ActionFallbackSvg;
             }
             else if (descriptor.m_category == "device")
             {
                 asset.m_sha256 =
-                    "sha256:59cdfd03770297f4038ab699ff972cfb14ad5537f298a43b4728b4c6a10b5ea4";
+                    "sha256:b28daf9c6a3a8cc0646d15f0eecf6b5d232e0a624e9e0cd2c025a06c41348899";
                 asset.m_utf8Bytes = DeviceFallbackSvg;
             }
             else
             {
                 asset.m_sha256 =
-                    "sha256:613ba507d9ff8c55113fe457fdf9d1cac3728bb075b0718db5759ee991e4f194";
+                    "sha256:28a7ce0f60ee0b8a2d679f5fa23778a003b7e2308d6d8c98ac5b1808a5f889e3";
                 asset.m_utf8Bytes = FrameFallbackSvg;
             }
             return asset;
@@ -221,13 +221,13 @@ namespace TaintedGrailModdingSDK::TaintedInterfaceUi
         }
 
         const auto& catalog = AssetCatalog();
-        const auto found = AZStd::lower_bound(
-            catalog.begin(), catalog.end(), semanticId,
-            [](const AssetDescriptor& value, const AZStd::string& key)
+        const auto found = AZStd::find_if(
+            catalog.begin(), catalog.end(),
+            [&semanticId](const AssetDescriptor& value)
             {
-                return value.m_semanticId < key;
+                return value.m_semanticId == semanticId;
             });
-        if (found == catalog.end() || found->m_semanticId != semanticId)
+        if (found == catalog.end())
         {
             return false;
         }
