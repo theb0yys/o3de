@@ -33,7 +33,7 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkKnowledge
                 { "mods/tainted-framework/docs/compatibility.md",
                   "b6cbd59b46cca19a4b085fea66bd9e416e19d279" },
                 { "mods/tainted-framework/release/manifest.md",
-                  "7a9139b0edbb2de834299c3b7a9bb7f9783fca83" },
+                  "55ad7e964c83c5ac17d582bf11d6e50e6adb2a8b" },
                 { "mods/tainted-framework/src/Tainted.Core/Plugins/"
                   "TaintedScaffoldPluginCatalogFactory.cs",
                   "8170dbd1f99727db44e89ea36b9b1df278df010d" },
