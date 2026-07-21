@@ -52,6 +52,9 @@ ALLOWED_PLUGIN_CATEGORY_FILES = {
     f"Plugins/{category}/README.md" for category in ALLOWED_PLUGIN_CATEGORIES
 }
 PLUGIN_PACKAGE_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,127}$")
+AUTOMATIC_STATIC_WORKFLOW = (
+    ".github/workflows/tainted-grail-sdk-pr-validation.yml"
+)
 ALLOWED_GITHUB_FILES = {
     ".github/CODEOWNERS",
     ".github/ISSUE_TEMPLATE/config.yml",
@@ -59,6 +62,7 @@ ALLOWED_GITHUB_FILES = {
     ".github/ISSUE_TEMPLATE/tg_sdk_feature.yml",
     ".github/ISSUE_TEMPLATE/tg_sdk_research.yml",
     ".github/PULL_REQUEST_TEMPLATE.md",
+    AUTOMATIC_STATIC_WORKFLOW,
     ".github/workflows/tainted-grail-editor-entry.yml",
     ".github/workflows/tainted-grail-repository-hygiene.yml",
     ".github/workflows/tainted-grail-sdk-foundation.yml",
@@ -66,6 +70,7 @@ ALLOWED_GITHUB_FILES = {
 }
 REQUIRED_PATHS = {
     ".github/CODEOWNERS",
+    AUTOMATIC_STATIC_WORKFLOW,
     "Gems/ExternalToolchain/gem.json",
     "Gems/TaintedGrailModdingSDK/gem.json",
     "Plugins/README.md",
@@ -238,8 +243,8 @@ def main() -> int:
         print(f"FOA-SDK repository structure validation failed: {exc}", file=sys.stderr)
         return 1
     print(
-        "FOA-SDK repository structure validation passed: tracked tree is product-only "
-        "and plug-in packages are governed."
+        "FOA-SDK repository structure validation passed: tracked tree is product-only, "
+        "the automatic static workflow is required, and plug-in packages are governed."
     )
     return 0
 
