@@ -41,10 +41,14 @@ class TaintedFrameworkKnowledgeValidatorTests(unittest.TestCase):
             target_gem / "Knowledge" / "TaintedFramework",
         )
         (target_gem / "Code" / "Source").mkdir(parents=True)
-        shutil.copy2(
-            source_gem / "Code" / "Source" / "TaintedFrameworkKnowledge.h",
-            target_gem / "Code" / "Source" / "TaintedFrameworkKnowledge.h",
-        )
+        for filename in (
+            "TaintedFrameworkKnowledge.h",
+            "TaintedFrameworkKnowledge.cpp",
+        ):
+            shutil.copy2(
+                source_gem / "Code" / "Source" / filename,
+                target_gem / "Code" / "Source" / filename,
+            )
         shutil.copy2(
             source_gem / "Code" / "taintedgrailmoddingsdk_framework_files.cmake",
             target_gem / "Code" / "taintedgrailmoddingsdk_framework_files.cmake",
