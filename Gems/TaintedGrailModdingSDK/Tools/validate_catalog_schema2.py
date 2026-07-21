@@ -527,11 +527,11 @@ def validate_catalog_schema2(repo_root: Path) -> None:
             "actor/troop contracts, reflection",
             "CatalogDatabase validation, queries",
             "schema-1 migration, schema-2-only writing",
-            "5. **Complete** \u2014 Core and Framework positive/negative population-authoring test sources",
+            "5. **Complete** — Core and Framework positive/negative population-authoring test sources",
             "compiled-target wiring",
-            "6. **Complete** \u2014 immutable population action-lane derivation",
+            "6. **Complete** — immutable population action-lane derivation",
             "Actor and Troop Editor pane",
-            "7. **Next** \u2014 deterministic synthetic population fixture",
+            "7. **Next** — deterministic synthetic population fixture",
             "do not claim that",
             "loaded candidate remains schema 1",
             "direct save is refused",
@@ -542,23 +542,40 @@ def validate_catalog_schema2(repo_root: Path) -> None:
     require_order(
         actor_design,
         (
-            "5. **Complete** \u2014 Core and Framework positive/negative population-authoring test sources",
+            "5. **Complete** — Core and Framework positive/negative population-authoring test sources",
             "compiled-target wiring",
-            "6. **Complete** \u2014 immutable population action-lane derivation",
-            "7. **Next** \u2014 deterministic synthetic population fixture",
+            "6. **Complete** — immutable population action-lane derivation",
+            "7. **Next** — deterministic synthetic population fixture",
         ),
         "Actor/troop implementation sequence",
     )
     roadmap = read_text(repo_root / "ROADMAP.md")
-    require_fragments(
+    roadmap_population = section_from_marker(
         roadmap,
+        "### Actors and population",
+        "\n### ",
+        "Roadmap population status",
+    )
+    require_fragments(
+        roadmap_population,
         (
-            "### Actors and population",
-            "Status: active development. Core contracts, CatalogDatabase integration",
+            "Status: implemented vertical slice, continuing hardening and exact-head host/UI verification.",
+            "durable catalog schema-2 migration/persistence",
             "evidence-bound Framework candidate publication",
-            "positive/negative Core and",
+            "positive/negative production-linked population tests are implemented",
+            "immutable seven-lane population action contract",
+            "registered **Tainted Grail Actor and Troop Editor** pane",
+            "project-owned deterministic schema-2 population fixture",
+            "real Windows twenty-four-pane evidence pass remain the active acceptance gate",
+            "Spawn and Encounter Editor is the next population authoring capability.",
+        ),
+        "Roadmap population status",
+    )
+    reject_fragments(
+        roadmap_population,
+        (
+            "Status: active development. Core contracts, CatalogDatabase integration",
             "Framework population-authoring test sources with compiled-target wiring are implemented",
-            "seven-lane population action contract and registered Actor and Troop Editor pane are also implemented",
             "deterministic synthetic fixture and complete local-validation integration are next",
         ),
         "Roadmap population status",
