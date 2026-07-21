@@ -1,0 +1,25 @@
+{
+  "Issues": [],
+  "SchemaVersion": 1,
+  "Source": {
+    "Branch": "preview-population",
+    "ByteSize": 2659,
+    "CapturedAt": "2026-01-01T00:00:00Z",
+    "Fingerprint": "sha256:70984c7742fb5fffec461aa3e98bd92fc43f6fd8d1b6d8d7114ce48ddd3d29ab",
+    "GameVersion": "preview-population-build-0",
+    "ImportStatus": "imported",
+    "ImportedAt": "2026-01-01T00:00:02Z",
+    "ImporterId": "tg.structured-json",
+    "ImporterVersion": "1.0.0",
+    "Limitations": "Project-owned synthetic population fixture; not evidence about the game.",
+    "Locator": "Input/preview-population-source.json",
+    "MediaType": "application/json",
+    "ProfileId": "preview.population.profile.windows-x64",
+    "RuntimeTarget": "Mono",
+    "SourceId": "preview.population.source",
+    "SourceKind": "project-owned-population-fixture",
+    "Title": "Actor and Troop synthetic source",
+    "ToolName": "population_preview_fixture.py",
+    "ToolVersion": "1.0.0"
+  }
+}
