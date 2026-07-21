@@ -19,22 +19,22 @@ namespace TaintedGrailModdingSDK
             GameProfile profile;
             profile.m_profileId = "profile.foa.mono";
             profile.m_displayName = "FoA Mono";
-            profile.m_installPath = "C:/private/game";
+            profile.m_installPath = "C:/fixture/game";
             profile.m_gameVersion = "1.0.0";
             profile.m_branch = "mono";
             profile.m_runtimeTarget = "mono";
             profile.m_unityVersion = "2022.3.20f1";
             profile.m_bepInExVersion = "5.4.23";
-            profile.m_managedAssembliesPath = "C:/private/game/Managed";
-            profile.m_pluginPath = "C:/private/game/BepInEx/plugins";
-            profile.m_diagnosticsPath = "C:/private/workspace/diagnostics";
-            profile.m_extractedDataPath = "C:/private/workspace/extracted";
+            profile.m_managedAssembliesPath = "C:/fixture/game/Managed";
+            profile.m_pluginPath = "C:/fixture/game/BepInEx/plugins";
+            profile.m_diagnosticsPath = "C:/fixture/workspace/diagnostics";
+            profile.m_extractedDataPath = "C:/fixture/workspace/extracted";
             profile.m_dlcScopes = { "dlc.z", "dlc.a" };
 
             WorkspaceModel workspace;
             workspace.m_workspaceId = "workspace.extension-api";
             workspace.m_displayName = "Extension API fixture";
-            workspace.m_rootPath = "C:/private/workspace";
+            workspace.m_rootPath = "C:/fixture/workspace";
             workspace.m_activeGameProfileId = profile.m_profileId;
             workspace.m_gameProfiles.push_back(profile);
             return workspace;
@@ -72,7 +72,7 @@ namespace TaintedGrailModdingSDK
             source.m_importerId = "importer.fixture";
             source.m_importerVersion = "1.0.0";
             source.m_capturedAt = "2026-07-21T12:00:00Z";
-            source.m_importedAt = "2026-07-21T12:01:00Z";
+            source.m_importedAt = "2026-07-21T12:03:00Z";
             source.m_mediaType = "application/json";
             source.m_importStatus = "imported";
             return source;
@@ -99,8 +99,7 @@ namespace TaintedGrailModdingSDK
         }
     } // namespace
 
-    class ExtensionAPITests
-        : public ::testing::Test
+    class ExtensionAPITests : public ::testing::Test
     {
     protected:
         ExtensionAPITests()
@@ -117,20 +116,11 @@ namespace TaintedGrailModdingSDK
         ExtensionAPI::Service& api = m_foundation.GetExtensionAPI();
         AZStd::string error;
         EXPECT_TRUE(api.RegisterExtension(
-            MakeDeclaration(
-                "extension.zeta",
-                { ExtensionAPI::Capability::QueryCatalog }),
-            &error));
+            MakeDeclaration("extension.zeta", { ExtensionAPI::Capability::QueryCatalog }), &error));
         EXPECT_TRUE(api.RegisterExtension(
-            MakeDeclaration(
-                "extension.alpha",
-                { ExtensionAPI::Capability::ReadActiveProfile }),
-            &error));
+            MakeDeclaration("extension.alpha", { ExtensionAPI::Capability::ReadActiveProfile }), &error));
         EXPECT_FALSE(api.RegisterExtension(
-            MakeDeclaration(
-                "extension.alpha",
-                { ExtensionAPI::Capability::ReadActiveProfile }),
-            &error));
+            MakeDeclaration("extension.alpha", { ExtensionAPI::Capability::ReadActiveProfile }), &error));
 
         const auto declarations = api.GetRegisteredExtensions();
         ASSERT_EQ(declarations.size(), 2);
@@ -143,10 +133,7 @@ namespace TaintedGrailModdingSDK
         ExtensionAPI::Service& api = m_foundation.GetExtensionAPI();
         AZStd::string error;
         ASSERT_TRUE(api.RegisterExtension(
-            MakeDeclaration(
-                "extension.profile",
-                { ExtensionAPI::Capability::ReadActiveProfile }),
-            &error));
+            MakeDeclaration("extension.profile", { ExtensionAPI::Capability::ReadActiveProfile }), &error));
 
         ExtensionAPI::ProfileView profile;
         ASSERT_TRUE(api.GetActiveProfile("extension.profile", profile, &error));
@@ -157,29 +144,20 @@ namespace TaintedGrailModdingSDK
         EXPECT_EQ(profile.m_dlcScopes[1], "dlc.z");
 
         AZStd::vector<CatalogRecord> records;
-        EXPECT_FALSE(api.QueryCatalog(
-            "extension.profile",
-            CatalogQuery{},
-            records,
-            16,
-            &error));
+        EXPECT_FALSE(api.QueryCatalog("extension.profile", CatalogQuery{}, records, 16, &error));
     }
 
     TEST_F(ExtensionAPITests, ExactBranchAndVersionDeclarationsAreEnforced)
     {
         ExtensionAPI::Service& api = m_foundation.GetExtensionAPI();
         auto declaration = MakeDeclaration(
-            "extension.wrong-branch",
-            { ExtensionAPI::Capability::ReadActiveProfile });
+            "extension.wrong-branch", { ExtensionAPI::Capability::ReadActiveProfile });
         declaration.m_supportedBranches = { "il2cpp" };
         AZStd::string error;
         ASSERT_TRUE(api.RegisterExtension(declaration, &error));
 
         ExtensionAPI::ProfileView profile;
-        EXPECT_FALSE(api.GetActiveProfile(
-            "extension.wrong-branch",
-            profile,
-            &error));
+        EXPECT_FALSE(api.GetActiveProfile("extension.wrong-branch", profile, &error));
     }
 
     TEST_F(ExtensionAPITests, CatalogQueriesAreCopyOnlyAndBounded)
@@ -187,18 +165,10 @@ namespace TaintedGrailModdingSDK
         ExtensionAPI::Service& api = m_foundation.GetExtensionAPI();
         AZStd::string error;
         ASSERT_TRUE(api.RegisterExtension(
-            MakeDeclaration(
-                "extension.catalog",
-                { ExtensionAPI::Capability::QueryCatalog }),
-            &error));
+            MakeDeclaration("extension.catalog", { ExtensionAPI::Capability::QueryCatalog }), &error));
 
         AZStd::vector<CatalogRecord> records;
-        EXPECT_TRUE(api.QueryCatalog(
-            "extension.catalog",
-            CatalogQuery{},
-            records,
-            16,
-            &error));
+        EXPECT_TRUE(api.QueryCatalog("extension.catalog", CatalogQuery{}, records, 16, &error));
         EXPECT_TRUE(records.empty());
         EXPECT_FALSE(api.QueryCatalog(
             "extension.catalog",
@@ -220,20 +190,12 @@ namespace TaintedGrailModdingSDK
             &error));
 
         EvidenceRecord evidence = MakeEvidence();
-        EXPECT_TRUE(api.SubmitCandidateEvidence(
-            "extension.evidence",
-            evidence,
-            &error));
-        EXPECT_NE(
-            m_foundation.GetSourceRegistry().FindEvidence(evidence.m_evidenceId),
-            nullptr);
+        EXPECT_TRUE(api.SubmitCandidateEvidence("extension.evidence", evidence, &error));
+        EXPECT_NE(m_foundation.GetSourceRegistry().FindEvidence(evidence.m_evidenceId), nullptr);
 
         evidence.m_evidenceId = "evidence.extension.wrong-branch";
         evidence.m_branch = "il2cpp";
-        EXPECT_FALSE(api.SubmitCandidateEvidence(
-            "extension.evidence",
-            evidence,
-            &error));
+        EXPECT_FALSE(api.SubmitCandidateEvidence("extension.evidence", evidence, &error));
     }
 
     TEST_F(ExtensionAPITests, UnknownCapabilityValueFailsRegistration)
