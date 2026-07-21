@@ -183,16 +183,17 @@ def validate(repo_root: Path) -> None:
         require(hardening_tests, fragment, "Population hardening compiled tests")
 
     for name in (
-        "ActorProfilePersistsAndNotifiesOnce",
-        "TroopDefinitionIsAtomicAndPreservesOmittedMembers",
-        "WrongSubjectEvidenceFailsWithoutPublication",
-        "PersistenceFailureDoesNotPublishOrNotify",
+        "ActorProfilePersistsPublishesSnapshotAndNotifiesOnce",
+        "TroopDefinitionIsAtomicOrderIndependentAndPreservesOmittedMembers",
+        "StructuralFailuresAndLinkOwnerMovesDoNotPublish",
+        "ContextEvidenceAndPrimaryOwnershipFailClosed",
+        "PersistenceFailureLeavesPublishedCatalogUnchangedAndSilent",
     ):
         require(authoring_tests, name, "Population authoring compiled tests")
     for name in (
-        "ActorProfilesSortAndRoundTripDeterministically",
-        "TroopIntegrityRejectsLeaderAndSizeMismatch",
-        "BoundDocumentRejectsWrongProfileEvidence",
+        "ActorProfilesAcceptExactResolvedAndUnresolvedTemplates",
+        "TroopsAcceptExactResolvedAndUnresolvedLeaders",
+        "MembersRejectBindingsBoundsRolesAndDuplicateConflicts",
     ):
         require(catalog_tests, name, "Population catalog compiled tests")
 
