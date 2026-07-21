@@ -20,6 +20,12 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
+TOOLS_ROOT = Path(__file__).resolve().parent
+if str(TOOLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(TOOLS_ROOT))
+
+import developer_preview
+
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 ALIAS_RE = re.compile(r"^[A-Za-z0-9._-]{2,64}$")
 GATES = (
@@ -82,7 +88,6 @@ def repository(args: argparse.Namespace) -> tuple[Path, str, str]:
     repo = resolve(args.repo_root, fallback)
     required = (
         repo / ".git",
-        repo / "engine.json",
         repo / "Gems/TaintedGrailModdingSDK/Tools/developer_preview.py",
         repo / "Gems/TaintedGrailModdingSDK/Tools/validation_receipt.py",
         repo
@@ -92,6 +97,10 @@ def repository(args: argparse.Namespace) -> tuple[Path, str, str]:
         raise VerificationError(
             "Repository is missing exact-head verification files."
         )
+    try:
+        developer_preview.validate_product_root(repo)
+    except RuntimeError as exc:
+        raise VerificationError(str(exc)) from exc
     code, head = invoke(
         ("git", "-C", str(repo), "rev-parse", "HEAD"),
         repo,
@@ -154,40 +163,51 @@ def paths(
     head: str,
 ) -> dict[str, Path]:
     short = head[:12]
+    lock = developer_preview.load_engine_lock(repo)
+    engine = (
+        resolve(args.engine_root, Path.cwd())
+        if args.engine_root is not None
+        else developer_preview.default_engine_root(repo, lock)
+    )
+    build_default = developer_preview.default_build_directory(repo)
+    evidence_root = repo.parent / "foa-validation" / short
     values = {
         "repo": repo,
-        "build": resolve(
-            args.build_dir,
-            repo / "build/tg-sdk-developer-preview-0-windows-profile",
-        ),
+        "engine": engine,
+        "build": resolve(args.build_dir, build_default),
         "receipt": resolve(
             args.receipt_dir,
-            repo.parent / f"tg-sdk-exact-head-receipt-{short}",
+            evidence_root / "receipt",
         ),
         "ui": resolve(
             args.ui_evidence_dir,
-            repo / f"build/tg-sdk-developer-preview-0-ui-evidence-{short}",
+            evidence_root / "ui",
         ),
         "state": resolve(
             args.verification_dir,
-            repo / f"build/tg-sdk-developer-preview-0-verification-{short}",
+            evidence_root / "state",
         ),
     }
     try:
-        values["receipt"].relative_to(repo)
-    except ValueError:
-        pass
-    else:
-        raise VerificationError(
-            "Receipt and logs must be outside the repository."
-        )
-    for key in ("ui", "state"):
+        developer_preview.validate_engine_root(engine, lock)
+        developer_preview.validate_engine_pin(engine, lock)
+    except RuntimeError as exc:
+        raise VerificationError(str(exc)) from exc
+    for key in ("receipt", "ui", "state"):
+        try:
+            values[key].relative_to(repo)
+        except ValueError:
+            pass
+        else:
+            raise VerificationError(
+                "Receipt and verification evidence must be outside the FOA-SDK checkout."
+            )
         try:
             values[key].relative_to(values["build"])
         except ValueError:
             continue
         raise VerificationError(
-            "UI and verification state must be outside the O3DE build directory."
+            "Receipt and verification evidence must be outside the O3DE build directory."
         )
     return values
 
@@ -246,8 +266,10 @@ def prerequisites(p: dict[str, Path]) -> tuple[str, ...]:
         p,
         "developer_preview.py",
         "prerequisites",
-        "--repo-root",
+        "--product-root",
         str(p["repo"]),
+        "--engine-root",
+        str(p["engine"]),
         "--build-dir",
         str(p["build"]),
         "--json-output",
@@ -266,13 +288,17 @@ def gate_commands(
             "run_local_validation.py",
             "--keep-going",
             "--static-only",
+            "--engine-root",
+            str(p["engine"]),
         ),
         "o3de-configure": tool(
             p,
             "developer_preview.py",
             "configure",
-            "--repo-root",
+            "--product-root",
             str(p["repo"]),
+            "--engine-root",
+            str(p["engine"]),
             "--build-dir",
             str(p["build"]),
         ),
@@ -280,8 +306,10 @@ def gate_commands(
             p,
             "developer_preview.py",
             "build",
-            "--repo-root",
+            "--product-root",
             str(p["repo"]),
+            "--engine-root",
+            str(p["engine"]),
             "--build-dir",
             str(p["build"]),
         ),
@@ -534,6 +562,7 @@ def build_parser() -> argparse.ArgumentParser:
     for name in ("plan", "prepare", "automated", "finalize", "status"):
         command = commands.add_parser(name)
         command.add_argument("--repo-root", type=Path)
+        command.add_argument("--engine-root", type=Path)
         command.add_argument("--build-dir", type=Path)
         command.add_argument("--receipt-dir", type=Path)
         command.add_argument("--ui-evidence-dir", type=Path)
