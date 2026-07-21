@@ -8,6 +8,11 @@ The project follows Keep a Changelog principles. Version numbers will follow Sem
 
 ### Added
 
+- Approved Windows prebuilt SDK installer path using O3DE's canonical `INSTALL`
+  layout, an installed project launcher, exact redistribution-reviewed inventory,
+  canonical manifest/checksums/provenance/SPDX metadata, deterministic portable
+  ZIP, CPack/WiX MSI, manual-only artifact workflow, and install/repair/uninstall
+  smoke contract without public release or FoA runtime authority.
 - Read-only **FOA Development Hub** default entry pane with live Foundation workspace/profile/pack context, explicit blocker and persistence-state visibility, task-first navigation, and deep-links to all existing specialist panes without duplicated domain logic or new runtime authority.
 - Twenty-four-pane Windows manual UI checklist coverage for Hub launch, live context, deep-links, and the existing accessibility and runtime-separation checks.
 - Tracked Developer Preview `Levels` root, contract regression coverage, and explicit Windows Controlled Folder Access diagnostics for level-authoring readiness.
