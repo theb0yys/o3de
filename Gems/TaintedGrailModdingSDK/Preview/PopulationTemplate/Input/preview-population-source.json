@@ -1,0 +1,60 @@
+{
+  "evidence": [
+    {
+      "claim": "The synthetic leader actor is available for evidence-bound preview authoring.",
+      "confidence": "documented",
+      "evidence_id": "preview.population.evidence.actor.leader",
+      "kind": "project-owned-population-fixture",
+      "subject_ref": "subject:preview:population:actor:leader"
+    },
+    {
+      "claim": "The synthetic scout actor is available for evidence-bound preview authoring.",
+      "confidence": "documented",
+      "evidence_id": "preview.population.evidence.actor.scout",
+      "kind": "project-owned-population-fixture",
+      "subject_ref": "subject:preview:population:actor:scout"
+    },
+    {
+      "claim": "The synthetic guard template is the resolved template for the preview leader.",
+      "confidence": "documented",
+      "evidence_id": "preview.population.evidence.template.guard",
+      "kind": "project-owned-population-fixture",
+      "subject_ref": "subject:preview:population:template:guard"
+    },
+    {
+      "claim": "The scout keeps one exact unresolved template subject for editor workflow coverage.",
+      "confidence": "hypothesis",
+      "evidence_id": "preview.population.evidence.template.scout-unresolved",
+      "kind": "project-owned-population-fixture",
+      "subject_ref": "subject:preview:population:template:scout-unresolved"
+    },
+    {
+      "claim": "The synthetic patrol groups the preview leader and scout.",
+      "confidence": "documented",
+      "evidence_id": "preview.population.evidence.troop.patrol",
+      "kind": "project-owned-population-fixture",
+      "subject_ref": "subject:preview:population:troop:patrol"
+    },
+    {
+      "claim": "The patrol contains exactly one required leader membership row.",
+      "confidence": "documented",
+      "evidence_id": "preview.population.evidence.member.patrol-leader",
+      "kind": "project-owned-population-fixture",
+      "subject_ref": "population-troop-member:preview.population.member.patrol-leader"
+    },
+    {
+      "claim": "The patrol contains one or two required scout membership rows.",
+      "confidence": "documented",
+      "evidence_id": "preview.population.evidence.member.patrol-scout",
+      "kind": "project-owned-population-fixture",
+      "subject_ref": "population-troop-member:preview.population.member.patrol-scout"
+    },
+    {
+      "claim": "The preview leader uses the resolved synthetic guard template.",
+      "confidence": "documented",
+      "evidence_id": "preview.population.evidence.relationship.leader-template",
+      "kind": "project-owned-population-fixture",
+      "subject_ref": "relationship:preview.population.relationship.leader-template"
+    }
+  ]
+}
