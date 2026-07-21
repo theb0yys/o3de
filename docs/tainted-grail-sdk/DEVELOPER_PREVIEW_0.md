@@ -113,7 +113,8 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview.py validate `
 
 FOA validators run from the product checkout. The O3DE source-policy validator
 is loaded from the pinned engine checkout and scans both product Gems. Compiled
-tests run from the build root. Validation stops on the first failure and writes:
+tests run from the build root with `--no-tests=error`, so a missing or misnamed
+Catalog target is a failure. Validation stops on the first failure and writes:
 
 ```text
 <build-root>/tg-sdk-developer-preview-validation.json
@@ -132,7 +133,8 @@ python Gems/TaintedGrailModdingSDK/Tools/run_local_validation.py `
 
 ## Synthetic fixture
 
-Generate and verify project-owned deterministic data outside the source tree:
+Generate the deterministic synthetic fixture and verify project-owned data
+outside the source tree:
 
 ```powershell
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview_fixture.py generate `
@@ -152,19 +154,22 @@ extracted assets.
 ctest --test-dir ..\foa-build\tg-sdk-developer-preview-0-windows-profile `
   -C profile `
   --output-on-failure `
+  --no-tests=error `
   -R "TaintedGrailModdingSDK\.Catalog\.Tests"
 ```
 
-This proves service-level load, save, close-equivalent clear, reopen, and
-canonical equivalence. It does not prove FoA runtime compatibility.
+This service-level persistence smoke proves load, save, close-equivalent clear,
+reopen, and canonical equivalence. It does not prove FoA runtime compatibility.
 
 ## Launch and diagnostics
 
-The existing launch wrapper continues to accept an explicit build root:
+The existing launch wrapper continues to accept an explicit build root and a
+bounded `--log-dir`:
 
 ```powershell
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview_launch.py `
   --build-dir ..\foa-build\tg-sdk-developer-preview-0-windows-profile `
+  --log-dir ..\foa-build\tg-sdk-developer-preview-0-launch-logs `
   --dry-run
 ```
 
@@ -178,9 +183,10 @@ Review every generated file before sharing.
 ## Windows manual UI smoke
 
 The [Windows Manual UI Smoke and Screenshot Evidence](DEVELOPER_PREVIEW_MANUAL_UI_SMOKE.md)
-defines the accepted real-session pass. The evidence tool binds results to an
-exact source commit, hashes reviewed PNG files, checks required coverage, and
-enforces privacy and runtime-boundary attestations.
+defines the accepted real-session pass. Initialize and verify that evidence with
+`developer_preview_ui_evidence.py`; the tool binds results to an exact source
+commit, hashes reviewed PNG files, checks required coverage, and enforces privacy
+and runtime-boundary attestations.
 
 The tooling does not take screenshots automatically, inspect pixels, use OCR,
 or fabricate release evidence.
