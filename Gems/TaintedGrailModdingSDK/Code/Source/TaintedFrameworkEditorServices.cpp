@@ -5,23 +5,10 @@
 #include "TaintedFrameworkEditorServices.h"
 
 #include <AzCore/std/algorithm.h>
+#include <AzCore/std/utility/move.h>
 
 namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
 {
-    namespace
-    {
-        AZStd::string StatusText(ReadinessStatus status)
-        {
-            switch (status)
-            {
-            case ReadinessStatus::Ready: return "ready";
-            case ReadinessStatus::Blocked: return "blocked";
-            case ReadinessStatus::Unsupported: return "unsupported";
-            }
-            return "unsupported";
-        }
-    }
-
     CompatibilityDecision Service::EvaluateCompatibility(
         const AZStd::string& gameVersion,
         const AZStd::string& branch,
@@ -40,10 +27,17 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
             {
                 continue;
             }
+
             result.m_evidencePath = row.m_evidencePath;
-            if (row.m_status == "live_load_validated" && row.m_gameVersion == gameVersion)
+            if (row.m_status == "live_load_validated")
             {
-                result.m_status = ReadinessStatus::Ready;
+                if (row.m_gameVersion == gameVersion)
+                {
+                    result.m_status = ReadinessStatus::Ready;
+                    return result;
+                }
+                result.m_status = ReadinessStatus::Unsupported;
+                result.m_blockers.push_back("exact_game_version_not_evidence_backed");
                 return result;
             }
             if (row.m_status == "blocked")
@@ -52,10 +46,12 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
                 result.m_blockers.push_back("upstream_branch_blocked");
                 return result;
             }
+
             result.m_status = ReadinessStatus::Unsupported;
-            result.m_blockers.push_back("exact_game_version_not_evidence_backed");
+            result.m_blockers.push_back("compatibility_observation_not_activatable");
             return result;
         }
+
         result.m_status = ReadinessStatus::Unsupported;
         result.m_blockers.push_back("branch_runtime_pair_not_in_canonical_knowledge");
         return result;
@@ -107,13 +103,19 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
         const AZStd::string& runtime) const
     {
         ActivationPlan plan;
-        plan.m_planId = "tainted-framework-editor-plan:0.1.33:" + branch + ":" + gameVersion;
+        plan.m_planId = "tainted-framework-editor-plan:0.1.33:";
+        plan.m_planId += branch;
+        plan.m_planId += ":";
+        plan.m_planId += runtime;
+        plan.m_planId += ":";
+        plan.m_planId += gameVersion;
         plan.m_extensionId = "extension.tainted-framework";
         plan.m_compatibility = EvaluateCompatibility(gameVersion, branch, runtime);
         plan.m_surfaces = GetApiSurfaceDecisions();
         plan.m_configuration = GetConfigurationDefaults();
         plan.m_diagnostics = GetDiagnosticVocabulary();
-        plan.m_candidateEvidenceSubmissionAllowed = plan.m_compatibility.m_status == ReadinessStatus::Ready;
+        plan.m_candidateEvidenceSubmissionAllowed =
+            plan.m_compatibility.m_status == ReadinessStatus::Ready;
         plan.m_runtimeInvocationAllowed = false;
         plan.m_fileWriteAllowed = false;
         plan.m_catalogMutationAllowed = false;
