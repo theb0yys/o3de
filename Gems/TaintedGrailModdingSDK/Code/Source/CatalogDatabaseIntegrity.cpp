@@ -8,14 +8,9 @@
 #include "CatalogDatabase.h"
 #include "PopulationEvidenceValidation.h"
 
-// Preserve the established governance/economy integrity implementation while
-// extending its bound-document and whole-catalog entry points with population
-// checks. The renamed methods remain private implementation details.
-#define ReplaceFromBoundDocument ReplaceFromBoundDocumentWithoutPopulation
-#define ValidateIntegrity ValidateIntegrityWithoutPopulation
+// The governance/economy implementation exposes explicit private helpers.
+// Population-aware public entry points extend those helpers below.
 #include "CatalogDatabaseIntegrityBase.inl"
-#undef ValidateIntegrity
-#undef ReplaceFromBoundDocument
 
 #include <AzCore/std/algorithm.h>
 
