@@ -12,7 +12,8 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
     CompatibilityDecision Service::EvaluateCompatibility(
         const AZStd::string& gameVersion,
         const AZStd::string& branch,
-        const AZStd::string& runtime) const
+        const AZStd::string& runtime,
+        const AZStd::string& bepInExVersion) const
     {
         const auto& pack = TaintedFrameworkKnowledge::GetCanonicalKnowledgePack();
 
@@ -21,6 +22,14 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
         result.m_gameVersion = gameVersion;
         result.m_branch = branch;
         result.m_runtime = runtime;
+        result.m_bepInExVersion = bepInExVersion;
+
+        const TaintedFrameworkKnowledge::CompatibilityObservation* blocked = nullptr;
+        const TaintedFrameworkKnowledge::CompatibilityObservation* exact = nullptr;
+        const TaintedFrameworkKnowledge::CompatibilityObservation* exactGame = nullptr;
+        const TaintedFrameworkKnowledge::CompatibilityObservation* live = nullptr;
+        const TaintedFrameworkKnowledge::CompatibilityObservation* nonActivatable = nullptr;
+        size_t exactMatchCount = 0;
 
         for (const auto& row : pack.m_compatibility)
         {
@@ -29,26 +38,77 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
                 continue;
             }
 
-            result.m_evidencePath = row.m_evidencePath;
-            if (row.m_status == "live_load_validated")
-            {
-                if (row.m_gameVersion == gameVersion)
-                {
-                    result.m_status = ReadinessStatus::Ready;
-                    return result;
-                }
-                result.m_status = ReadinessStatus::Unsupported;
-                result.m_blockers.push_back("exact_game_version_not_evidence_backed");
-                return result;
-            }
             if (row.m_status == "blocked")
             {
-                result.m_status = ReadinessStatus::Blocked;
-                result.m_blockers.push_back("upstream_branch_blocked");
-                return result;
+                blocked = &row;
+                continue;
             }
 
+            if (row.m_status == "live_load_validated")
+            {
+                live = &row;
+                if (row.m_gameVersion != gameVersion)
+                {
+                    continue;
+                }
+
+                exactGame = &row;
+                if (row.m_bepInExVersion != bepInExVersion)
+                {
+                    continue;
+                }
+
+                exact = &row;
+                ++exactMatchCount;
+                continue;
+            }
+
+            nonActivatable = &row;
+        }
+
+        if (blocked)
+        {
+            result.m_status = ReadinessStatus::Blocked;
+            result.m_evidencePath = blocked->m_evidencePath;
+            result.m_blockers.push_back("upstream_branch_blocked");
+            return result;
+        }
+
+        if (exactMatchCount > 1)
+        {
             result.m_status = ReadinessStatus::Unsupported;
+            result.m_evidencePath = exact->m_evidencePath;
+            result.m_blockers.push_back("ambiguous_exact_compatibility_observations");
+            return result;
+        }
+
+        if (exact)
+        {
+            result.m_status = ReadinessStatus::Ready;
+            result.m_evidencePath = exact->m_evidencePath;
+            return result;
+        }
+
+        if (exactGame)
+        {
+            result.m_status = ReadinessStatus::Unsupported;
+            result.m_evidencePath = exactGame->m_evidencePath;
+            result.m_blockers.push_back("exact_bepinex_version_not_evidence_backed");
+            return result;
+        }
+
+        if (live)
+        {
+            result.m_status = ReadinessStatus::Unsupported;
+            result.m_evidencePath = live->m_evidencePath;
+            result.m_blockers.push_back("exact_game_version_not_evidence_backed");
+            return result;
+        }
+
+        if (nonActivatable)
+        {
+            result.m_status = ReadinessStatus::Unsupported;
+            result.m_evidencePath = nonActivatable->m_evidencePath;
             result.m_blockers.push_back("compatibility_observation_not_activatable");
             return result;
         }
@@ -56,6 +116,16 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
         result.m_status = ReadinessStatus::Unsupported;
         result.m_blockers.push_back("branch_runtime_pair_not_in_canonical_knowledge");
         return result;
+    }
+
+    CompatibilityDecision Service::EvaluateCompatibility(
+        const ExtensionAPI::ProfileView& profile) const
+    {
+        return EvaluateCompatibility(
+            profile.m_gameVersion,
+            profile.m_branch,
+            profile.m_runtimeTarget,
+            profile.m_bepInExVersion);
     }
 
     AZStd::vector<ApiSurfaceDecision> Service::GetApiSurfaceDecisions() const
@@ -67,8 +137,16 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
             decision.m_surfaceId = surface.m_surfaceId;
             decision.m_status = surface.m_status;
             decision.m_consumerBinding = surface.m_consumerBinding;
-            decision.m_consumerReady = surface.m_consumerReady;
-            if (!decision.m_consumerReady)
+            decision.m_consumerReady =
+                surface.m_consumerReady
+                && surface.m_status == "candidate"
+                && !surface.m_consumerBinding.empty()
+                && surface.m_consumerBinding != "disabled";
+            if (surface.m_status == "blocked")
+            {
+                decision.m_blockers.push_back("surface_status_blocked");
+            }
+            else if (!decision.m_consumerReady)
             {
                 decision.m_blockers.push_back("consumer_binding_not_approved");
             }
@@ -101,7 +179,8 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
     ActivationPlan Service::BuildActivationPlan(
         const AZStd::string& gameVersion,
         const AZStd::string& branch,
-        const AZStd::string& runtime) const
+        const AZStd::string& runtime,
+        const AZStd::string& bepInExVersion) const
     {
         const auto& pack = TaintedFrameworkKnowledge::GetCanonicalKnowledgePack();
 
@@ -114,16 +193,40 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
         plan.m_planId += runtime;
         plan.m_planId += ":";
         plan.m_planId += gameVersion;
+        plan.m_planId += ":";
+        plan.m_planId += bepInExVersion;
         plan.m_extensionId = "extension.tainted-framework";
-        plan.m_compatibility = EvaluateCompatibility(gameVersion, branch, runtime);
+        plan.m_compatibility = EvaluateCompatibility(
+            gameVersion,
+            branch,
+            runtime,
+            bepInExVersion);
         plan.m_surfaces = GetApiSurfaceDecisions();
         plan.m_configuration = GetConfigurationDefaults();
         plan.m_diagnostics = GetDiagnosticVocabulary();
+        const bool hasConsumerReadySurface = AZStd::any_of(
+            plan.m_surfaces.begin(),
+            plan.m_surfaces.end(),
+            [](const ApiSurfaceDecision& surface)
+            {
+                return surface.m_consumerReady;
+            });
         plan.m_candidateEvidenceSubmissionEligible =
-            plan.m_compatibility.m_status == ReadinessStatus::Ready;
+            plan.m_compatibility.m_status == ReadinessStatus::Ready
+            && hasConsumerReadySurface;
         plan.m_runtimeInvocationAllowed = false;
         plan.m_fileWriteAllowed = false;
         plan.m_catalogMutationAllowed = false;
         return plan;
+    }
+
+    ActivationPlan Service::BuildActivationPlan(
+        const ExtensionAPI::ProfileView& profile) const
+    {
+        return BuildActivationPlan(
+            profile.m_gameVersion,
+            profile.m_branch,
+            profile.m_runtimeTarget,
+            profile.m_bepInExVersion);
     }
 } // namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
