@@ -19,9 +19,12 @@ import shlex
 import stat
 import subprocess
 import sys
+import threading
+import time
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO, Sequence
 
 
 SCHEMA_VERSION = 1
@@ -44,14 +47,40 @@ MANDATORY_PASS_GATES = (
     "o3de-build",
     "compiled-tests",
 )
-RISK_ACCEPTABLE_GATES = (
-    "windows-ui",
-)
+RISK_ACCEPTABLE_GATES = ("windows-ui",)
 VALID_STATUSES = ("passed", "failed", "not_run")
+STREAM_CHUNK_BYTES = 64 * 1024
+MAXIMUM_GATE_STREAM_BYTES = 256 * 1024 * 1024
+LIMIT_FAILURE_EXIT_CODE = 125
+PROCESS_TERMINATION_SECONDS = 5.0
 
 
 class ValidationReceiptError(RuntimeError):
     pass
+
+
+@dataclass(frozen=True)
+class StreamedLog:
+    path: Path
+    sha256: str
+    byte_count: int
+    truncated: bool
+
+    def receipt_value(self, output: Path) -> dict[str, Any]:
+        return {
+            "path": self.path.relative_to(output).as_posix(),
+            "sha256": self.sha256,
+            "bytes": self.byte_count,
+            "truncated": self.truncated,
+        }
+
+
+@dataclass(frozen=True)
+class StreamedProcessResult:
+    exit_code: int
+    stdout: StreamedLog
+    stderr: StreamedLog
+    limit_exceeded: bool
 
 
 def parse_utc(value: str, field: str) -> datetime:
@@ -212,15 +241,11 @@ def hash_file(path: Path) -> tuple[str, int]:
 
 def safe_log_name(gate: str, stream_name: str) -> str:
     require_token(gate, "gate")
+    require_token(stream_name, "stream name")
     return f"{gate}.{stream_name}.log"
 
 
-def capture_log_bytes(
-    output: Path,
-    gate: str,
-    stream_name: str,
-    content: bytes,
-) -> dict[str, Any]:
+def prepare_log_destination(output: Path, gate: str, stream_name: str) -> Path:
     logs = output / LOG_DIRECTORY
     if not logs.exists():
         logs.mkdir(parents=False, exist_ok=False)
@@ -231,23 +256,171 @@ def capture_log_bytes(
         raise ValidationReceiptError(
             f"Log destination already exists and will not be overwritten: {destination}"
         )
+    return destination
+
+
+def open_exclusive_binary(path: Path) -> BinaryIO:
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
-    descriptor = os.open(destination, flags, 0o600)
+    descriptor = os.open(path, flags, 0o600)
+    return os.fdopen(descriptor, "wb")
+
+
+def _terminate_process(process: subprocess.Popen[bytes]) -> None:
+    if process.poll() is not None:
+        return
     try:
-        with os.fdopen(descriptor, "wb", closefd=False) as stream:
-            stream.write(content)
-            stream.flush()
-            os.fsync(stream.fileno())
+        process.terminate()
+    except OSError:
+        return
+
+
+def _stream_pipe(
+    pipe: BinaryIO,
+    destination: BinaryIO,
+    destination_path: Path,
+    maximum_bytes: int,
+    exceeded: threading.Event,
+    process: subprocess.Popen[bytes],
+    errors: list[BaseException],
+) -> StreamedLog:
+    digest = hashlib.sha256()
+    total = 0
+    truncated = False
+    try:
+        while True:
+            chunk = pipe.read(STREAM_CHUNK_BYTES)
+            if not chunk:
+                break
+            remaining = maximum_bytes - total
+            if remaining > 0:
+                accepted = chunk[:remaining]
+                destination.write(accepted)
+                digest.update(accepted)
+                total += len(accepted)
+            if len(chunk) > max(remaining, 0):
+                truncated = True
+                exceeded.set()
+                _terminate_process(process)
+        destination.flush()
+        os.fsync(destination.fileno())
+    except BaseException as exc:  # propagate thread failures to the recorder
+        errors.append(exc)
+        exceeded.set()
+        _terminate_process(process)
     finally:
-        os.close(descriptor)
-    digest, byte_count = hash_file(destination)
-    return {
-        "path": destination.relative_to(output).as_posix(),
-        "sha256": digest,
-        "bytes": byte_count,
-    }
+        try:
+            pipe.close()
+        except OSError:
+            pass
+        try:
+            destination.close()
+        except OSError:
+            pass
+    return StreamedLog(
+        destination_path,
+        f"sha256:{digest.hexdigest()}",
+        total,
+        truncated,
+    )
+
+
+def stream_gate_process(
+    command: Sequence[str],
+    cwd: Path,
+    stdout_path: Path,
+    stderr_path: Path,
+    *,
+    maximum_stream_bytes: int = MAXIMUM_GATE_STREAM_BYTES,
+) -> StreamedProcessResult:
+    if maximum_stream_bytes <= 0:
+        raise ValidationReceiptError("maximum stream bytes must be positive.")
+
+    stdout_file = open_exclusive_binary(stdout_path)
+    try:
+        stderr_file = open_exclusive_binary(stderr_path)
+    except BaseException:
+        stdout_file.close()
+        stdout_path.unlink(missing_ok=True)
+        raise
+
+    try:
+        process = subprocess.Popen(
+            list(command),
+            cwd=str(cwd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+        )
+    except OSError as exc:
+        stdout_file.close()
+        stderr_file.close()
+        stdout_path.unlink(missing_ok=True)
+        stderr_path.unlink(missing_ok=True)
+        raise ValidationReceiptError(f"Unable to execute validation gate: {exc}") from exc
+
+    assert process.stdout is not None
+    assert process.stderr is not None
+    exceeded = threading.Event()
+    errors: list[BaseException] = []
+    results: dict[str, StreamedLog] = {}
+
+    def capture(name: str, pipe: BinaryIO, destination: BinaryIO, path: Path) -> None:
+        results[name] = _stream_pipe(
+            pipe,
+            destination,
+            path,
+            maximum_stream_bytes,
+            exceeded,
+            process,
+            errors,
+        )
+
+    threads = (
+        threading.Thread(
+            target=capture,
+            args=("stdout", process.stdout, stdout_file, stdout_path),
+            daemon=True,
+        ),
+        threading.Thread(
+            target=capture,
+            args=("stderr", process.stderr, stderr_file, stderr_path),
+            daemon=True,
+        ),
+    )
+    for thread in threads:
+        thread.start()
+
+    termination_started: float | None = None
+    while process.poll() is None:
+        if exceeded.is_set():
+            _terminate_process(process)
+            if termination_started is None:
+                termination_started = time.monotonic()
+            elif time.monotonic() - termination_started >= PROCESS_TERMINATION_SECONDS:
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+        time.sleep(0.05)
+    exit_code = int(process.wait())
+    for thread in threads:
+        thread.join()
+    if errors:
+        raise ValidationReceiptError(f"Unable to stream validation logs: {errors[0]}")
+    if set(results) != {"stdout", "stderr"}:
+        raise ValidationReceiptError("Validation log capture did not complete.")
+
+    limit_exceeded = exceeded.is_set()
+    if limit_exceeded and exit_code == 0:
+        exit_code = LIMIT_FAILURE_EXIT_CODE
+    return StreamedProcessResult(
+        exit_code,
+        results["stdout"],
+        results["stderr"],
+        limit_exceeded,
+    )
 
 
 def find_gate(receipt: dict[str, Any], gate: str) -> dict[str, Any] | None:
@@ -272,15 +445,15 @@ def validate_log_reference(output: Path, value: Any, field: str) -> None:
     relative = value.get("path")
     digest = value.get("sha256")
     expected_bytes = value.get("bytes")
+    truncated = value.get("truncated", False)
     if not isinstance(relative, str) or not relative:
         raise ValidationReceiptError(f"{field}.path is required.")
+    if not isinstance(truncated, bool):
+        raise ValidationReceiptError(f"{field}.truncated must be boolean when present.")
     relative_path = Path(relative)
     if relative_path.is_absolute() or ".." in relative_path.parts:
         raise ValidationReceiptError(f"{field}.path escapes the receipt directory.")
-    candidate = reject_storage_indirection(
-        output / relative_path,
-        f"{field}.path",
-    )
+    candidate = reject_storage_indirection(output / relative_path, f"{field}.path")
     try:
         candidate.relative_to(output)
     except ValueError as exc:
@@ -377,6 +550,10 @@ def validate_receipt(
                 raise ValidationReceiptError(
                     f"{name} executed state requires tool-captured stdout and stderr logs."
                 )
+            if entry.get("log_limit_exceeded") not in (None, False, True):
+                raise ValidationReceiptError(f"{name}.log_limit_exceeded must be boolean.")
+            if entry.get("log_limit_exceeded") and status != "failed":
+                raise ValidationReceiptError(f"{name} exceeded a log limit but is not failed.")
         validate_log_reference(output, entry.get("stdout_log"), f"{name}.stdout_log")
         validate_log_reference(output, entry.get("stderr_log"), f"{name}.stderr_log")
 
@@ -489,45 +666,50 @@ def record_gate(args: argparse.Namespace) -> int:
         raise ValidationReceiptError(
             "record requires an executable and arguments after --."
         )
+
+    stdout_path = prepare_log_destination(output, args.name, "stdout")
+    stderr_path = prepare_log_destination(output, args.name, "stderr")
     started = utc_now()
-    try:
-        completed = subprocess.run(
-            command,
-            cwd=repository,
-            check=False,
-            capture_output=True,
-        )
-    except OSError as exc:
-        raise ValidationReceiptError(f"Unable to execute validation gate: {exc}") from exc
+    completed = stream_gate_process(
+        command,
+        repository,
+        stdout_path,
+        stderr_path,
+    )
     finished = utc_now()
     repository_state(
         repository,
         expected_commit=str(receipt.get("source_commit", "")),
     )
-    status = "passed" if completed.returncode == 0 else "failed"
-    exit_code = completed.returncode
+
+    status = "passed" if completed.exit_code == 0 else "failed"
+    notes = args.notes
+    if completed.limit_exceeded:
+        detail = (
+            f"Gate output exceeded the fixed {MAXIMUM_GATE_STREAM_BYTES}-byte "
+            "per-stream limit; the process was terminated and the captured prefix "
+            "was retained with its incremental hash."
+        )
+        notes = f"{notes}\n{detail}".strip()
     entry = {
         "name": args.name,
         "command": shlex.join(command),
         "status": status,
-        "exit_code": exit_code,
+        "exit_code": completed.exit_code,
         "started_at_utc": started,
         "finished_at_utc": finished,
-        "notes": args.notes,
-        "stdout_log": capture_log_bytes(
-            output, args.name, "stdout", completed.stdout
-        ),
-        "stderr_log": capture_log_bytes(
-            output, args.name, "stderr", completed.stderr
-        ),
+        "notes": notes,
+        "log_limit_exceeded": completed.limit_exceeded,
+        "stdout_log": completed.stdout.receipt_value(output),
+        "stderr_log": completed.stderr.receipt_value(output),
     }
     gates = list(receipt.get("gates", []))
     gates.append(entry)
     gates.sort(key=lambda item: GATE_NAMES.index(item["name"]))
     receipt["gates"] = gates
     write_receipt(output, receipt)
-    print(f"{args.name}: {status} (exit {exit_code})")
-    return 0 if completed.returncode == 0 else 1
+    print(f"{args.name}: {status} (exit {completed.exit_code})")
+    return 0 if completed.exit_code == 0 else 1
 
 
 def skip_gate(args: argparse.Namespace) -> int:
@@ -661,9 +843,9 @@ def summarize(args: argparse.Namespace) -> int:
     for gate_name in GATE_NAMES:
         gate = find_gate(receipt, gate_name)
         if gate is None:
-            print(f"| `{gate_name}` | missing | \u2014 | \u2014 |")
+            print(f"| `{gate_name}` | missing | — | — |")
             continue
-        exit_value = "\u2014" if gate["exit_code"] is None else str(gate["exit_code"])
+        exit_value = "—" if gate["exit_code"] is None else str(gate["exit_code"])
         notes = gate["notes"].replace("|", "\\|").replace("\n", " ")
         print(f"| `{gate_name}` | {gate['status']} | {exit_value} | {notes} |")
     if receipt.get("risk_acceptances"):
@@ -671,7 +853,7 @@ def summarize(args: argparse.Namespace) -> int:
         print("Maintainer risk acceptances:")
         for acceptance in receipt["risk_acceptances"]:
             print(
-                f"- `{acceptance['gate']}` \u2014 `{acceptance['maintainer_alias']}` at "
+                f"- `{acceptance['gate']}` — `{acceptance['maintainer_alias']}` at "
                 f"`{acceptance['accepted_at_utc']}`: {acceptance['rationale']}"
             )
     return 0

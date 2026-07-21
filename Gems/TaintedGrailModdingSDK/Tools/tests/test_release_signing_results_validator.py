@@ -25,12 +25,14 @@ FIXTURE_PATHS = (
     "Gems/TaintedGrailModdingSDK/Code/Source/AdapterReleaseSigningResultContracts.cpp",
     "Gems/TaintedGrailModdingSDK/Code/Source/AdapterReleaseSigningEvidenceService.h",
     "Gems/TaintedGrailModdingSDK/Code/Source/AdapterReleaseSigningEvidenceService.cpp",
+    "Gems/TaintedGrailModdingSDK/Code/Source/AdapterReleaseSigningHardening.h",
     "Gems/TaintedGrailModdingSDK/Code/Source/AdapterReleaseSigningResultWidget.h",
     "Gems/TaintedGrailModdingSDK/Code/Source/AdapterReleaseSigningResultWidget.cpp",
     "Gems/TaintedGrailModdingSDK/Code/Source/AdapterReleaseSigningPaneSystemComponent.h",
     "Gems/TaintedGrailModdingSDK/Code/Source/AdapterReleaseSigningPaneSystemComponent.cpp",
     "Gems/TaintedGrailModdingSDK/Code/Source/TaintedGrailModdingSDKEditorModule.cpp",
     "Gems/TaintedGrailModdingSDK/Code/Tests/AdapterReleaseSigningResultTests.cpp",
+    "Gems/TaintedGrailModdingSDK/Code/Tests/AdapterReleaseSigningHardeningTests.cpp",
     "Gems/TaintedGrailModdingSDK/Code/CMakeLists.txt",
     "Gems/TaintedGrailModdingSDK/Code/taintedgrailmoddingsdk_core_files.cmake",
     "Gems/TaintedGrailModdingSDK/Code/taintedgrailmoddingsdk_editor_files.cmake",
@@ -78,6 +80,80 @@ class ReleaseSigningValidatorTests(unittest.TestCase):
     def test_repository_fixture_passes(self) -> None:
         validator.validate(self.root)
 
+    def test_registry_capacity_check_must_precede_append(self) -> None:
+        def move_append_before_capacity(text: str) -> str:
+            text = text.replace(
+                "        if (m_envelopes.size() >= "
+                "MaximumReleaseSigningRegistryEnvelopes)",
+                "        m_envelopes.push_back(envelope);\n"
+                "        if (m_envelopes.size() >= "
+                "MaximumReleaseSigningRegistryEnvelopes)",
+                1,
+            )
+            return text.replace(
+                "        m_envelopes.push_back(envelope);\n"
+                "        if (error)",
+                "        if (error)",
+                1,
+            )
+
+        self.mutate(
+            (
+                "Gems/TaintedGrailModdingSDK/Code/Source/"
+                "AdapterReleaseSigningResultContracts.cpp"
+            ),
+            move_append_before_capacity,
+        )
+        self.assert_validation_fails("fixed capacity")
+
+    def test_missing_hardening_test_fails_closed(self) -> None:
+        path = (
+            self.root
+            / "Gems/TaintedGrailModdingSDK/Code/Tests/"
+            "AdapterReleaseSigningHardeningTests.cpp"
+        )
+        path.unlink()
+        self.assert_validation_fails("Required file is missing")
+
+    def test_reconstructed_upstream_check_fails_closed(self) -> None:
+        self.mutate(
+            (
+                "Gems/TaintedGrailModdingSDK/Code/Source/"
+                "AdapterReleaseSigningEvidenceService.cpp"
+            ),
+            lambda text: text.replace(
+                "SameReleaseAssemblyEvidenceReturn(",
+                "RemovedAssemblyEvidenceComparison(",
+            ),
+        )
+        self.assert_validation_fails("SameReleaseAssemblyEvidenceReturn")
+
+    def test_unsafe_diagnostic_label_fails_closed(self) -> None:
+        self.mutate(
+            (
+                "Gems/TaintedGrailModdingSDK/Code/Source/"
+                "AdapterReleaseSigningResultWidget.cpp"
+            ),
+            lambda text: text.replace(
+                "Supplied diagnostics — not evaluated",
+                "Safe diagnostics",
+            ),
+        )
+        self.assert_validation_fails("Supplied diagnostics")
+
+    def test_unknown_diagnostic_media_type_fails_closed(self) -> None:
+        self.mutate(
+            (
+                "Gems/TaintedGrailModdingSDK/Code/Source/"
+                "AdapterReleaseSigningEvidenceService.cpp"
+            ),
+            lambda text: text.replace(
+                '"application/octet-stream"',
+                '"text/plain"',
+            ),
+        )
+        self.assert_validation_fails("application/octet-stream")
+
     def test_mutable_widget_control_fails_closed(self) -> None:
         self.mutate(
             (
@@ -87,6 +163,19 @@ class ReleaseSigningValidatorTests(unittest.TestCase):
             lambda text: text + "\nQPushButton* prohibitedAction = nullptr;\n",
         )
         self.assert_validation_fails("QPushButton")
+
+    def test_missing_compiled_hardening_manifest_entry_fails_closed(self) -> None:
+        self.mutate(
+            (
+                "Gems/TaintedGrailModdingSDK/Code/"
+                "taintedgrailmoddingsdk_release_signing_result_tests_files.cmake"
+            ),
+            lambda text: text.replace(
+                "    Tests/AdapterReleaseSigningHardeningTests.cpp\n",
+                "",
+            ),
+        )
+        self.assert_validation_fails("hardening")
 
     def test_missing_local_gate_registration_fails_closed(self) -> None:
         self.mutate(
@@ -120,7 +209,7 @@ class ReleaseSigningValidatorTests(unittest.TestCase):
             "ROADMAP.md",
             lambda text: text.replace(
                 "### Release-signing result envelope",
-                "### Next ordered slice \u2014 release-signing result envelope",
+                "### Next ordered slice — release-signing result envelope",
             ),
         )
         self.assert_validation_fails("roadmap")

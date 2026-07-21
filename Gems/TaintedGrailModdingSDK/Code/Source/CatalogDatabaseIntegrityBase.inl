@@ -496,7 +496,7 @@ namespace TaintedGrailModdingSDK
         return AddGovernanceEvent(event, error);
     }
 
-    bool CatalogDatabase::ReplaceFromBoundDocument(
+    bool CatalogDatabase::ReplaceFromBoundDocumentWithoutPopulation(
         const CatalogDocument& document,
         const WorkspaceModel& workspace,
         const GameProfile& profile,
@@ -517,7 +517,7 @@ namespace TaintedGrailModdingSDK
 
         CatalogDatabase candidate;
         if (!candidate.ReplaceFromDocument(document, error)
-            || !candidate.ValidateIntegrity(
+            || !candidate.ValidateIntegrityWithoutPopulation(
                 workspace,
                 profile,
                 sourceRegistry,
@@ -529,7 +529,7 @@ namespace TaintedGrailModdingSDK
         return true;
     }
 
-    bool CatalogDatabase::ValidateIntegrity(
+    bool CatalogDatabase::ValidateIntegrityWithoutPopulation(
         const WorkspaceModel& workspace,
         const GameProfile& profile,
         const SourceEvidenceRegistry& sourceRegistry,

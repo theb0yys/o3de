@@ -7,8 +7,12 @@
 
 #include "AdapterReleaseSigningResultContracts.h"
 
+#include "AdapterReleaseSigningHardening.h"
 #include "PackagePathValidation.h"
 #include "ResearchContractValidation.h"
+
+#include <AzCore/std/algorithm.h>
+#include <AzCore/std/sort.h>
 
 namespace TaintedGrailModdingSDK
 {
@@ -143,10 +147,45 @@ namespace TaintedGrailModdingSDK
             return value.empty() || IsStableContractId(value);
         }
 
+        bool HasUniqueStableIds(
+            const AZStd::vector<AZStd::string>& values)
+        {
+            AZStd::vector<AZStd::string> sorted = values;
+            for (const AZStd::string& value : sorted)
+            {
+                if (!IsStableContractId(value))
+                {
+                    return false;
+                }
+            }
+            AZStd::sort(sorted.begin(), sorted.end());
+            return AZStd::adjacent_find(sorted.begin(), sorted.end())
+                == sorted.end();
+        }
+
+        bool HasUniqueCapabilities(
+            const AZStd::vector<AdapterReleaseSignerCapability>& values)
+        {
+            for (size_t left = 0; left < values.size(); ++left)
+            {
+                for (size_t right = left + 1; right < values.size(); ++right)
+                {
+                    if (values[left] == values[right])
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         bool HasRegistryShape(
             const AdapterReleaseSigningResultEnvelope& envelope)
         {
-            if (envelope.m_contractVersion != 1
+            if (!IsReleaseSigningEnvelopeWithinLimits(envelope)
+                || !AreReleaseSigningEnumsKnown(envelope)
+                || !IsReleaseSigningEnvelopePublic(envelope)
+                || envelope.m_contractVersion != 1
                 || !IsStableContractId(envelope.m_resultId)
                 || !IsSha256Fingerprint(envelope.m_resultFingerprint)
                 || !IsStableContractId(envelope.m_artifactId)
@@ -154,91 +193,109 @@ namespace TaintedGrailModdingSDK
                 || !IsStableContractId(envelope.m_assemblyResultId)
                 || !IsSha256Fingerprint(envelope.m_assemblyResultFingerprint)
                 || !IsStableContractId(envelope.m_archiveId)
+                || !IsSafePackageRelativePath(envelope.m_archivePath)
+                || envelope.m_archiveByteSize == 0
                 || !IsSha256Fingerprint(envelope.m_archiveFingerprint)
                 || !IsStableContractId(envelope.m_signingIntentId)
                 || !IsStableContractId(envelope.m_signerId)
                 || !IsSha256Fingerprint(envelope.m_identityFingerprint)
+                || !IsStrictUtcTimestamp(envelope.m_capturedAtUtc)
                 || !IsStableContractId(envelope.m_signerReview.m_reviewId)
                 || !IsStableContractId(envelope.m_signerReview.m_signerToolId)
                 || !IsStrictSemanticVersion(
                     envelope.m_signerReview.m_signerToolVersion)
                 || !IsSha256Fingerprint(
-                    envelope.m_signerReview.m_signerToolFingerprint))
+                    envelope.m_signerReview.m_signerToolFingerprint)
+                || !IsStrictUtcTimestamp(
+                    envelope.m_signerReview.m_reviewedAtUtc)
+                || !HasUniqueCapabilities(
+                    envelope.m_signerReview.m_capabilities)
+                || !HasUniqueStableIds(envelope.m_signerReview.m_evidenceIds)
+                || !HasUniqueStableIds(envelope.m_failureIds)
+                || !HasUniqueStableIds(envelope.m_diagnosticReferenceIds))
             {
                 return false;
             }
 
+            AZStd::vector<AZStd::string> artifactIds;
+            AZStd::vector<AZStd::string> artifactPaths;
             for (const AdapterReleaseSignatureArtifact& artifact :
-                envelope.m_signatureArtifacts)
+                 envelope.m_signatureArtifacts)
             {
+                PackagePathIdentity pathIdentity;
                 if (!IsStableContractId(artifact.m_signatureArtifactId)
+                    || !TryBuildPackagePathIdentity(
+                        artifact.m_reference,
+                        pathIdentity)
+                    || artifact.m_byteSize == 0
                     || !IsSha256Fingerprint(artifact.m_fingerprint)
+                    || !IsStrictUtcTimestamp(artifact.m_createdAtUtc)
                     || !IsStableContractId(artifact.m_archiveId)
-                    || !IsSha256Fingerprint(artifact.m_archiveFingerprint))
+                    || !IsSha256Fingerprint(artifact.m_archiveFingerprint)
+                    || !HasUniqueStableIds(
+                        artifact.m_diagnosticReferenceIds))
                 {
                     return false;
                 }
-                for (const AZStd::string& diagnosticId :
-                    artifact.m_diagnosticReferenceIds)
-                {
-                    if (!IsStableContractId(diagnosticId))
-                    {
-                        return false;
-                    }
-                }
+                artifactIds.push_back(artifact.m_signatureArtifactId);
+                artifactPaths.push_back(pathIdentity.m_windowsIdentity);
+            }
+            if (!HasUniqueStableIds(artifactIds))
+            {
+                return false;
+            }
+            AZStd::sort(artifactPaths.begin(), artifactPaths.end());
+            if (AZStd::adjacent_find(
+                    artifactPaths.begin(),
+                    artifactPaths.end()) != artifactPaths.end())
+            {
+                return false;
             }
 
+            AZStd::vector<AZStd::string> failureIds;
             for (const AdapterReleaseSigningFailure& failure : envelope.m_failures)
             {
                 if (!IsStableContractId(failure.m_failureId)
-                    || !HasStableOptionalId(failure.m_signatureArtifactId))
+                    || !HasStableOptionalId(failure.m_signatureArtifactId)
+                    || !HasUniqueStableIds(
+                        failure.m_diagnosticReferenceIds))
                 {
                     return false;
                 }
-                for (const AZStd::string& diagnosticId :
-                    failure.m_diagnosticReferenceIds)
-                {
-                    if (!IsStableContractId(diagnosticId))
-                    {
-                        return false;
-                    }
-                }
+                failureIds.push_back(failure.m_failureId);
+            }
+            if (!HasUniqueStableIds(failureIds))
+            {
+                return false;
             }
 
+            AZStd::vector<AZStd::string> diagnosticIds;
+            AZStd::vector<AZStd::string> diagnosticPaths;
             for (const AdapterReleaseSigningDiagnosticReference& diagnostic :
-                envelope.m_diagnosticReferences)
+                 envelope.m_diagnosticReferences)
             {
+                PackagePathIdentity pathIdentity;
                 if (!IsStableContractId(diagnostic.m_diagnosticId)
-                    || !IsSha256Fingerprint(diagnostic.m_fingerprint))
+                    || !TryBuildPackagePathIdentity(
+                        diagnostic.m_reference,
+                        pathIdentity)
+                    || !IsSha256Fingerprint(diagnostic.m_fingerprint)
+                    || !HasUniqueStableIds(
+                        diagnostic.m_signatureArtifactIds))
                 {
                     return false;
                 }
-                for (const AZStd::string& artifactId :
-                    diagnostic.m_signatureArtifactIds)
-                {
-                    if (!IsStableContractId(artifactId))
-                    {
-                        return false;
-                    }
-                }
+                diagnosticIds.push_back(diagnostic.m_diagnosticId);
+                diagnosticPaths.push_back(pathIdentity.m_windowsIdentity);
             }
-
-            for (const AZStd::string& failureId : envelope.m_failureIds)
+            if (!HasUniqueStableIds(diagnosticIds))
             {
-                if (!IsStableContractId(failureId))
-                {
-                    return false;
-                }
+                return false;
             }
-            for (const AZStd::string& diagnosticId :
-                envelope.m_diagnosticReferenceIds)
-            {
-                if (!IsStableContractId(diagnosticId))
-                {
-                    return false;
-                }
-            }
-            return true;
+            AZStd::sort(diagnosticPaths.begin(), diagnosticPaths.end());
+            return AZStd::adjacent_find(
+                       diagnosticPaths.begin(),
+                       diagnosticPaths.end()) == diagnosticPaths.end();
         }
     } // namespace
 
@@ -309,10 +366,6 @@ namespace TaintedGrailModdingSDK
         const AZStd::string& value,
         AdapterReleaseSigningFailureKind& kind)
     {
-        if (value == "unknown")
-        {
-            return false;
-        }
         return TryParseEnum(value, kind, FailureKinds);
     }
 
@@ -371,9 +424,20 @@ namespace TaintedGrailModdingSDK
             if (error)
             {
                 *error =
-                    "Release signing-result registration requires contract version 1, "
-                    "stable binding identities, strict signer-tool versioning, and "
+                    "Release signing-result registration requires bounded collections, "
+                    "known enum values, public metadata, safe relative references, "
+                    "stable unique identities, strict timestamps/versioning, and "
                     "lowercase SHA-256 fingerprints.";
+            }
+            return false;
+        }
+        if (m_envelopes.size() >= MaximumReleaseSigningRegistryEnvelopes)
+        {
+            if (error)
+            {
+                *error =
+                    "The transient release signing-result registry reached its fixed "
+                    "envelope limit.";
             }
             return false;
         }
