@@ -38,7 +38,9 @@ class InstallerWorkflowValidatorTests(unittest.TestCase):
             '"validate_installer_workflow.py"\n'
             "source_policy_engine_root = None\n"
             "def resolve_engine_root(value):\n"
-            "    return value\n",
+            "    return value\n"
+            'PRODUCT_SOURCE_POLICY_PATHS = ("Gems/ExternalToolchain", '
+            '"Gems/TaintedGrailModdingSDK")\n',
             encoding="utf-8",
         )
         return repo
