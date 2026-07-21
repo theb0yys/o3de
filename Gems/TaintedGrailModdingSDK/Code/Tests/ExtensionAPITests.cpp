@@ -22,7 +22,7 @@ namespace TaintedGrailModdingSDK
             profile.m_installPath = "C:/fixture/game";
             profile.m_gameVersion = "1.0.0";
             profile.m_branch = "mono";
-            profile.m_runtimeTarget = "mono";
+            profile.m_runtimeTarget = "Mono";
             profile.m_unityVersion = "2022.3.20f1";
             profile.m_bepInExVersion = "5.4.23";
             profile.m_managedAssembliesPath = "C:/fixture/game/Managed";
@@ -66,7 +66,7 @@ namespace TaintedGrailModdingSDK
             source.m_profileId = "profile.foa.mono";
             source.m_gameVersion = "1.0.0";
             source.m_branch = "mono";
-            source.m_runtimeTarget = "mono";
+            source.m_runtimeTarget = "Mono";
             source.m_toolName = "fixture";
             source.m_toolVersion = "1.2.3";
             source.m_importerId = "importer.fixture";
@@ -139,6 +139,7 @@ namespace TaintedGrailModdingSDK
         ASSERT_TRUE(api.GetActiveProfile("extension.profile", profile, &error));
         EXPECT_EQ(profile.m_profileId, "profile.foa.mono");
         EXPECT_EQ(profile.m_branch, "mono");
+        EXPECT_EQ(profile.m_runtimeTarget, "Mono");
         ASSERT_EQ(profile.m_dlcScopes.size(), 2);
         EXPECT_EQ(profile.m_dlcScopes[0], "dlc.a");
         EXPECT_EQ(profile.m_dlcScopes[1], "dlc.z");
