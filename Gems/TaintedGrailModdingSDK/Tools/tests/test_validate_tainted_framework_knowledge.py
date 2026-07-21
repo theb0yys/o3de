@@ -34,7 +34,21 @@ class TaintedFrameworkKnowledgeValidatorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name) / "repo"
-        shutil.copytree(REPO_ROOT / "Gems", self.root / "Gems")
+        source_gem = REPO_ROOT / "Gems" / "TaintedGrailModdingSDK"
+        target_gem = self.root / "Gems" / "TaintedGrailModdingSDK"
+        shutil.copytree(
+            source_gem / "Knowledge" / "TaintedFramework",
+            target_gem / "Knowledge" / "TaintedFramework",
+        )
+        (target_gem / "Code" / "Source").mkdir(parents=True)
+        shutil.copy2(
+            source_gem / "Code" / "Source" / "TaintedFrameworkKnowledge.h",
+            target_gem / "Code" / "Source" / "TaintedFrameworkKnowledge.h",
+        )
+        shutil.copy2(
+            source_gem / "Code" / "taintedgrailmoddingsdk_framework_files.cmake",
+            target_gem / "Code" / "taintedgrailmoddingsdk_framework_files.cmake",
+        )
 
     def tearDown(self) -> None:
         self.temp.cleanup()
