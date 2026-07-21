@@ -56,7 +56,7 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
         bool m_runtimeInvocationAllowed = false;
         bool m_fileWriteAllowed = false;
         bool m_catalogMutationAllowed = false;
-        bool m_candidateEvidenceSubmissionAllowed = false;
+        bool m_candidateEvidenceSubmissionEligible = false;
     };
 
     class Service final
