@@ -33,6 +33,7 @@ VALIDATORS = (
     "validate_research_contract_hardening.py",
     "validate_population_actor_troop_editor.py",
     "validate_population_contract_hardening.py",
+    "validate_tainted_framework_knowledge.py",
     "validate_catalog_schema2.py",
     "validate_economy_coverage_dashboard.py",
     "validate_economy_duplicate_detection.py",
@@ -96,7 +97,6 @@ def build_static_commands(
                 ),
             )
         )
-
     for validator in VALIDATORS:
         commands.append(
             ValidationCommand(
@@ -104,7 +104,6 @@ def build_static_commands(
                 python_command(str(TOOLS_ROOT / validator)),
             )
         )
-
     if include_source_policy:
         commands.append(
             ValidationCommand(
@@ -125,7 +124,26 @@ def build_static_commands(
 def build_fixture_commands(temporary_root: Path) -> list[ValidationCommand]:
     fixture = temporary_root / "developer-preview-fixture"
     diagnostics = temporary_root / "developer-preview-diagnostics"
+    tainted_framework = temporary_root / "tainted-framework-knowledge"
     return [
+        ValidationCommand(
+            "Generate Tainted Framework knowledge",
+            python_command(
+                str(TOOLS_ROOT / "tainted_framework_knowledge.py"),
+                "generate",
+                "--output",
+                str(tainted_framework),
+            ),
+        ),
+        ValidationCommand(
+            "Verify Tainted Framework knowledge",
+            python_command(
+                str(TOOLS_ROOT / "tainted_framework_knowledge.py"),
+                "verify",
+                "--output",
+                str(tainted_framework),
+            ),
+        ),
         ValidationCommand(
             "Generate Developer Preview fixture",
             python_command(
@@ -171,15 +189,19 @@ def find_ctest(build_directory: Path) -> str:
     discovered = shutil.which("ctest")
     if discovered:
         return discovered
-
     cache = build_directory / "CMakeCache.txt"
     if cache.is_file():
         prefix = "CMAKE_COMMAND:INTERNAL="
-        for line in cache.read_text(encoding="utf-8", errors="strict").splitlines():
+        for line in cache.read_text(
+            encoding="utf-8",
+            errors="strict",
+        ).splitlines():
             if not line.startswith(prefix):
                 continue
             cmake = Path(line[len(prefix) :])
-            candidate = cmake.with_name("ctest.exe" if os.name == "nt" else "ctest")
+            candidate = cmake.with_name(
+                "ctest.exe" if os.name == "nt" else "ctest"
+            )
             if candidate.is_file():
                 return str(candidate)
             break
@@ -216,7 +238,6 @@ def run_commands(
     failures: list[str] = []
     environment = os.environ.copy()
     environment.setdefault("PYTHONUTF8", "1")
-
     for command in commands:
         print(f"\n=== {command.label} ===", flush=True)
         print(display_command(command), flush=True)
@@ -283,28 +304,29 @@ def main() -> int:
         include_unit_tests=not arguments.skip_unit_tests,
         include_source_policy=not arguments.skip_source_policy,
     )
-
     if arguments.list:
         for command in static_commands:
             print(f"{command.label}: {display_command(command)}")
         return 0
-
     print(
         "TG SDK local validation is authoritative while GitHub Actions remains "
         "manual-only. No automated per-commit test result is claimed.",
         flush=True,
     )
-
-    failures = run_commands(static_commands, keep_going=arguments.keep_going)
+    failures = run_commands(
+        static_commands,
+        keep_going=arguments.keep_going,
+    )
     if not failures and not arguments.skip_fixtures:
-        with tempfile.TemporaryDirectory(prefix="tg-sdk-validation-") as temporary:
+        with tempfile.TemporaryDirectory(
+            prefix="tg-sdk-validation-"
+        ) as temporary:
             failures.extend(
                 run_commands(
                     build_fixture_commands(Path(temporary)),
                     keep_going=arguments.keep_going,
                 )
             )
-
     if not failures and arguments.ctest_build_dir:
         failures.extend(
             run_commands(
@@ -312,13 +334,11 @@ def main() -> int:
                 keep_going=arguments.keep_going,
             )
         )
-
     if failures:
         print("\nTG SDK local validation failed:", file=sys.stderr)
         for failure in failures:
             print(f"- {failure}", file=sys.stderr)
         return 1
-
     print("\nTG SDK local validation passed.")
     if not arguments.ctest_build_dir:
         print(
