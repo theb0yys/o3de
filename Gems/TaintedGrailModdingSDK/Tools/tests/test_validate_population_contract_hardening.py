@@ -25,7 +25,10 @@ import validate_population_contract_hardening as validator
 FIXTURE_PATHS = (
     "Gems/TaintedGrailModdingSDK/Code/Source/PopulationEvidenceValidation.h",
     "Gems/TaintedGrailModdingSDK/Code/Source/PopulationAuthoringService.cpp",
+    "Gems/TaintedGrailModdingSDK/Code/Source/CatalogDatabase.cpp",
+    "Gems/TaintedGrailModdingSDK/Code/Source/CatalogDatabaseBase.inl",
     "Gems/TaintedGrailModdingSDK/Code/Source/CatalogDatabaseIntegrity.cpp",
+    "Gems/TaintedGrailModdingSDK/Code/Source/CatalogDatabaseIntegrityBase.inl",
     "Gems/TaintedGrailModdingSDK/Code/Source/CatalogDatabasePopulationPart3.inl",
     "Gems/TaintedGrailModdingSDK/Code/Tests/PopulationContractHardeningTests.cpp",
     "Gems/TaintedGrailModdingSDK/Code/Tests/PopulationAuthoringTests.cpp",
@@ -84,7 +87,7 @@ class PopulationContractHardeningValidatorTests(unittest.TestCase):
             "if (!covered[index])",
             "if (covered[index])",
         )
-        self.assert_validation_fails("if \(!covered\[index\]\)")
+        self.assert_validation_fails(r"if \(!covered\[index\]\)")
 
     def test_workspace_path_policy_call_fails_closed(self) -> None:
         self.mutate(
@@ -94,13 +97,41 @@ class PopulationContractHardeningValidatorTests(unittest.TestCase):
         )
         self.assert_validation_fails("ValidateWorkspacePaths")
 
+    def test_method_renaming_macro_fails_closed(self) -> None:
+        self.mutate(
+            "Gems/TaintedGrailModdingSDK/Code/Source/CatalogDatabase.cpp",
+            '#include "CatalogDatabaseBase.inl"',
+            "#define ReplaceFromDocument ReplaceFromDocumentWithoutPopulation\n"
+            '#include "CatalogDatabaseBase.inl"',
+        )
+        self.assert_validation_fails("#define ReplaceFromDocument")
+
+    def test_explicit_catalog_helper_definition_is_required(self) -> None:
+        self.mutate(
+            "Gems/TaintedGrailModdingSDK/Code/Source/CatalogDatabaseBase.inl",
+            "bool CatalogDatabase::ReplaceFromDocumentWithoutPopulation(",
+            "bool CatalogDatabase::ReplaceFromDocument(",
+        )
+        self.assert_validation_fails("ReplaceFromDocumentWithoutPopulation")
+
+    def test_bound_helper_must_call_explicit_integrity_helper(self) -> None:
+        self.mutate(
+            (
+                "Gems/TaintedGrailModdingSDK/Code/Source/"
+                "CatalogDatabaseIntegrityBase.inl"
+            ),
+            "candidate.ValidateIntegrityWithoutPopulation(",
+            "candidate.ValidateIntegrity(",
+        )
+        self.assert_validation_fails("candidate.ValidateIntegrityWithoutPopulation")
+
     def test_unconditional_member_minimum_fails_closed(self) -> None:
         self.mutate(
             "Gems/TaintedGrailModdingSDK/Code/Source/CatalogDatabaseIntegrity.cpp",
             "if (member.m_required)\n                {\n                    requiredMinimum += member.m_minimumCount;\n                }",
             "requiredMinimum += member.m_minimumCount;",
         )
-        self.assert_validation_fails("if \(member.m_required\)")
+        self.assert_validation_fails(r"if \(member.m_required\)")
 
     def test_required_zero_minimum_guard_fails_closed(self) -> None:
         self.mutate(
