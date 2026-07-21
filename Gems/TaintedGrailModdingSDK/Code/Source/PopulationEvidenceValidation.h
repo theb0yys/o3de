@@ -15,6 +15,8 @@
 #include <AzCore/std/sort.h>
 #include <AzCore/std/string/string.h>
 
+#include <cstddef>
+
 namespace TaintedGrailModdingSDK
 {
     inline void AppendUniquePopulationEvidenceId(
