@@ -194,22 +194,16 @@ def find_ctest(build_directory: Path) -> str:
     cache = build_directory / "CMakeCache.txt"
     if cache.is_file():
         prefix = "CMAKE_COMMAND:INTERNAL="
-        for line in cache.read_text(
-            encoding="utf-8",
-            errors="strict",
-        ).splitlines():
+        for line in cache.read_text(encoding="utf-8", errors="strict").splitlines():
             if not line.startswith(prefix):
                 continue
             cmake = Path(line[len(prefix) :])
-            candidate = cmake.with_name(
-                "ctest.exe" if os.name == "nt" else "ctest"
-            )
+            candidate = cmake.with_name("ctest.exe" if os.name == "nt" else "ctest")
             if candidate.is_file():
                 return str(candidate)
             break
     raise RuntimeError(
-        "Unable to locate ctest from PATH or the configured build's "
-        "CMakeCache.txt."
+        "Unable to locate ctest from PATH or the configured build's CMakeCache.txt."
     )
 
 
@@ -253,9 +247,7 @@ def run_commands(
         )
         if completed.returncode == 0:
             continue
-        failures.append(
-            f"{command.label} (exit {completed.returncode})"
-        )
+        failures.append(f"{command.label} (exit {completed.returncode})")
         if not keep_going:
             break
     return failures
@@ -264,8 +256,8 @@ def run_commands(
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Run TG SDK unit tests, contract validators, fixture checks, "
-            "path hygiene, and source policy locally."
+            "Run TG SDK unit tests, contract validators, fixture checks, path "
+            "hygiene, and source policy locally."
         )
     )
     parser.add_argument(
@@ -317,19 +309,14 @@ def main() -> int:
         return 0
 
     print(
-        "TG SDK local validation is authoritative while GitHub Actions "
-        "remains manual-only. No automated per-commit test result is claimed.",
+        "TG SDK local validation is authoritative while GitHub Actions remains "
+        "manual-only. No automated per-commit test result is claimed.",
         flush=True,
     )
 
-    failures = run_commands(
-        static_commands,
-        keep_going=arguments.keep_going,
-    )
+    failures = run_commands(static_commands, keep_going=arguments.keep_going)
     if not failures and not arguments.skip_fixtures:
-        with tempfile.TemporaryDirectory(
-            prefix="tg-sdk-validation-"
-        ) as temporary:
+        with tempfile.TemporaryDirectory(prefix="tg-sdk-validation-") as temporary:
             failures.extend(
                 run_commands(
                     build_fixture_commands(Path(temporary)),
@@ -340,11 +327,7 @@ def main() -> int:
     if not failures and arguments.ctest_build_dir:
         failures.extend(
             run_commands(
-                [
-                    build_ctest_command(
-                        arguments.ctest_build_dir.resolve()
-                    )
-                ],
+                [build_ctest_command(arguments.ctest_build_dir.resolve())],
                 keep_going=arguments.keep_going,
             )
         )
@@ -356,6 +339,10 @@ def main() -> int:
         return 1
 
     print("\nTG SDK local validation passed.")
+    if not arguments.ctest_build_dir:
+        print(
+            "Compiled O3DE tests were not run; pass --ctest-build-dir to add them."
+        )
     return 0
 
 
