@@ -22,5 +22,6 @@ set(FILES
     Tests/PopulationActionLaneServiceTests.cpp
     Tests/PopulationAuthoringTests.cpp
     Tests/PopulationCatalogTests.cpp
+    Tests/PopulationContractHardeningTests.cpp
     Tests/SourceImportServiceTests.cpp
 )
