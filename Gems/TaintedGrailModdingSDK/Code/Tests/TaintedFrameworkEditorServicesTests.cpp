@@ -4,6 +4,7 @@
  */
 #include <AzTest/AzTest.h>
 
+#include "FoundationService.h"
 #include "TaintedFrameworkEditorServices.h"
 
 namespace TaintedGrailModdingSDK
@@ -68,19 +69,27 @@ namespace TaintedGrailModdingSDK
         EXPECT_FALSE(first.m_runtimeInvocationAllowed);
         EXPECT_FALSE(first.m_fileWriteAllowed);
         EXPECT_FALSE(first.m_catalogMutationAllowed);
-        EXPECT_TRUE(first.m_candidateEvidenceSubmissionAllowed);
+        EXPECT_TRUE(first.m_candidateEvidenceSubmissionEligible);
         EXPECT_EQ(first.m_configuration.size(), 3);
         EXPECT_FALSE(first.m_diagnostics.empty());
     }
 
-    TEST(TaintedFrameworkEditorServicesTests, BlockedPlanCannotSubmitCandidateEvidence)
+    TEST(TaintedFrameworkEditorServicesTests, BlockedPlanIsNotEvidenceEligible)
     {
         Service service;
         const auto plan = service.BuildActivationPlan("unknown", "IL2CPP", "IL2CPP");
         EXPECT_EQ(plan.m_compatibility.m_status, ReadinessStatus::Blocked);
-        EXPECT_FALSE(plan.m_candidateEvidenceSubmissionAllowed);
+        EXPECT_FALSE(plan.m_candidateEvidenceSubmissionEligible);
         EXPECT_FALSE(plan.m_runtimeInvocationAllowed);
         EXPECT_FALSE(plan.m_fileWriteAllowed);
         EXPECT_FALSE(plan.m_catalogMutationAllowed);
+    }
+
+    TEST(TaintedFrameworkEditorServicesTests, FoundationOwnsPersistentService)
+    {
+        FoundationService foundation(FoundationWorkspaceLoadDependencies{});
+        auto& first = foundation.GetTaintedFrameworkEditorServices();
+        auto& second = foundation.GetTaintedFrameworkEditorServices();
+        EXPECT_EQ(&first, &second);
     }
 } // namespace TaintedGrailModdingSDK
