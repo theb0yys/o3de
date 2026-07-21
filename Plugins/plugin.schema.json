@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/theb0yys/FOA-SDK/blob/main/Plugins/plugin.schema.json",
+  "title": "FOA-SDK plug-in package manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "version",
+    "category",
+    "status",
+    "entry_points",
+    "capabilities",
+    "dependencies",
+    "compatibility",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^extension\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+      "maxLength": 128
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$",
+      "maxLength": 64
+    },
+    "category": {
+      "enum": [
+        "authoring",
+        "integration",
+        "runtime-adapter"
+      ]
+    },
+    "status": {
+      "enum": [
+        "experimental",
+        "available",
+        "deprecated"
+      ]
+    },
+    "optional": {
+      "const": true,
+      "default": true
+    },
+    "entry_points": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "o3de_gems": {
+          "$ref": "#/$defs/relativePaths"
+        },
+        "python_modules": {
+          "$ref": "#/$defs/relativePaths"
+        },
+        "tools": {
+          "$ref": "#/$defs/relativePaths"
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/namespacedToken"
+      },
+      "uniqueItems": true,
+      "maxItems": 64
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^extension\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+        "maxLength": 128
+      },
+      "uniqueItems": true,
+      "maxItems": 64
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "game_versions",
+        "branches",
+        "runtime_targets"
+      ],
+      "properties": {
+        "game_versions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "uniqueItems": true,
+          "maxItems": 64
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "uniqueItems": true,
+          "maxItems": 32
+        },
+        "runtime_targets": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "editor-only",
+              "mono",
+              "il2cpp"
+            ]
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "maxItems": 3
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin",
+        "revision",
+        "license",
+        "redistribution_reviewed"
+      ],
+      "properties": {
+        "origin": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "redistribution_reviewed": {
+          "type": "boolean"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "namespacedToken": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+      "maxLength": 128
+    },
+    "relativePaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$",
+        "maxLength": 256
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "maxItems": 64
+    }
+  }
+}
