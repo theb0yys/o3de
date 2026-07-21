@@ -14,16 +14,17 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
         const AZStd::string& branch,
         const AZStd::string& runtime) const
     {
+        const auto& pack = TaintedFrameworkKnowledge::GetCanonicalKnowledgePack();
+
         CompatibilityDecision result;
-        result.m_frameworkVersion = "0.1.33";
+        result.m_frameworkVersion = pack.m_frameworkVersion;
         result.m_gameVersion = gameVersion;
         result.m_branch = branch;
         result.m_runtime = runtime;
 
-        const auto& pack = TaintedFrameworkKnowledge::GetCanonicalKnowledgePack();
         for (const auto& row : pack.m_compatibility)
         {
-            if (row.m_branch != branch || row.m_runtime != runtime)
+            if (row.m_branch != branch || row.m_runtimeTarget != runtime)
             {
                 continue;
             }
@@ -102,8 +103,12 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkEditorServices
         const AZStd::string& branch,
         const AZStd::string& runtime) const
     {
+        const auto& pack = TaintedFrameworkKnowledge::GetCanonicalKnowledgePack();
+
         ActivationPlan plan;
-        plan.m_planId = "tainted-framework-editor-plan:0.1.33:";
+        plan.m_planId = "tainted-framework-editor-plan:";
+        plan.m_planId += pack.m_frameworkVersion;
+        plan.m_planId += ":";
         plan.m_planId += branch;
         plan.m_planId += ":";
         plan.m_planId += runtime;
