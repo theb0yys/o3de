@@ -37,10 +37,10 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkKnowledge
                 { "mods/tainted-framework/src/Tainted.Core/Plugins/"
                   "TaintedScaffoldPluginCatalogFactory.cs",
                   "8170dbd1f99727db44e89ea36b9b1df278df010d" },
-                { "mods/tainted-framework/src/Tainted.Host.Mono/Plugin.cs",
-                  "f73491e1f6766ff5d328f686ea339c24f1548151" },
                 { "mods/tainted-framework/src/Tainted.Host.IL2CPP/Plugin.cs",
                   "b34239da98387261bdda56cc02c590c710fc4b22" },
+                { "mods/tainted-framework/src/Tainted.Host.Mono/Plugin.cs",
+                  "f73491e1f6766ff5d328f686ea339c24f1548151" },
             };
 
             pack.m_components = {
@@ -96,9 +96,9 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkKnowledge
             };
 
             pack.m_configurationKeys = {
-                "Framework.Enabled",
-                "Framework.DiagnosticsOnly",
-                "Framework.ReportVerbosity",
+                "General.Enabled",
+                "Safety.DryRunOnly",
+                "Safety.ReportOnlyMode",
             };
             pack.m_diagnosticVocabulary = {
                 "runtime-report",
@@ -120,6 +120,34 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkKnowledge
             };
             return pack;
         }
+
+        ExtensionAPI::ExtensionDeclaration BuildExtensionDeclaration()
+        {
+            ExtensionAPI::ExtensionDeclaration declaration;
+            declaration.m_extensionId = "extension.tainted-framework";
+            declaration.m_displayName = "Tainted Framework Knowledge Consumer";
+            declaration.m_version = "0.1.33";
+            declaration.m_supportedGameVersions = { "1.23.401" };
+            declaration.m_supportedBranches = { "Mono" };
+            declaration.m_capabilities = {
+                ExtensionAPI::Capability::ReadActiveProfile,
+                ExtensionAPI::Capability::QueryCatalog,
+                ExtensionAPI::Capability::SubmitCandidateEvidence,
+            };
+            return declaration;
+        }
+
+        bool SameDeclaration(
+            const ExtensionAPI::ExtensionDeclaration& left,
+            const ExtensionAPI::ExtensionDeclaration& right)
+        {
+            return left.m_extensionId == right.m_extensionId
+                && left.m_displayName == right.m_displayName
+                && left.m_version == right.m_version
+                && left.m_supportedGameVersions == right.m_supportedGameVersions
+                && left.m_supportedBranches == right.m_supportedBranches
+                && left.m_capabilities == right.m_capabilities;
+        }
     } // namespace
 
     const KnowledgePack& GetCanonicalKnowledgePack()
@@ -132,17 +160,28 @@ namespace TaintedGrailModdingSDK::TaintedFrameworkKnowledge
         ExtensionAPI::Service& extensionApi,
         AZStd::string* error)
     {
-        ExtensionAPI::ExtensionDeclaration declaration;
-        declaration.m_extensionId = "extension.tainted-framework";
-        declaration.m_displayName = "Tainted Framework Knowledge Consumer";
-        declaration.m_version = "0.1.33";
-        declaration.m_supportedGameVersions = { "1.23.401" };
-        declaration.m_supportedBranches = { "Mono" };
-        declaration.m_capabilities = {
-            ExtensionAPI::Capability::ReadActiveProfile,
-            ExtensionAPI::Capability::QueryCatalog,
-            ExtensionAPI::Capability::SubmitCandidateEvidence,
-        };
-        return extensionApi.RegisterExtension(declaration, error);
+        const ExtensionAPI::ExtensionDeclaration expected = BuildExtensionDeclaration();
+        for (const ExtensionAPI::ExtensionDeclaration& existing :
+             extensionApi.GetRegisteredExtensions())
+        {
+            if (existing.m_extensionId != expected.m_extensionId)
+            {
+                continue;
+            }
+            if (SameDeclaration(existing, expected))
+            {
+                if (error)
+                {
+                    error->clear();
+                }
+                return true;
+            }
+            if (error)
+            {
+                *error = "The registered Tainted Framework extension declaration conflicts with the canonical knowledge consumer.";
+            }
+            return false;
+        }
+        return extensionApi.RegisterExtension(expected, error);
     }
 } // namespace TaintedGrailModdingSDK::TaintedFrameworkKnowledge
