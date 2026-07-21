@@ -181,6 +181,34 @@ def validate(repo_root: Path) -> None:
         "Authoritative local validation gate",
     )
 
+    preview_command = read(
+        repo_root,
+        "Gems/TaintedGrailModdingSDK/Tools/developer_preview.py",
+    )
+    require_all(
+        preview_command,
+        (
+            '"compiled-catalog-tests"',
+            '"--no-tests=error"',
+            "CATALOG_TEST_PATTERN",
+        ),
+        "Developer Preview compiled validation path",
+    )
+
+    preview_command_tests = read(
+        repo_root,
+        "Gems/TaintedGrailModdingSDK/Tools/tests/test_developer_preview.py",
+    )
+    require_all(
+        preview_command_tests,
+        (
+            'compiled = next(step for step in plan if step.name == "compiled-catalog-tests")',
+            'self.assertIn("--no-tests=error", compiled.command)',
+            "self.assertIn(preview.CATALOG_TEST_PATTERN, compiled.command)",
+        ),
+        "Developer Preview compiled validation tests",
+    )
+
     coordinator = read(
         repo_root,
         "Gems/TaintedGrailModdingSDK/Tools/developer_preview_verification.py",
