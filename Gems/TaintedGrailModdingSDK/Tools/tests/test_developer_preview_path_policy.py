@@ -206,7 +206,10 @@ class DeveloperPreviewPathPolicyTests(unittest.TestCase):
             with self.engine_environment(engine), self.pin_mock(), mock.patch.object(
                 policy, "_workspace_paths", return_value=self.workspace(root)
             ):
-                with self.assertRaisesRegex(policy.PathPolicyError, "FOA-SDK project"):
+                with self.assertRaisesRegex(
+                    policy.PathPolicyError,
+                    "dedicated TaintedGrailModdingEditor project",
+                ):
                     policy.resolve_source_built_entry(
                         product,
                         build,
