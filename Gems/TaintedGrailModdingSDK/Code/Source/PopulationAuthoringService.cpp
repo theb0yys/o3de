@@ -7,6 +7,8 @@
 
 #include "PopulationAuthoringService.h"
 
+#include "PathPolicyService.h"
+#include "PopulationEvidenceValidation.h"
 #include "ResearchContractValidation.h"
 
 #include <AzCore/std/algorithm.h>
@@ -82,6 +84,18 @@ namespace TaintedGrailModdingSDK
                     "active workspace and game profile.";
                 return false;
             }
+
+            PathPolicyService pathPolicy;
+            const AZ::Outcome<void, AZStd::string> pathValidation =
+                pathPolicy.ValidateWorkspacePaths(workspace, workspaceRoot);
+            if (!pathValidation.IsSuccess())
+            {
+                error = "Population authoring requires the path-policy-validated "
+                    "canonical workspace root: "
+                    + AZStd::string(pathValidation.GetError());
+                return false;
+            }
+
             if (!activePack.HasStableIdentity()
                 || !activePack.UsesSupportedSchema()
                 || activePack.m_runtimeActionsEnabled
@@ -118,91 +132,55 @@ namespace TaintedGrailModdingSDK
             return true;
         }
 
-        bool EvidenceIsCompleteAndBound(
-            const EvidenceRecord& evidence,
-            const SourceRecord& source,
-            const GameProfile& profile,
-            const AZStd::vector<AZStd::string>& allowedSubjects)
+        void AddRecordEvidence(
+            AZStd::vector<AZStd::string>& evidenceIds,
+            const CatalogRecord* record)
         {
-            return Contains(allowedSubjects, evidence.m_subjectRef)
-                && !evidence.m_claim.empty()
-                && !evidence.m_evidenceKind.empty()
-                && !evidence.m_confidence.empty()
-                && !evidence.m_locator.empty()
-                && !evidence.m_recordPath.empty()
-                && IsSha256Fingerprint(evidence.m_sourceFingerprint)
-                && IsStrictUtcTimestamp(evidence.m_extractedAt)
-                && IsSha256Fingerprint(source.m_fingerprint)
-                && IsStrictUtcTimestamp(source.m_capturedAt)
-                && IsStrictUtcTimestamp(source.m_importedAt)
-                && IsUsableImportStatus(source.m_importStatus)
-                && evidence.m_sourceId == source.m_sourceId
-                && evidence.m_sourceFingerprint == source.m_fingerprint
-                && evidence.m_profileId == profile.m_profileId
-                && evidence.m_gameVersion == profile.m_gameVersion
-                && evidence.m_branch == profile.m_branch
-                && source.m_profileId == profile.m_profileId
-                && source.m_gameVersion == profile.m_gameVersion
-                && source.m_branch == profile.m_branch
-                && source.m_runtimeTarget == profile.m_runtimeTarget
-                && source.m_capturedAt <= evidence.m_extractedAt
-                && evidence.m_extractedAt <= source.m_importedAt;
+            if (record)
+            {
+                AppendUniquePopulationEvidenceIds(
+                    evidenceIds,
+                    record->m_evidenceIds);
+            }
         }
 
         bool ValidateEvidence(
             const AZStd::vector<AZStd::string>& evidenceIds,
-            const AZStd::vector<AZStd::string>& allowedSubjects,
+            const AZStd::vector<AZStd::string>& requiredSubjects,
             const GameProfile& profile,
             const SourceEvidenceRegistry& sourceRegistry,
             const char* authoredArea,
             AZStd::string& error)
         {
-            if (evidenceIds.empty() || allowedSubjects.empty())
-            {
-                error = AZStd::string(authoredArea)
-                    + " authoring requires exact-subject evidence.";
-                return false;
-            }
+            return ValidatePopulationEvidenceCoverage(
+                evidenceIds,
+                requiredSubjects,
+                profile,
+                sourceRegistry,
+                authoredArea,
+                error);
+        }
 
-            AZStd::vector<AZStd::string> sortedEvidenceIds = evidenceIds;
-            AZStd::sort(sortedEvidenceIds.begin(), sortedEvidenceIds.end());
-            if (AZStd::adjacent_find(
-                    sortedEvidenceIds.begin(),
-                    sortedEvidenceIds.end()) != sortedEvidenceIds.end())
+        AZStd::string ResolveActorSubject(
+            const AZStd::string& actorRecordId,
+            const AZStd::string& actorSubjectRef,
+            const CatalogDatabase& catalog)
+        {
+            if (const CatalogRecord* actor =
+                    catalog.FindByRecordId(actorRecordId))
             {
-                error = AZStd::string(authoredArea)
-                    + " authoring evidence IDs must be unique.";
-                return false;
+                return actor->m_subjectRef;
             }
+            return actorSubjectRef;
+        }
 
-            for (const AZStd::string& evidenceId : sortedEvidenceIds)
-            {
-                if (!IsStableContractId(evidenceId))
-                {
-                    error = AZStd::string(authoredArea)
-                        + " authoring evidence IDs must be stable bounded identities.";
-                    return false;
-                }
-                const EvidenceRecord* evidence =
-                    sourceRegistry.FindEvidence(evidenceId);
-                const SourceRecord* source = evidence
-                    ? sourceRegistry.FindSource(evidence->m_sourceId)
-                    : nullptr;
-                if (!evidence
-                    || !source
-                    || !EvidenceIsCompleteAndBound(
-                        *evidence,
-                        *source,
-                        profile,
-                        allowedSubjects))
-                {
-                    error = AZStd::string(authoredArea)
-                        + " evidence does not prove an allowed exact subject in "
-                        "the active profile: " + evidenceId;
-                    return false;
-                }
-            }
-            return true;
+        const CatalogRecord* ResolveActorRecord(
+            const AZStd::string& actorRecordId,
+            const CatalogDatabase& catalog)
+        {
+            return actorRecordId.empty()
+                ? nullptr
+                : catalog.FindByRecordId(actorRecordId);
         }
 
         AZStd::vector<AZStd::string> ActorEvidenceSubjects(
@@ -224,17 +202,21 @@ namespace TaintedGrailModdingSDK
             return subjects;
         }
 
-        AZStd::string ResolveActorSubject(
-            const AZStd::string& actorRecordId,
-            const AZStd::string& actorSubjectRef,
+        AZStd::vector<AZStd::string> ActorEvidenceIds(
+            const PopulationActorProfile& actor,
             const CatalogDatabase& catalog)
         {
-            if (const CatalogRecord* actor =
-                    catalog.FindByRecordId(actorRecordId))
-            {
-                return actor->m_subjectRef;
-            }
-            return actorSubjectRef;
+            AZStd::vector<AZStd::string> evidenceIds;
+            AppendUniquePopulationEvidenceIds(
+                evidenceIds,
+                actor.m_evidenceIds);
+            AddRecordEvidence(
+                evidenceIds,
+                catalog.FindByRecordId(actor.m_recordId));
+            AddRecordEvidence(
+                evidenceIds,
+                catalog.FindByRecordId(actor.m_templateRecordId));
+            return evidenceIds;
         }
 
         AZStd::vector<AZStd::string> TroopEvidenceSubjects(
@@ -254,6 +236,25 @@ namespace TaintedGrailModdingSDK
                     troop.m_leaderActorSubjectRef,
                     catalog));
             return subjects;
+        }
+
+        AZStd::vector<AZStd::string> TroopEvidenceIds(
+            const PopulationTroopProfile& troop,
+            const CatalogDatabase& catalog)
+        {
+            AZStd::vector<AZStd::string> evidenceIds;
+            AppendUniquePopulationEvidenceIds(
+                evidenceIds,
+                troop.m_evidenceIds);
+            AddRecordEvidence(
+                evidenceIds,
+                catalog.FindByRecordId(troop.m_recordId));
+            AddRecordEvidence(
+                evidenceIds,
+                ResolveActorRecord(
+                    troop.m_leaderActorRecordId,
+                    catalog));
+            return evidenceIds;
         }
 
         AZStd::vector<AZStd::string> MemberEvidenceSubjects(
@@ -276,6 +277,23 @@ namespace TaintedGrailModdingSDK
                     member.m_actorSubjectRef,
                     catalog));
             return subjects;
+        }
+
+        AZStd::vector<AZStd::string> MemberEvidenceIds(
+            const PopulationTroopMember& member,
+            const CatalogDatabase& catalog)
+        {
+            AZStd::vector<AZStd::string> evidenceIds;
+            AppendUniquePopulationEvidenceIds(
+                evidenceIds,
+                member.m_evidenceIds);
+            AddRecordEvidence(
+                evidenceIds,
+                catalog.FindByRecordId(member.m_troopRecordId));
+            AddRecordEvidence(
+                evidenceIds,
+                ResolveActorRecord(member.m_actorRecordId, catalog));
+            return evidenceIds;
         }
 
         bool ValidateMemberLinkOwnership(
@@ -342,7 +360,7 @@ namespace TaintedGrailModdingSDK
                 activePack,
                 validationError)
             || !ValidateEvidence(
-                actor.m_evidenceIds,
+                ActorEvidenceIds(actor, catalog),
                 ActorEvidenceSubjects(actor, catalog),
                 profile,
                 sourceRegistry,
@@ -425,7 +443,7 @@ namespace TaintedGrailModdingSDK
         }
 
         if (!ValidateEvidence(
-                definition.m_profile.m_evidenceIds,
+                TroopEvidenceIds(definition.m_profile, catalog),
                 TroopEvidenceSubjects(definition.m_profile, catalog),
                 profile,
                 sourceRegistry,
@@ -437,7 +455,7 @@ namespace TaintedGrailModdingSDK
         for (const PopulationTroopMember& member : definition.m_members)
         {
             if (!ValidateEvidence(
-                    member.m_evidenceIds,
+                    MemberEvidenceIds(member, catalog),
                     MemberEvidenceSubjects(member, catalog),
                     profile,
                     sourceRegistry,
@@ -555,7 +573,7 @@ namespace TaintedGrailModdingSDK
                 catalog,
                 validationError)
             || !ValidateEvidence(
-                member.m_evidenceIds,
+                MemberEvidenceIds(member, catalog),
                 MemberEvidenceSubjects(member, catalog),
                 profile,
                 sourceRegistry,
