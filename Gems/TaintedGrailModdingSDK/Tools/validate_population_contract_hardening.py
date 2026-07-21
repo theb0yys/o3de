@@ -100,7 +100,18 @@ def validate(repo_root: Path) -> None:
         "if (!covered[index])",
     )
     positions = [coverage.find(fragment) for fragment in coverage_order]
-    if any(position < 0 for position in positions) or positions != sorted(positions):
+    missing = [
+        fragment
+        for fragment, position in zip(coverage_order, positions)
+        if position < 0
+    ]
+    if missing:
+        raise PopulationContractHardeningError(
+            "Population evidence coverage is missing required semantic fragment(s): "
+            + ", ".join(repr(fragment) for fragment in missing)
+            + "."
+        )
+    if positions != sorted(positions):
         raise PopulationContractHardeningError(
             "Population evidence coverage must validate complete evidence, map exact "
             "subjects, mark coverage, and reject every uncovered binding in order."
@@ -110,7 +121,8 @@ def validate(repo_root: Path) -> None:
         '#include "PathPolicyService.h"',
         "PathPolicyService pathPolicy;",
         "pathPolicy.ValidateWorkspacePaths(workspace, workspaceRoot)",
-        "path-policy-validated canonical workspace root",
+        "path-policy-validated ",
+        "canonical workspace root: ",
         "EvidenceIsCompleteAndBound(",
         "ValidatePopulationEvidenceCoverage(",
         "ActorEvidenceIds(actor, catalog)",
