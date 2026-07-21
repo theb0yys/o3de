@@ -21,6 +21,7 @@ if str(TOOLS_ROOT) not in sys.path:
 from run_local_validation import (  # noqa: E402
     TOOLS_ROOT as REAL_TOOLS_ROOT,
     VALIDATORS,
+    build_fixture_commands,
     build_static_commands,
     find_ctest,
 )
@@ -118,6 +119,7 @@ class LocalValidationEntrypointTests(unittest.TestCase):
     def test_validator_inventory_is_unique_and_present(self) -> None:
         self.assertEqual(len(VALIDATORS), len(set(VALIDATORS)))
         self.assertIn("validate_population_actor_troop_editor.py", VALIDATORS)
+        self.assertIn("validate_population_preview_fixture.py", VALIDATORS)
         for validator in VALIDATORS:
             self.assertTrue((REAL_TOOLS_ROOT / validator).is_file(), validator)
 
@@ -131,6 +133,23 @@ class LocalValidationEntrypointTests(unittest.TestCase):
         self.assertTrue(all(isinstance(command.argv, tuple) for command in commands))
         self.assertIn("Python unit tests", commands[0].label)
         self.assertEqual(commands[-1].label, "O3DE source policy")
+
+    def test_fixture_commands_include_population_generation_and_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            commands = build_fixture_commands(Path(temporary))
+        labels = [command.label for command in commands]
+        self.assertIn("Generate Actor/Troop population fixture", labels)
+        self.assertIn("Verify Actor/Troop population fixture", labels)
+        population_commands = [
+            command
+            for command in commands
+            if any("population_preview_fixture.py" in value for value in command.argv)
+        ]
+        self.assertEqual(len(population_commands), 2)
+        self.assertEqual(
+            [command.argv[3] for command in population_commands],
+            ["generate", "verify"],
+        )
 
     def test_ctest_is_derived_from_configured_cmake_when_not_on_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

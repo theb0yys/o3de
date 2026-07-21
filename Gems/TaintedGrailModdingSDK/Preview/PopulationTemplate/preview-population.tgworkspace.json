@@ -1,0 +1,29 @@
+{
+  "ActiveGameProfileId": "preview.population.profile.windows-x64",
+  "DeploymentPath": "Deployment",
+  "DisplayName": "Actor and Troop Synthetic Preview Workspace",
+  "GameProfiles": [
+    {
+      "BepInExVersion": "preview-not-configured",
+      "Branch": "preview-population",
+      "DiagnosticsPath": "Diagnostics",
+      "DisplayName": "Synthetic Population Preview Profile",
+      "DlcScopes": [
+        "preview-population-synthetic"
+      ],
+      "ExtractedDataPath": "Extracted",
+      "GameVersion": "preview-population-build-0",
+      "InstallPath": "PlaceholderGame",
+      "ManagedAssembliesPath": "PlaceholderGame/Managed",
+      "PluginPath": "PlaceholderGame/Plugins",
+      "ProfileId": "preview.population.profile.windows-x64",
+      "RuntimeTarget": "Mono",
+      "UnityVersion": "preview-not-configured"
+    }
+  ],
+  "OutputPath": "Build",
+  "RootPath": ".",
+  "SchemaVersion": 1,
+  "StagingPath": "Staging",
+  "WorkspaceId": "preview.population.workspace"
+}

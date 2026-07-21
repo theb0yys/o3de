@@ -1,0 +1,25 @@
+{
+  "AssetPaths": [],
+  "BuildConfiguration": "Profile",
+  "CompatibleGameVersions": [],
+  "ContentDefinitionPaths": [],
+  "Dependencies": [],
+  "DisplayName": "Actor and Troop Synthetic Preview Pack",
+  "DlcScopes": [
+    "preview-population-synthetic"
+  ],
+  "Incompatibilities": [],
+  "LocalisationPaths": [],
+  "OwnerId": "preview.population",
+  "PackId": "preview.population.pack",
+  "ReleaseChannel": "development",
+  "RequiredAdapterVersion": "0.0.0-preview",
+  "RequiredCoreVersion": "0.0.0-preview",
+  "RequiredMods": [],
+  "RuntimeActionsEnabled": false,
+  "SaveImpact": "none",
+  "SchemaVersion": 1,
+  "TargetBranch": "preview-population",
+  "TargetGameVersion": "preview-population-build-0",
+  "Version": "0.0.0-preview.0"
+}

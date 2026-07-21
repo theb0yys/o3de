@@ -1,0 +1,421 @@
+{
+  "ActorProfiles": [
+    {
+      "ActorKind": "npc",
+      "Archetype": "preview-patrol-leader",
+      "EssentialActor": true,
+      "EvidenceIds": [
+        "preview.population.evidence.actor.leader",
+        "preview.population.evidence.template.guard"
+      ],
+      "LocalisationDescriptionRef": "preview.population.loc.actor.leader.description",
+      "LocalisationNameRef": "preview.population.loc.actor.leader.name",
+      "MaximumLevel": 8,
+      "MinimumLevel": 4,
+      "ModelAssetRef": "preview.population.asset.actor.leader.model",
+      "PersistentActor": false,
+      "PortraitAssetRef": "preview.population.asset.actor.leader.portrait",
+      "RecordId": "preview.population.actor.leader",
+      "Tags": [
+        "leader",
+        "preview"
+      ],
+      "TemplateRecordId": "preview.population.template.guard",
+      "TemplateSubjectRef": "subject:preview:population:template:guard",
+      "UniqueActor": false
+    },
+    {
+      "ActorKind": "npc",
+      "Archetype": "preview-patrol-scout",
+      "EssentialActor": false,
+      "EvidenceIds": [
+        "preview.population.evidence.actor.scout",
+        "preview.population.evidence.template.scout-unresolved"
+      ],
+      "LocalisationDescriptionRef": "preview.population.loc.actor.scout.description",
+      "LocalisationNameRef": "preview.population.loc.actor.scout.name",
+      "MaximumLevel": 6,
+      "MinimumLevel": 2,
+      "ModelAssetRef": "preview.population.asset.actor.scout.model",
+      "PersistentActor": false,
+      "PortraitAssetRef": "preview.population.asset.actor.scout.portrait",
+      "RecordId": "preview.population.actor.scout",
+      "Tags": [
+        "preview",
+        "scout"
+      ],
+      "TemplateRecordId": "",
+      "TemplateSubjectRef": "subject:preview:population:template:scout-unresolved",
+      "UniqueActor": false
+    }
+  ],
+  "Branch": "preview-population",
+  "EconomyItems": [],
+  "EconomyRecipes": [],
+  "GameVersion": "preview-population-build-0",
+  "GovernanceHistory": [
+    {
+      "Axis": "permission",
+      "DecidedAt": "2026-01-01T00:00:04Z",
+      "EventId": "preview.population.governance.leader.spawn-candidate",
+      "EvidenceIds": [
+        "preview.population.evidence.actor.leader"
+      ],
+      "NewValue": "allow",
+      "Notes": "Project-owned deterministic population fixture state.",
+      "PreviousValue": "unset",
+      "Reviewer": "preview.population.maintainer",
+      "SubjectId": "preview.population.actor.leader",
+      "SubjectKind": "record",
+      "Usage": "spawn_candidate",
+      "ValidationIds": [
+        "preview.population.validation.leader"
+      ]
+    },
+    {
+      "Axis": "permission",
+      "DecidedAt": "2026-01-01T00:00:04Z",
+      "EventId": "preview.population.governance.patrol.spawn-candidate",
+      "EvidenceIds": [
+        "preview.population.evidence.troop.patrol"
+      ],
+      "NewValue": "allow",
+      "Notes": "Project-owned deterministic population fixture state.",
+      "PreviousValue": "unset",
+      "Reviewer": "preview.population.maintainer",
+      "SubjectId": "preview.population.troop.patrol",
+      "SubjectKind": "record",
+      "Usage": "spawn_candidate",
+      "ValidationIds": [
+        "preview.population.validation.patrol"
+      ]
+    },
+    {
+      "Axis": "permission",
+      "DecidedAt": "2026-01-01T00:00:04Z",
+      "EventId": "preview.population.governance.scout.spawn-candidate",
+      "EvidenceIds": [
+        "preview.population.evidence.actor.scout"
+      ],
+      "NewValue": "forbid",
+      "Notes": "Project-owned deterministic population fixture state.",
+      "PreviousValue": "unset",
+      "Reviewer": "preview.population.maintainer",
+      "SubjectId": "preview.population.actor.scout",
+      "SubjectKind": "record",
+      "Usage": "spawn_candidate",
+      "ValidationIds": [
+        "preview.population.validation.scout"
+      ]
+    }
+  ],
+  "ProfileId": "preview.population.profile.windows-x64",
+  "RecipeIngredients": [],
+  "RecipeOutputs": [],
+  "Records": [
+    {
+      "Aliases": [],
+      "AllowedUsages": [
+        "spawn_candidate"
+      ],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00Z",
+      "DisplayName": "Preview Patrol Leader",
+      "Domain": "population",
+      "EvidenceIds": [
+        "preview.population.evidence.actor.leader"
+      ],
+      "ForbiddenUsages": [],
+      "IdentityKind": "synthetic",
+      "MissingRefs": [],
+      "NativeRefExact": "",
+      "OperationalRisk": "low",
+      "OwnerPackId": "preview.population.pack",
+      "RecordId": "preview.population.actor.leader",
+      "RecordKind": "actor",
+      "ResearchStage": "S5",
+      "SourceScopedRefs": [],
+      "StalenessState": "current",
+      "SubjectRef": "subject:preview:population:actor:leader",
+      "SupersededByRecordId": "",
+      "Tags": [
+        "leader",
+        "preview",
+        "synthetic"
+      ],
+      "UpdatedAt": "2026-01-01T00:00:00Z",
+      "ValidationState": "validated"
+    },
+    {
+      "Aliases": [],
+      "AllowedUsages": [],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00Z",
+      "DisplayName": "Preview Patrol Scout",
+      "Domain": "population",
+      "EvidenceIds": [
+        "preview.population.evidence.actor.scout"
+      ],
+      "ForbiddenUsages": [
+        "spawn_candidate"
+      ],
+      "IdentityKind": "synthetic",
+      "MissingRefs": [],
+      "NativeRefExact": "",
+      "OperationalRisk": "low",
+      "OwnerPackId": "preview.population.pack",
+      "RecordId": "preview.population.actor.scout",
+      "RecordKind": "actor",
+      "ResearchStage": "S5",
+      "SourceScopedRefs": [],
+      "StalenessState": "current",
+      "SubjectRef": "subject:preview:population:actor:scout",
+      "SupersededByRecordId": "",
+      "Tags": [
+        "preview",
+        "scout",
+        "synthetic"
+      ],
+      "UpdatedAt": "2026-01-01T00:00:00Z",
+      "ValidationState": "validated"
+    },
+    {
+      "Aliases": [],
+      "AllowedUsages": [],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00Z",
+      "DisplayName": "Preview Guard Template",
+      "Domain": "population",
+      "EvidenceIds": [
+        "preview.population.evidence.template.guard"
+      ],
+      "ForbiddenUsages": [],
+      "IdentityKind": "synthetic",
+      "MissingRefs": [],
+      "NativeRefExact": "",
+      "OperationalRisk": "low",
+      "OwnerPackId": "preview.population.pack",
+      "RecordId": "preview.population.template.guard",
+      "RecordKind": "actor_template",
+      "ResearchStage": "S5",
+      "SourceScopedRefs": [],
+      "StalenessState": "current",
+      "SubjectRef": "subject:preview:population:template:guard",
+      "SupersededByRecordId": "",
+      "Tags": [
+        "preview",
+        "synthetic",
+        "template"
+      ],
+      "UpdatedAt": "2026-01-01T00:00:00Z",
+      "ValidationState": "validated"
+    },
+    {
+      "Aliases": [],
+      "AllowedUsages": [
+        "spawn_candidate"
+      ],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00Z",
+      "DisplayName": "Preview Patrol",
+      "Domain": "population",
+      "EvidenceIds": [
+        "preview.population.evidence.troop.patrol"
+      ],
+      "ForbiddenUsages": [],
+      "IdentityKind": "synthetic",
+      "MissingRefs": [],
+      "NativeRefExact": "",
+      "OperationalRisk": "low",
+      "OwnerPackId": "preview.population.pack",
+      "RecordId": "preview.population.troop.patrol",
+      "RecordKind": "troop",
+      "ResearchStage": "S5",
+      "SourceScopedRefs": [],
+      "StalenessState": "current",
+      "SubjectRef": "subject:preview:population:troop:patrol",
+      "SupersededByRecordId": "",
+      "Tags": [
+        "patrol",
+        "preview",
+        "synthetic"
+      ],
+      "UpdatedAt": "2026-01-01T00:00:00Z",
+      "ValidationState": "validated"
+    }
+  ],
+  "Relationships": [
+    {
+      "AllowedUsages": [],
+      "Attributes": [
+        "binding:resolved-template"
+      ],
+      "Confidence": "documented",
+      "ConflictRefs": [],
+      "CreatedAt": "2026-01-01T00:00:00Z",
+      "EvidenceIds": [
+        "preview.population.evidence.relationship.leader-template"
+      ],
+      "ForbiddenUsages": [],
+      "FromRecordId": "preview.population.actor.leader",
+      "MissingRefs": [],
+      "OperationalRisk": "low",
+      "RelationshipId": "preview.population.relationship.leader-template",
+      "RelationshipKind": "uses_template",
+      "ResearchStage": "S5",
+      "StalenessState": "current",
+      "SupersededByRelationshipId": "",
+      "TargetSubjectRef": "",
+      "ToRecordId": "preview.population.template.guard",
+      "UpdatedAt": "2026-01-01T00:00:00Z",
+      "ValidationState": "validated"
+    }
+  ],
+  "SchemaVersion": 2,
+  "TroopMembers": [
+    {
+      "ActorRecordId": "preview.population.actor.leader",
+      "ActorSubjectRef": "subject:preview:population:actor:leader",
+      "Conditions": [],
+      "EvidenceIds": [
+        "preview.population.evidence.member.patrol-leader"
+      ],
+      "LinkId": "preview.population.member.patrol-leader",
+      "MaximumCount": 1,
+      "MinimumCount": 1,
+      "Required": true,
+      "Role": "leader",
+      "TroopRecordId": "preview.population.troop.patrol",
+      "Weight": 1.0
+    },
+    {
+      "ActorRecordId": "preview.population.actor.scout",
+      "ActorSubjectRef": "subject:preview:population:actor:scout",
+      "Conditions": [
+        "daylight",
+        "open-terrain"
+      ],
+      "EvidenceIds": [
+        "preview.population.evidence.member.patrol-scout"
+      ],
+      "LinkId": "preview.population.member.patrol-scout",
+      "MaximumCount": 2,
+      "MinimumCount": 1,
+      "Required": true,
+      "Role": "ranged",
+      "TroopRecordId": "preview.population.troop.patrol",
+      "Weight": 1.5
+    }
+  ],
+  "TroopProfiles": [
+    {
+      "EvidenceIds": [
+        "preview.population.evidence.actor.leader",
+        "preview.population.evidence.troop.patrol"
+      ],
+      "Formation": "column",
+      "LeaderActorRecordId": "preview.population.actor.leader",
+      "LeaderActorSubjectRef": "subject:preview:population:actor:leader",
+      "MaximumSize": 3,
+      "MinimumSize": 2,
+      "RecordId": "preview.population.troop.patrol",
+      "Tags": [
+        "patrol",
+        "preview"
+      ],
+      "TroopKind": "patrol"
+    }
+  ],
+  "ValidationHistory": [
+    {
+      "Branch": "preview-population",
+      "CheckedAt": "2026-01-01T00:00:03Z",
+      "EvidenceIds": [
+        "preview.population.evidence.template.guard"
+      ],
+      "GameVersion": "preview-population-build-0",
+      "Method": "project-owned-population-fixture-verification",
+      "Notes": "Deterministic synthetic population evidence only.",
+      "ProfileId": "preview.population.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.population.template.guard",
+      "SubjectKind": "record",
+      "ValidationId": "preview.population.validation.guard",
+      "Validator": "preview.population.fixture.generator"
+    },
+    {
+      "Branch": "preview-population",
+      "CheckedAt": "2026-01-01T00:00:03Z",
+      "EvidenceIds": [
+        "preview.population.evidence.actor.leader"
+      ],
+      "GameVersion": "preview-population-build-0",
+      "Method": "project-owned-population-fixture-verification",
+      "Notes": "Deterministic synthetic population evidence only.",
+      "ProfileId": "preview.population.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.population.actor.leader",
+      "SubjectKind": "record",
+      "ValidationId": "preview.population.validation.leader",
+      "Validator": "preview.population.fixture.generator"
+    },
+    {
+      "Branch": "preview-population",
+      "CheckedAt": "2026-01-01T00:00:03Z",
+      "EvidenceIds": [
+        "preview.population.evidence.troop.patrol"
+      ],
+      "GameVersion": "preview-population-build-0",
+      "Method": "project-owned-population-fixture-verification",
+      "Notes": "Deterministic synthetic population evidence only.",
+      "ProfileId": "preview.population.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.population.troop.patrol",
+      "SubjectKind": "record",
+      "ValidationId": "preview.population.validation.patrol",
+      "Validator": "preview.population.fixture.generator"
+    },
+    {
+      "Branch": "preview-population",
+      "CheckedAt": "2026-01-01T00:00:03Z",
+      "EvidenceIds": [
+        "preview.population.evidence.relationship.leader-template"
+      ],
+      "GameVersion": "preview-population-build-0",
+      "Method": "project-owned-population-fixture-verification",
+      "Notes": "Deterministic synthetic population evidence only.",
+      "ProfileId": "preview.population.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.population.relationship.leader-template",
+      "SubjectKind": "relationship",
+      "ValidationId": "preview.population.validation.relationship.leader-template",
+      "Validator": "preview.population.fixture.generator"
+    },
+    {
+      "Branch": "preview-population",
+      "CheckedAt": "2026-01-01T00:00:03Z",
+      "EvidenceIds": [
+        "preview.population.evidence.actor.scout"
+      ],
+      "GameVersion": "preview-population-build-0",
+      "Method": "project-owned-population-fixture-verification",
+      "Notes": "Deterministic synthetic population evidence only.",
+      "ProfileId": "preview.population.profile.windows-x64",
+      "RecordId": "",
+      "State": "validated",
+      "SubjectId": "preview.population.actor.scout",
+      "SubjectKind": "record",
+      "ValidationId": "preview.population.validation.scout",
+      "Validator": "preview.population.fixture.generator"
+    }
+  ],
+  "WorkspaceId": "preview.population.workspace"
+}

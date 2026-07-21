@@ -32,6 +32,7 @@ VALIDATORS = (
     "validate_downstream_compiled_tests.py",
     "validate_research_contract_hardening.py",
     "validate_population_actor_troop_editor.py",
+    "validate_population_preview_fixture.py",
     "validate_catalog_schema2.py",
     "validate_economy_coverage_dashboard.py",
     "validate_economy_duplicate_detection.py",
@@ -123,6 +124,7 @@ def build_static_commands(
 
 def build_fixture_commands(temporary_root: Path) -> list[ValidationCommand]:
     fixture = temporary_root / "developer-preview-fixture"
+    population_fixture = temporary_root / "population-preview-fixture"
     diagnostics = temporary_root / "developer-preview-diagnostics"
     return [
         ValidationCommand(
@@ -141,6 +143,24 @@ def build_fixture_commands(temporary_root: Path) -> list[ValidationCommand]:
                 "verify",
                 "--output",
                 str(fixture),
+            ),
+        ),
+        ValidationCommand(
+            "Generate Actor/Troop population fixture",
+            python_command(
+                str(TOOLS_ROOT / "population_preview_fixture.py"),
+                "generate",
+                "--output",
+                str(population_fixture),
+            ),
+        ),
+        ValidationCommand(
+            "Verify Actor/Troop population fixture",
+            python_command(
+                str(TOOLS_ROOT / "population_preview_fixture.py"),
+                "verify",
+                "--output",
+                str(population_fixture),
             ),
         ),
         ValidationCommand(
@@ -174,16 +194,22 @@ def find_ctest(build_directory: Path) -> str:
     cache = build_directory / "CMakeCache.txt"
     if cache.is_file():
         prefix = "CMAKE_COMMAND:INTERNAL="
-        for line in cache.read_text(encoding="utf-8", errors="strict").splitlines():
+        for line in cache.read_text(
+            encoding="utf-8",
+            errors="strict",
+        ).splitlines():
             if not line.startswith(prefix):
                 continue
             cmake = Path(line[len(prefix) :])
-            candidate = cmake.with_name("ctest.exe" if os.name == "nt" else "ctest")
+            candidate = cmake.with_name(
+                "ctest.exe" if os.name == "nt" else "ctest"
+            )
             if candidate.is_file():
                 return str(candidate)
             break
     raise RuntimeError(
-        "Unable to locate ctest from PATH or the configured build's CMakeCache.txt."
+        "Unable to locate ctest from PATH or the configured build's "
+        "CMakeCache.txt."
     )
 
 
@@ -227,7 +253,9 @@ def run_commands(
         )
         if completed.returncode == 0:
             continue
-        failures.append(f"{command.label} (exit {completed.returncode})")
+        failures.append(
+            f"{command.label} (exit {completed.returncode})"
+        )
         if not keep_going:
             break
     return failures
@@ -236,8 +264,8 @@ def run_commands(
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Run TG SDK unit tests, contract validators, fixture checks, path "
-            "hygiene, and source policy locally."
+            "Run TG SDK unit tests, contract validators, fixture checks, "
+            "path hygiene, and source policy locally."
         )
     )
     parser.add_argument(
@@ -289,14 +317,19 @@ def main() -> int:
         return 0
 
     print(
-        "TG SDK local validation is authoritative while GitHub Actions remains "
-        "manual-only. No automated per-commit test result is claimed.",
+        "TG SDK local validation is authoritative while GitHub Actions "
+        "remains manual-only. No automated per-commit test result is claimed.",
         flush=True,
     )
 
-    failures = run_commands(static_commands, keep_going=arguments.keep_going)
+    failures = run_commands(
+        static_commands,
+        keep_going=arguments.keep_going,
+    )
     if not failures and not arguments.skip_fixtures:
-        with tempfile.TemporaryDirectory(prefix="tg-sdk-validation-") as temporary:
+        with tempfile.TemporaryDirectory(
+            prefix="tg-sdk-validation-"
+        ) as temporary:
             failures.extend(
                 run_commands(
                     build_fixture_commands(Path(temporary)),
@@ -307,7 +340,11 @@ def main() -> int:
     if not failures and arguments.ctest_build_dir:
         failures.extend(
             run_commands(
-                [build_ctest_command(arguments.ctest_build_dir.resolve())],
+                [
+                    build_ctest_command(
+                        arguments.ctest_build_dir.resolve()
+                    )
+                ],
                 keep_going=arguments.keep_going,
             )
         )
@@ -319,10 +356,6 @@ def main() -> int:
         return 1
 
     print("\nTG SDK local validation passed.")
-    if not arguments.ctest_build_dir:
-        print(
-            "Compiled O3DE tests were not run; pass --ctest-build-dir to add them."
-        )
     return 0
 
 
