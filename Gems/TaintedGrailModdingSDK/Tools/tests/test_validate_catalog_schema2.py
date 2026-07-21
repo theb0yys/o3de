@@ -254,7 +254,7 @@ class CatalogSchema2ValidatorTests(unittest.TestCase):
         )
         self._write(
             "docs/tainted-grail-sdk/ACTOR_TROOP_EDITOR_DESIGN.md",
-            "Status: active implementation\n"
+            "Status: active hardening\n"
             "actor/troop contracts, reflection\n"
             "CatalogDatabase validation, queries\n"
             "schema-1 migration, schema-2-only writing\n"
@@ -263,8 +263,10 @@ class CatalogSchema2ValidatorTests(unittest.TestCase):
             "and compiled-target wiring\n"
             "6. **Complete** \u2014 immutable population action-lane derivation, "
             "Actor and Troop Editor pane, and lifecycle registration\n"
-            "7. **Next** \u2014 deterministic synthetic population fixture\n"
-            "do not claim that an exact-head compiled test run exists\n"
+            "7. **Complete** \u2014 deterministic synthetic population fixture\n"
+            "8. **Complete** \u2014 public user documentation\n"
+            "9. **Active acceptance gate** \u2014 exact-head configure/build\n"
+            "do not claim an exact-head compiled test run\n"
             "loaded candidate remains schema 1\n"
             "direct save is refused\n"
             "successful bound replacement and `BuildDocument`\n",
@@ -272,11 +274,12 @@ class CatalogSchema2ValidatorTests(unittest.TestCase):
         self._write(
             "ROADMAP.md",
             "### Actors and population\n"
-            "Status: active development. Core contracts, CatalogDatabase integration\n"
-            "evidence-bound Framework candidate publication and positive/negative Core and\n"
-            "Framework population-authoring test sources with compiled-target wiring are implemented\n"
-            "The immutable seven-lane population action contract and registered Actor and Troop Editor pane are also implemented\n"
-            "The deterministic synthetic fixture and complete local-validation integration are next\n",
+            "Status: implemented vertical slice, continuing hardening and exact-head host/UI verification.\n"
+            "Core contracts, CatalogDatabase integration, durable catalog schema-2 migration/persistence, "
+            "evidence-bound Framework candidate publication, and positive/negative production-linked population tests are implemented\n"
+            "The immutable seven-lane population action contract is implemented\n"
+            "The project-owned deterministic schema-2 population fixture is implemented\n"
+            "Exact-head O3DE configure/build, compiled Catalog test execution remains active\n",
         )
         self._write(
             "docs/tainted-grail-sdk/CATALOG_GUIDE.md",
@@ -300,8 +303,9 @@ class CatalogSchema2ValidatorTests(unittest.TestCase):
         self._write(
             "docs/tainted-grail-sdk/README.md",
             "Actor and Troop Editor Design ACTOR_TROOP_EDITOR_DESIGN.md "
-            "completed Core, schema-2 persistence, Framework candidate-publication, "
-            "population-authoring test-source, immutable action-lane, and registered Actor/Troop pane units\n",
+            "deterministic fixture, validation, and deferred runtime scope\n"
+            "typed actor profiles, troop profiles, exact troop-member rows\n"
+            "deterministic project-owned fixture\n",
         )
 
     def test_valid_contract_passes(self) -> None:
@@ -336,6 +340,16 @@ class CatalogSchema2ValidatorTests(unittest.TestCase):
         )
         path.write_text(text, encoding="utf-8")
         with self.assertRaisesRegex(CatalogSchema2ContractError, r"6\. \*\*Complete"):
+            validate_catalog_schema2(self.repo_root)
+
+    def test_rejects_stale_fixture_complete_status(self) -> None:
+        path = self.repo_root / "docs/tainted-grail-sdk/ACTOR_TROOP_EDITOR_DESIGN.md"
+        text = path.read_text(encoding="utf-8").replace(
+            "7. **Complete** \u2014 deterministic synthetic population fixture",
+            "7. **Next** \u2014 deterministic synthetic population fixture",
+        )
+        path.write_text(text, encoding="utf-8")
+        with self.assertRaisesRegex(CatalogSchema2ContractError, r"7\. \*\*Complete"):
             validate_catalog_schema2(self.repo_root)
 
     def test_rejects_stale_replacement_semantics(self) -> None:

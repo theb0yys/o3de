@@ -40,6 +40,7 @@ VALIDATORS = (
     "validate_core_framework_build_graph.py",
     "validate_downstream_compiled_tests.py",
     "validate_research_contract_hardening.py",
+    "validate_tainted_system_ports.py",
     "validate_population_actor_troop_editor.py",
     "validate_population_contract_hardening.py",
     "validate_tainted_framework_knowledge.py",
@@ -222,7 +223,9 @@ def find_ctest(build_directory: Path) -> str:
             if not line.startswith(prefix):
                 continue
             cmake = Path(line[len(prefix) :])
-            candidate = cmake.with_name("ctest.exe" if os.name == "nt" else "ctest")
+            candidate = cmake.with_name(
+                "ctest.exe" if cmake.suffix.lower() == ".exe" else "ctest"
+            )
             if candidate.is_file():
                 return str(candidate)
             break

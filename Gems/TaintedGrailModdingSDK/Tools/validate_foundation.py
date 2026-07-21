@@ -50,13 +50,22 @@ def require_fragments(path: Path, fragments: tuple[str, ...]) -> str:
     return text
 
 
-def validate_engine_registration(repo_root: Path) -> None:
-    engine = load_json(repo_root / "engine.json")
-    external = engine.get("external_subdirectories")
-    if not isinstance(external, list) or external.count(GEM_PATH) != 1:
-        fail(f"{GEM_PATH} must appear exactly once in engine.json external_subdirectories")
-    if GEM_NAME in engine.get("gem_names", []):
-        fail(f"{GEM_NAME} must not be an engine-wide default Gem")
+def validate_product_registration(repo_root: Path) -> None:
+    project_path = repo_root / "TaintedGrailModdingEditor/project.json"
+    project = load_json(project_path)
+    product_gem_path = f"../{GEM_PATH}"
+    external = project.get("external_subdirectories")
+    if not isinstance(external, list) or external.count(product_gem_path) != 1:
+        fail(
+            f"{product_gem_path} must appear exactly once in "
+            "TaintedGrailModdingEditor/project.json external_subdirectories"
+        )
+    gem_names = project.get("gem_names")
+    if not isinstance(gem_names, list) or gem_names.count(GEM_NAME) != 1:
+        fail(
+            f"{GEM_NAME} must appear exactly once in "
+            "TaintedGrailModdingEditor/project.json gem_names"
+        )
 
 
 def validate_gem_metadata(gem_root: Path) -> None:
@@ -504,7 +513,7 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parents[3]
     gem_root = repo_root / GEM_PATH
     try:
-        validate_engine_registration(repo_root)
+        validate_product_registration(repo_root)
         validate_gem_metadata(gem_root)
         validate_cmake(gem_root)
         validate_build_graph(repo_root)

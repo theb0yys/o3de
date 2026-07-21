@@ -132,7 +132,8 @@ python Gems/TaintedGrailModdingSDK/Tools/run_local_validation.py `
 
 ## Synthetic fixture
 
-Generate and verify project-owned deterministic data outside the source tree:
+Generate the deterministic synthetic fixture outside the source tree, then
+verify it before use:
 
 ```powershell
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview_fixture.py generate `
@@ -142,9 +143,14 @@ python Gems/TaintedGrailModdingSDK/Tools/developer_preview_fixture.py verify `
   --output ..\foa-build\tg-sdk-developer-preview-0-fixture
 ```
 
-The fixture uses reserved `preview.*` identities and contains no proprietary
-game data, native FoA identifiers, private paths, credentials, saves, or
-extracted assets.
+The fixture uses reserved `preview.*` identities and does not contain proprietary game data,
+native FoA identifiers, private paths, credentials, saves, or extracted assets.
+
+Generation writes `preview-fixture.manifest.json` with SHA-256 bindings for
+the project-owned synthetic data. Repeated generation is byte-for-byte deterministic.
+The command refuses to overwrite an existing fixture unless
+that fixture first passes verification and `--replace` is explicit. Fixture
+verification proves the files and manifest are intact; it does not prove Editor load/save/reopen behavior.
 
 ## Compiled persistence smoke
 
@@ -155,8 +161,13 @@ ctest --test-dir ..\foa-build\tg-sdk-developer-preview-0-windows-profile `
   -R "TaintedGrailModdingSDK\.Catalog\.Tests"
 ```
 
-This proves service-level load, save, close-equivalent clear, reopen, and
-canonical equivalence. It does not prove FoA runtime compatibility.
+The service-level persistence smoke proves load, save, close-equivalent, and reopen
+behavior plus canonical equivalence. It does not prove FoA runtime
+compatibility.
+
+The `TaintedGrailModdingSDK.Catalog.Tests` case compares canonical state before
+and after reopen, preserves proof-backed allowed usages, and verifies that
+legacy unproven allowances still fail closed.
 
 ## Launch and diagnostics
 
@@ -165,6 +176,8 @@ The existing launch wrapper continues to accept an explicit build root:
 ```powershell
 python Gems/TaintedGrailModdingSDK/Tools/developer_preview_launch.py `
   --build-dir ..\foa-build\tg-sdk-developer-preview-0-windows-profile `
+  --project .\TaintedGrailModdingEditor `
+  --log-dir ..\foa-build\tg-sdk-developer-preview-0-launch `
   --dry-run
 ```
 
@@ -173,7 +186,19 @@ arguments, waits for the Editor process, and returns its exit code.
 
 Diagnostics and screenshot evidence must also remain under the external build
 root or another reviewed output directory. Nothing is uploaded automatically.
-Review every generated file before sharing.
+You must review every generated file before sharing.
+
+Collect and verify a redacted diagnostics bundle with:
+
+```powershell
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_diagnostics.py collect `
+  --output ..\foa-build\tg-sdk-developer-preview-0-diagnostics `
+  --build-dir ..\foa-build\tg-sdk-developer-preview-0-windows-profile `
+  --project .\TaintedGrailModdingEditor
+
+python Gems/TaintedGrailModdingSDK/Tools/developer_preview_diagnostics.py verify `
+  --output ..\foa-build\tg-sdk-developer-preview-0-diagnostics
+```
 
 ## Windows manual UI smoke
 
@@ -181,6 +206,11 @@ The [Windows Manual UI Smoke and Screenshot Evidence](DEVELOPER_PREVIEW_MANUAL_U
 defines the accepted real-session pass. The evidence tool binds results to an
 exact source commit, hashes reviewed PNG files, checks required coverage, and
 enforces privacy and runtime-boundary attestations.
+
+Initialize the manual screenshot capture record with
+`developer_preview_ui_evidence.py init`, then follow the linked checklist for
+recording checks, attaching reviewed screenshots, attesting, and verifying the
+result. The actual Windows pass remains pending.
 
 The tooling does not take screenshots automatically, inspect pixels, use OCR,
 or fabricate release evidence.

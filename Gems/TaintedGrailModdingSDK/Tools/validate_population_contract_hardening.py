@@ -110,7 +110,8 @@ def validate(repo_root: Path) -> None:
         '#include "PathPolicyService.h"',
         "PathPolicyService pathPolicy;",
         "pathPolicy.ValidateWorkspacePaths(workspace, workspaceRoot)",
-        "path-policy-validated canonical workspace root",
+        '"Population authoring requires the path-policy-validated "',
+        '"canonical workspace root: "',
         "EvidenceIsCompleteAndBound(",
         "ValidatePopulationEvidenceCoverage(",
         "ActorEvidenceIds(actor, catalog)",
@@ -217,7 +218,8 @@ def validate(repo_root: Path) -> None:
         "const bool countRangeValid",
         "member.m_minimumCount <= member.m_maximumCount",
         "(!member.m_required || member.m_minimumCount > 0)",
-        "positive minimum for required rows",
+        '"count up to 1000, an ordered minimum range, a positive minimum for "',
+        '"required rows, finite non-negative weight, unique conditions, and "',
     ):
         require(member_validation, fragment, "Population member validation")
     reject(
@@ -233,7 +235,7 @@ def validate(repo_root: Path) -> None:
         "PublicAuthoringRejectsUnvalidatedRoot",
         "missing evidence for exact subject",
         "m_required = true",
-        "m_required = false",
+        "member.m_required = required;",
         "path-policy-validated canonical workspace root",
     ):
         require(hardening_tests, fragment, "Population hardening compiled tests")

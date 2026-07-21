@@ -523,7 +523,7 @@ def validate_catalog_schema2(repo_root: Path) -> None:
     require_fragments(
         actor_design,
         (
-            "Status: active implementation",
+            "Status: active hardening",
             "actor/troop contracts, reflection",
             "CatalogDatabase validation, queries",
             "schema-1 migration, schema-2-only writing",
@@ -531,8 +531,10 @@ def validate_catalog_schema2(repo_root: Path) -> None:
             "compiled-target wiring",
             "6. **Complete** \u2014 immutable population action-lane derivation",
             "Actor and Troop Editor pane",
-            "7. **Next** \u2014 deterministic synthetic population fixture",
-            "do not claim that",
+            "7. **Complete** \u2014 deterministic synthetic population fixture",
+            "8. **Complete** \u2014 public user documentation",
+            "9. **Active acceptance gate** \u2014 exact-head configure/build",
+            "do not claim an exact-head compiled test run",
             "loaded candidate remains schema 1",
             "direct save is refused",
             "successful bound replacement and `BuildDocument`",
@@ -545,7 +547,9 @@ def validate_catalog_schema2(repo_root: Path) -> None:
             "5. **Complete** \u2014 Core and Framework positive/negative population-authoring test sources",
             "compiled-target wiring",
             "6. **Complete** \u2014 immutable population action-lane derivation",
-            "7. **Next** \u2014 deterministic synthetic population fixture",
+            "7. **Complete** \u2014 deterministic synthetic population fixture",
+            "8. **Complete** \u2014 public user documentation",
+            "9. **Active acceptance gate** \u2014 exact-head configure/build",
         ),
         "Actor/troop implementation sequence",
     )
@@ -554,12 +558,13 @@ def validate_catalog_schema2(repo_root: Path) -> None:
         roadmap,
         (
             "### Actors and population",
-            "Status: active development. Core contracts, CatalogDatabase integration",
+            "Status: implemented vertical slice, continuing hardening and exact-head host/UI verification.",
+            "Core contracts, CatalogDatabase integration, durable catalog schema-2 migration/persistence",
             "evidence-bound Framework candidate publication",
-            "positive/negative Core and",
-            "Framework population-authoring test sources with compiled-target wiring are implemented",
-            "seven-lane population action contract and registered Actor and Troop Editor pane are also implemented",
-            "deterministic synthetic fixture and complete local-validation integration are next",
+            "positive/negative production-linked population tests are implemented",
+            "immutable seven-lane population action contract",
+            "project-owned deterministic schema-2 population fixture",
+            "Exact-head O3DE configure/build, compiled Catalog test execution",
         ),
         "Roadmap population status",
     )
@@ -603,8 +608,9 @@ def validate_catalog_schema2(repo_root: Path) -> None:
         (
             "Actor and Troop Editor Design",
             "ACTOR_TROOP_EDITOR_DESIGN.md",
-            "completed Core, schema-2 persistence, Framework candidate-publication, population-authoring test-source",
-            "immutable action-lane, and registered Actor/Troop pane units",
+            "deterministic fixture, validation, and deferred runtime scope",
+            "typed actor profiles, troop profiles, exact troop-member rows",
+            "deterministic project-owned fixture",
         ),
         "Documentation hub",
     )

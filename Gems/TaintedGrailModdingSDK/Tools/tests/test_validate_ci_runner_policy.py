@@ -122,15 +122,19 @@ class LocalValidationEntrypointTests(unittest.TestCase):
             self.assertTrue((REAL_TOOLS_ROOT / validator).is_file(), validator)
 
     def test_static_commands_use_argument_vectors(self) -> None:
-        commands = build_static_commands(
-            include_unit_tests=True,
-            include_source_policy=True,
-        )
+        with tempfile.TemporaryDirectory() as temporary:
+            commands = build_static_commands(
+                include_unit_tests=True,
+                source_policy_engine_root=Path(temporary),
+            )
         self.assertGreater(len(commands), len(VALIDATORS))
         self.assertTrue(all(command.argv for command in commands))
         self.assertTrue(all(isinstance(command.argv, tuple) for command in commands))
         self.assertIn("Python unit tests", commands[0].label)
-        self.assertEqual(commands[-1].label, "O3DE source policy")
+        self.assertEqual(
+            commands[-1].label,
+            "O3DE source policy: TaintedGrailModdingSDK",
+        )
 
     def test_ctest_is_derived_from_configured_cmake_when_not_on_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
