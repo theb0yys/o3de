@@ -89,9 +89,8 @@ A pull request may merge only when all of the following are true:
 - the compiled `TaintedGrailModdingSDK.Catalog.Tests` target executed and passed
   with zero-test matching treated as failure;
 - a merge-ready exact-head validation receipt is verified with
-  `validation_receipt.py verify --require-merge-ready`, its receipt source commit
-  matches the reviewed head, and the verified summary is included in the pull
-  request;
+  `validation_receipt.py verify --require-merge-ready`, its receipt source commit matches the reviewed head,
+  and the verified summary is included in the pull request;
 - the Windows UI gate passed, or the one permitted explicit local maintainer risk
   acceptance is recorded with a concrete rationale;
 - requested changes and blocking review threads are resolved;
