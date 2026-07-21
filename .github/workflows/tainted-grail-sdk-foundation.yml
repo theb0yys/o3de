@@ -53,6 +53,15 @@ jobs:
       - name: Validate Developer Preview 0 command contract
         run: python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview.py
 
+      - name: Test Developer Preview 0 launch wrapper
+        run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview_launch.py" -v
+
+      - name: Test Developer Preview 0 diagnostics
+        run: python -m unittest discover -s Gems/TaintedGrailModdingSDK/Tools/tests -p "test_developer_preview_diagnostics.py" -v
+
+      - name: Validate Developer Preview 0 launch and diagnostics contract
+        run: python Gems/TaintedGrailModdingSDK/Tools/validate_developer_preview_launch_diagnostics.py
+
       - name: Run focused validator regression matrix
         shell: bash
         run: |
