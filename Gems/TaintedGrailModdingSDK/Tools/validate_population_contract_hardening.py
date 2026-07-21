@@ -248,8 +248,7 @@ def validate(repo_root: Path) -> None:
         "OptionalMinimumDoesNotRaiseTroopRequirement",
         "PublicAuthoringRejectsUnvalidatedRoot",
         "missing evidence for exact subject",
-        "m_required = true",
-        "m_required = false",
+        "optional.m_required = true",
         "path-policy-validated canonical workspace root",
     ):
         require(hardening_tests, fragment, "Population hardening compiled tests")
