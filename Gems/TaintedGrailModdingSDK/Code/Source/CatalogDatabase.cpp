@@ -7,16 +7,9 @@
 
 #include "CatalogDatabase.h"
 
-// Keep the established catalog implementation byte-for-byte while extending the
-// three document-bound methods below with population collections. The renamed
-// methods remain private implementation details and are not alternate APIs.
-#define ReplaceFromDocument ReplaceFromDocumentWithoutPopulation
-#define Clear ClearWithoutPopulation
-#define BuildDocument BuildDocumentWithoutPopulation
+// The base implementation declares explicit private helpers for the legacy
+// document projection. Population-aware public methods extend those helpers below.
 #include "CatalogDatabaseBase.inl"
-#undef BuildDocument
-#undef Clear
-#undef ReplaceFromDocument
 
 #include <AzCore/std/algorithm.h>
 #include <AzCore/std/sort.h>

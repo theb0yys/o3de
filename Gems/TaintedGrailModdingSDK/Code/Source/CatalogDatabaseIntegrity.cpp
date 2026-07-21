@@ -6,15 +6,11 @@
  */
 
 #include "CatalogDatabase.h"
+#include "PopulationEvidenceValidation.h"
 
-// Preserve the established governance/economy integrity implementation while
-// extending its bound-document and whole-catalog entry points with population
-// checks. The renamed methods remain private implementation details.
-#define ReplaceFromBoundDocument ReplaceFromBoundDocumentWithoutPopulation
-#define ValidateIntegrity ValidateIntegrityWithoutPopulation
+// The governance/economy implementation exposes explicit private helpers.
+// Population-aware public entry points extend those helpers below.
 #include "CatalogDatabaseIntegrityBase.inl"
-#undef ValidateIntegrity
-#undef ReplaceFromBoundDocument
 
 #include <AzCore/std/algorithm.h>
 
@@ -26,58 +22,19 @@ namespace TaintedGrailModdingSDK
             AZStd::vector<AZStd::string>& subjects,
             const AZStd::string& subject)
         {
-            if (!subject.empty()
-                && AZStd::find(subjects.begin(), subjects.end(), subject)
-                    == subjects.end())
-            {
-                subjects.push_back(subject);
-            }
+            AppendUniquePopulationRequiredSubject(subjects, subject);
         }
 
-        bool ValidateEvidenceForAnyPopulationSubject(
-            const AZStd::vector<AZStd::string>& evidenceIds,
-            const AZStd::vector<AZStd::string>& allowedSubjects,
-            const GameProfile& profile,
-            const SourceEvidenceRegistry& sourceRegistry,
-            AZStd::string& error)
+        void AppendPopulationRecordEvidenceIds(
+            AZStd::vector<AZStd::string>& evidenceIds,
+            const CatalogRecord* record)
         {
-            if (allowedSubjects.empty())
+            if (record)
             {
-                error = "Population evidence validation requires at least one exact subject.";
-                return false;
+                AppendUniquePopulationEvidenceIds(
+                    evidenceIds,
+                    record->m_evidenceIds);
             }
-            if (!HasUniqueStableIds(evidenceIds, false, error))
-            {
-                return false;
-            }
-
-            for (const AZStd::string& evidenceId : evidenceIds)
-            {
-                bool matched = false;
-                AZStd::vector<AZStd::string> singleEvidence{ evidenceId };
-                for (const AZStd::string& subject : allowedSubjects)
-                {
-                    AZStd::string subjectError;
-                    if (ValidateEvidenceForSubject(
-                            singleEvidence,
-                            subject,
-                            profile,
-                            sourceRegistry,
-                            false,
-                            subjectError))
-                    {
-                        matched = true;
-                        break;
-                    }
-                }
-                if (!matched)
-                {
-                    error = "Population evidence does not prove any exact subject "
-                        "represented by the authored row: " + evidenceId;
-                    return false;
-                }
-            }
-            return true;
         }
 
         AZStd::string ResolvePopulationActorSubject(
@@ -91,6 +48,15 @@ namespace TaintedGrailModdingSDK
                 return actor ? actor->m_subjectRef : AZStd::string{};
             }
             return actorSubjectRef;
+        }
+
+        const CatalogRecord* ResolvePopulationActorRecord(
+            const CatalogDatabase& catalog,
+            const AZStd::string& actorRecordId)
+        {
+            return actorRecordId.empty()
+                ? nullptr
+                : catalog.FindByRecordId(actorRecordId);
         }
 
         bool MemberMatchesActorSubject(
@@ -173,29 +139,36 @@ namespace TaintedGrailModdingSDK
                 return false;
             }
 
-            AZStd::vector<AZStd::string> allowedSubjects;
+            AZStd::vector<AZStd::string> requiredSubjects;
+            AZStd::vector<AZStd::string> evidenceIds;
+            AppendUniquePopulationEvidenceIds(
+                evidenceIds,
+                actor.m_evidenceIds);
             const CatalogRecord* actorRecord = FindByRecordId(actor.m_recordId);
             AppendUniquePopulationSubject(
-                allowedSubjects,
+                requiredSubjects,
                 actorRecord ? actorRecord->m_subjectRef : AZStd::string{});
+            AppendPopulationRecordEvidenceIds(evidenceIds, actorRecord);
             if (!actor.m_templateRecordId.empty())
             {
                 const CatalogRecord* templateRecord =
                     FindByRecordId(actor.m_templateRecordId);
                 AppendUniquePopulationSubject(
-                    allowedSubjects,
+                    requiredSubjects,
                     templateRecord
                         ? templateRecord->m_subjectRef
                         : AZStd::string{});
+                AppendPopulationRecordEvidenceIds(evidenceIds, templateRecord);
             }
             AppendUniquePopulationSubject(
-                allowedSubjects,
+                requiredSubjects,
                 actor.m_templateSubjectRef);
-            if (!ValidateEvidenceForAnyPopulationSubject(
-                    actor.m_evidenceIds,
-                    allowedSubjects,
+            if (!ValidatePopulationEvidenceCoverage(
+                    evidenceIds,
+                    requiredSubjects,
                     profile,
                     sourceRegistry,
+                    "Population actor profile",
                     validationError))
             {
                 SetError(
@@ -217,22 +190,32 @@ namespace TaintedGrailModdingSDK
                 return false;
             }
 
-            AZStd::vector<AZStd::string> allowedSubjects;
+            AZStd::vector<AZStd::string> requiredSubjects;
+            AZStd::vector<AZStd::string> evidenceIds;
+            AppendUniquePopulationEvidenceIds(
+                evidenceIds,
+                troop.m_evidenceIds);
             const CatalogRecord* troopRecord = FindByRecordId(troop.m_recordId);
             AppendUniquePopulationSubject(
-                allowedSubjects,
+                requiredSubjects,
                 troopRecord ? troopRecord->m_subjectRef : AZStd::string{});
+            AppendPopulationRecordEvidenceIds(evidenceIds, troopRecord);
+            const CatalogRecord* leaderRecord = ResolvePopulationActorRecord(
+                *this,
+                troop.m_leaderActorRecordId);
             AppendUniquePopulationSubject(
-                allowedSubjects,
+                requiredSubjects,
                 ResolvePopulationActorSubject(
                     *this,
                     troop.m_leaderActorRecordId,
                     troop.m_leaderActorSubjectRef));
-            if (!ValidateEvidenceForAnyPopulationSubject(
-                    troop.m_evidenceIds,
-                    allowedSubjects,
+            AppendPopulationRecordEvidenceIds(evidenceIds, leaderRecord);
+            if (!ValidatePopulationEvidenceCoverage(
+                    evidenceIds,
+                    requiredSubjects,
                     profile,
                     sourceRegistry,
+                    "Population troop profile",
                     validationError))
             {
                 SetError(
@@ -262,26 +245,36 @@ namespace TaintedGrailModdingSDK
                 return false;
             }
 
-            AZStd::vector<AZStd::string> allowedSubjects;
+            AZStd::vector<AZStd::string> requiredSubjects;
+            AZStd::vector<AZStd::string> evidenceIds;
+            AppendUniquePopulationEvidenceIds(
+                evidenceIds,
+                member.m_evidenceIds);
             AppendUniquePopulationSubject(
-                allowedSubjects,
+                requiredSubjects,
                 "population-troop-member:" + member.m_linkId);
             const CatalogRecord* troopRecord =
                 FindByRecordId(member.m_troopRecordId);
             AppendUniquePopulationSubject(
-                allowedSubjects,
+                requiredSubjects,
                 troopRecord ? troopRecord->m_subjectRef : AZStd::string{});
+            AppendPopulationRecordEvidenceIds(evidenceIds, troopRecord);
+            const CatalogRecord* actorRecord = ResolvePopulationActorRecord(
+                *this,
+                member.m_actorRecordId);
             AppendUniquePopulationSubject(
-                allowedSubjects,
+                requiredSubjects,
                 ResolvePopulationActorSubject(
                     *this,
                     member.m_actorRecordId,
                     member.m_actorSubjectRef));
-            if (!ValidateEvidenceForAnyPopulationSubject(
-                    member.m_evidenceIds,
-                    allowedSubjects,
+            AppendPopulationRecordEvidenceIds(evidenceIds, actorRecord);
+            if (!ValidatePopulationEvidenceCoverage(
+                    evidenceIds,
+                    requiredSubjects,
                     profile,
                     sourceRegistry,
+                    "Population troop member",
                     validationError))
             {
                 SetError(
@@ -305,7 +298,7 @@ namespace TaintedGrailModdingSDK
                 return false;
             }
 
-            AZ::u64 totalMinimum = 0;
+            AZ::u64 requiredMinimum = 0;
             AZ::u64 totalMaximum = 0;
             size_t leaderRowCount = 0;
             const PopulationTroopMember* matchingLeader = nullptr;
@@ -315,7 +308,10 @@ namespace TaintedGrailModdingSDK
                 troop.m_leaderActorSubjectRef);
             for (const PopulationTroopMember& member : members)
             {
-                totalMinimum += member.m_minimumCount;
+                if (member.m_required)
+                {
+                    requiredMinimum += member.m_minimumCount;
+                }
                 totalMaximum += member.m_maximumCount;
                 if (member.m_role == "leader")
                 {
@@ -330,22 +326,26 @@ namespace TaintedGrailModdingSDK
                 }
             }
 
-            if (totalMinimum > troop.m_maximumSize
+            if (requiredMinimum > troop.m_maximumSize
                 || totalMaximum < troop.m_minimumSize)
             {
                 SetError(
                     error,
-                    "Population troop member ranges do not overlap the declared "
-                    "troop size range: " + troop.m_recordId);
+                    "Required population troop member ranges do not overlap the "
+                    "declared troop size range: " + troop.m_recordId);
                 return false;
             }
             if (!leaderSubject.empty()
-                && (leaderRowCount != 1 || !matchingLeader))
+                && (leaderRowCount != 1
+                    || !matchingLeader
+                    || !matchingLeader->m_required
+                    || matchingLeader->m_minimumCount == 0))
             {
                 SetError(
                     error,
-                    "A troop leader binding requires exactly one matching leader "
-                    "membership row: " + troop.m_recordId);
+                    "A troop leader binding requires exactly one matching, required "
+                    "leader membership row with a positive minimum count: "
+                        + troop.m_recordId);
                 return false;
             }
         }

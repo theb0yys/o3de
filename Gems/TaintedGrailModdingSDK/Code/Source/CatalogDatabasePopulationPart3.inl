@@ -49,19 +49,22 @@ namespace TaintedGrailModdingSDK
             return false;
         }
 
+        const bool countRangeValid = member.m_maximumCount > 0
+            && member.m_minimumCount <= member.m_maximumCount
+            && member.m_maximumCount <= MaximumPopulationCount
+            && (!member.m_required || member.m_minimumCount > 0);
         if (!ParsePopulationTroopMemberRole(member.m_role).IsSuccess()
-            || member.m_minimumCount == 0
-            || member.m_minimumCount > member.m_maximumCount
-            || member.m_maximumCount > MaximumPopulationCount
+            || !countRangeValid
             || !IsFiniteNonNegative(member.m_weight)
             || !HasUniqueBoundedPopulationValues(member.m_conditions, 256)
             || !HasUniquePopulationEvidenceIds(member.m_evidenceIds))
         {
             SetPopulationError(
                 error,
-                "Troop membership requires a supported role, ordered positive "
-                "counts up to 1000, finite non-negative weight, unique conditions, "
-                "and stable unique evidence identities.");
+                "Troop membership requires a supported role, a positive maximum "
+                "count up to 1000, an ordered minimum range, a positive minimum for "
+                "required rows, finite non-negative weight, unique conditions, and "
+                "stable unique evidence identities.");
             return false;
         }
 

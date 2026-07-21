@@ -44,6 +44,16 @@ def require_all(text: str, fragments: tuple[str, ...], label: str) -> None:
         require(text, fragment, label)
 
 
+def function_slice(text: str, name: str, next_name: str) -> str:
+    start = text.find(f"def {name}(")
+    end = text.find(f"def {next_name}(", start + 1)
+    if start < 0 or end < 0:
+        raise ValidationReceiptContractError(
+            f"Unable to isolate {name} for semantic receipt validation."
+        )
+    return text[start:end]
+
+
 def validate(repo_root: Path) -> None:
     tool = read(
         repo_root,
@@ -63,8 +73,12 @@ def validate(repo_root: Path) -> None:
             '"compiled-tests"',
             '"windows-ui"',
             "repository_state(",
-            "subprocess.run(",
-            "capture_log_bytes(",
+            "subprocess.Popen(",
+            "def stream_gate_process(",
+            "MAXIMUM_GATE_STREAM_BYTES",
+            "STREAM_CHUNK_BYTES",
+            "hashlib.sha256()",
+            "threading.Thread(",
             "os.O_EXCL",
             'if hasattr(os, "O_NOFOLLOW")',
             "reject_storage_indirection(",
@@ -75,6 +89,8 @@ def validate(repo_root: Path) -> None:
             'receipt["finalized_at_utc"] = utc_now()',
             "hash_file(",
             "validate_log_reference(",
+            '"log_limit_exceeded"',
+            '"truncated": self.truncated',
             "Receipt commit",
             "must pass; it cannot be waived",
             "explicit maintainer risk acceptance",
@@ -88,6 +104,21 @@ def validate(repo_root: Path) -> None:
     forbid(tool, 'add_argument("--exit-code"', "Validation receipt tool")
     forbid(tool, 'add_argument("--started-at"', "Validation receipt tool")
     forbid(tool, 'add_argument("--finished-at"', "Validation receipt tool")
+
+    record_gate = function_slice(tool, "record_gate", "skip_gate")
+    forbid(record_gate, "capture_output=True", "Validation receipt record gate")
+    forbid(record_gate, "subprocess.run(", "Validation receipt record gate")
+    require_all(
+        record_gate,
+        (
+            "stream_gate_process(",
+            "prepare_log_destination(",
+            '"log_limit_exceeded": completed.limit_exceeded',
+            "completed.stdout.receipt_value(output)",
+            "completed.stderr.receipt_value(output)",
+        ),
+        "Validation receipt record gate",
+    )
 
     tests = read(
         repo_root,
@@ -108,6 +139,25 @@ def validate(repo_root: Path) -> None:
             "test_output_directory_symlink_is_rejected",
         ),
         "Validation receipt unit tests",
+    )
+
+    streaming_tests = read(
+        repo_root,
+        "Gems/TaintedGrailModdingSDK/Tools/tests/test_validation_receipt_streaming.py",
+    )
+    require_all(
+        streaming_tests,
+        (
+            "test_process_streams_distinct_stdout_and_stderr_with_incremental_hashes",
+            "test_stream_limit_terminates_gate_and_keeps_only_hashed_prefix",
+            "test_existing_log_destination_is_never_overwritten",
+            "stream_gate_process(",
+            "maximum_stream_bytes=64",
+            "result.limit_exceeded",
+            "result.stdout.truncated",
+            "hashlib.sha256",
+        ),
+        "Validation receipt streaming tests",
     )
 
     template = read(repo_root, ".github/PULL_REQUEST_TEMPLATE.md")
@@ -184,8 +234,8 @@ def main() -> int:
         print(f"Validation-receipt contract failed: {exc}", file=sys.stderr)
         return 1
     print(
-        "Validation-receipt contract passed: tooling, negative tests, PR template, "
-        "and merge policy require exact-head machine-verifiable evidence."
+        "Validation-receipt contract passed: tooling streams bounded gate logs, "
+        "hashes them incrementally, and retains exact-head policy wiring."
     )
     return 0
 

@@ -32,7 +32,7 @@ VALIDATORS = (
     "validate_downstream_compiled_tests.py",
     "validate_research_contract_hardening.py",
     "validate_population_actor_troop_editor.py",
-    "validate_population_preview_fixture.py",
+    "validate_population_contract_hardening.py",
     "validate_catalog_schema2.py",
     "validate_economy_coverage_dashboard.py",
     "validate_economy_duplicate_detection.py",
@@ -124,7 +124,6 @@ def build_static_commands(
 
 def build_fixture_commands(temporary_root: Path) -> list[ValidationCommand]:
     fixture = temporary_root / "developer-preview-fixture"
-    population_fixture = temporary_root / "population-preview-fixture"
     diagnostics = temporary_root / "developer-preview-diagnostics"
     return [
         ValidationCommand(
@@ -143,24 +142,6 @@ def build_fixture_commands(temporary_root: Path) -> list[ValidationCommand]:
                 "verify",
                 "--output",
                 str(fixture),
-            ),
-        ),
-        ValidationCommand(
-            "Generate Actor/Troop population fixture",
-            python_command(
-                str(TOOLS_ROOT / "population_preview_fixture.py"),
-                "generate",
-                "--output",
-                str(population_fixture),
-            ),
-        ),
-        ValidationCommand(
-            "Verify Actor/Troop population fixture",
-            python_command(
-                str(TOOLS_ROOT / "population_preview_fixture.py"),
-                "verify",
-                "--output",
-                str(population_fixture),
             ),
         ),
         ValidationCommand(

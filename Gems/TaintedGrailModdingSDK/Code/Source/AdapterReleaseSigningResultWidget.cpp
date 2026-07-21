@@ -7,6 +7,8 @@
 
 #include "AdapterReleaseSigningResultWidget.h"
 
+#include "AdapterReleaseSigningHardening.h"
+
 #include <AzCore/std/algorithm.h>
 #include <AzCore/std/sort.h>
 
@@ -26,18 +28,36 @@ namespace TaintedGrailModdingSDK
 {
     namespace
     {
+        constexpr qsizetype MaximumSigningCellCharacters = 4096;
+
         QString ToSigningQString(const AZStd::string& value)
         {
-            return QString::fromUtf8(value.c_str());
+            return QString::fromUtf8(
+                value.c_str(),
+                static_cast<qsizetype>(value.size()));
+        }
+
+        QString BoundedSigningCell(QString value)
+        {
+            if (value.size() <= MaximumSigningCellCharacters)
+            {
+                return value;
+            }
+            value.truncate(MaximumSigningCellCharacters - 30);
+            value += QStringLiteral(" ... [display truncated]");
+            return value;
         }
 
         void SetSigningCell(
             QTableWidget* table,
             int row,
             int column,
-            const QString& value)
+            QString value)
         {
-            table->setItem(row, column, new QTableWidgetItem(value));
+            table->setItem(
+                row,
+                column,
+                new QTableWidgetItem(BoundedSigningCell(AZStd::move(value))));
         }
 
         QString JoinCapabilities(const AdapterReleaseSignerReview& review)
@@ -48,7 +68,7 @@ namespace TaintedGrailModdingSDK
                 values.push_back(ToSigningQString(ToString(capability)));
             }
             values.sort();
-            return values.join(QStringLiteral(", "));
+            return BoundedSigningCell(values.join(QStringLiteral(", ")));
         }
 
         QString JoinSigningIds(const AZStd::vector<AZStd::string>& ids)
@@ -60,7 +80,7 @@ namespace TaintedGrailModdingSDK
             {
                 values.push_back(ToSigningQString(id));
             }
-            return values.join(QStringLiteral(", "));
+            return BoundedSigningCell(values.join(QStringLiteral(", ")));
         }
 
         QString FailureDetails(
@@ -80,8 +100,7 @@ namespace TaintedGrailModdingSDK
             AZStd::sort(
                 failures.begin(),
                 failures.end(),
-                [](const AdapterReleaseSigningFailure* left,
-                   const AdapterReleaseSigningFailure* right)
+                [](const auto* left, const auto* right)
                 {
                     return left->m_failureId < right->m_failureId;
                 });
@@ -105,9 +124,9 @@ namespace TaintedGrailModdingSDK
                     value += QStringLiteral(" | artifact=")
                         + ToSigningQString(failure->m_signatureArtifactId);
                 }
-                values.push_back(value);
+                values.push_back(AZStd::move(value));
             }
-            return values.join(QStringLiteral(" | "));
+            return BoundedSigningCell(values.join(QStringLiteral(" | ")));
         }
 
         QString DiagnosticDetails(
@@ -134,8 +153,7 @@ namespace TaintedGrailModdingSDK
             AZStd::sort(
                 diagnostics.begin(),
                 diagnostics.end(),
-                [](const AdapterReleaseSigningDiagnosticReference* left,
-                   const AdapterReleaseSigningDiagnosticReference* right)
+                [](const auto* left, const auto* right)
                 {
                     return left->m_diagnosticId < right->m_diagnosticId;
                 });
@@ -153,7 +171,7 @@ namespace TaintedGrailModdingSDK
                     + QStringLiteral(" | ")
                     + ToSigningQString(diagnostic->m_fingerprint));
             }
-            return values.join(QStringLiteral(" | "));
+            return BoundedSigningCell(values.join(QStringLiteral(" | ")));
         }
     } // namespace
 
@@ -173,14 +191,14 @@ namespace TaintedGrailModdingSDK
 
         auto* description = new QLabel(
             tr(
-                "Read-only Phase 8 evidence supplied by a separately reviewed external "
-                "signer. Supplied release-artifact, assembly-result, archive, signing-"
-                "intent, signer-review, reported-outcome, signature-artifact, failure, "
-                "and safe diagnostic binding fields are displayed. This pane does not "
-                "open or modify "
-                "archives, load keys or credentials, resolve identities, sign or verify "
-                "data, write signature artifacts, upload, publish, launch FoA, call an "
-                "adapter, mutate deployment state, or modify saves."),
+                "Read-only Phase 8 metadata supplied by a separately reviewed "
+                "external signer. Registry rows have not been evaluated against the "
+                "exact upstream artifact and assembly result. Supplied diagnostics are "
+                "references only, not content the SDK has opened or declared safe. "
+                "This pane does not open or modify archives, load keys or credentials, "
+                "resolve identities, sign or verify data, write signature artifacts, "
+                "upload, publish, launch FoA, call an adapter, mutate deployment state, "
+                "or modify saves."),
             this);
         description->setWordWrap(true);
         layout->addWidget(description);
@@ -198,7 +216,7 @@ namespace TaintedGrailModdingSDK
             tr("Reported signing outcome"),
             tr("Signature artifact"),
             tr("Failures"),
-            tr("Safe diagnostics"),
+            tr("Supplied diagnostics — not evaluated"),
             tr("Context"),
             tr("Safety"),
         });
@@ -228,14 +246,32 @@ namespace TaintedGrailModdingSDK
     {
         const AZStd::vector<AdapterReleaseSigningResultEnvelope>& envelopes =
             AdapterReleaseSigningResultRegistry::Get().GetEnvelopes();
-        int rowCount = 0;
+
+        size_t requestedRows = 0;
         for (const AdapterReleaseSigningResultEnvelope& envelope : envelopes)
         {
-            rowCount += envelope.m_signatureArtifacts.empty()
+            const size_t rows = envelope.m_signatureArtifacts.empty()
                 ? 1
-                : static_cast<int>(envelope.m_signatureArtifacts.size());
+                : envelope.m_signatureArtifacts.size();
+            if (requestedRows
+                > MaximumReleaseSigningEditorRows - AZStd::min(
+                    rows,
+                    MaximumReleaseSigningEditorRows))
+            {
+                requestedRows = MaximumReleaseSigningEditorRows;
+                break;
+            }
+            requestedRows += rows;
+            if (requestedRows >= MaximumReleaseSigningEditorRows)
+            {
+                requestedRows = MaximumReleaseSigningEditorRows;
+                break;
+            }
         }
-        m_table->setRowCount(rowCount);
+        const size_t displayRows = AZStd::min(
+            requestedRows,
+            MaximumReleaseSigningEditorRows);
+        m_table->setRowCount(static_cast<int>(displayRows));
 
         AZ::u64 attemptedCount = 0;
         AZ::u64 succeededCount = 0;
@@ -244,7 +280,9 @@ namespace TaintedGrailModdingSDK
         AZ::u64 signatureArtifactCount = 0;
         AZ::u64 failureCount = 0;
         AZ::u64 diagnosticCount = 0;
-        int rowIndex = 0;
+        size_t rowIndex = 0;
+        bool displayTruncated = false;
+
         for (const AdapterReleaseSigningResultEnvelope& envelope : envelopes)
         {
             attemptedCount += envelope.m_attempted ? 1 : 0;
@@ -269,32 +307,34 @@ namespace TaintedGrailModdingSDK
             AZStd::sort(
                 artifacts.begin(),
                 artifacts.end(),
-                [](const AdapterReleaseSignatureArtifact* left,
-                   const AdapterReleaseSignatureArtifact* right)
+                [](const auto* left, const auto* right)
                 {
                     return left->m_signatureArtifactId
                         < right->m_signatureArtifactId;
                 });
 
-            const int rows = artifacts.empty()
-                ? 1
-                : static_cast<int>(artifacts.size());
-            for (int localRow = 0; localRow < rows; ++localRow)
+            const size_t rows = artifacts.empty() ? 1 : artifacts.size();
+            for (size_t localRow = 0; localRow < rows; ++localRow)
             {
+                if (rowIndex >= displayRows)
+                {
+                    displayTruncated = true;
+                    break;
+                }
                 const AdapterReleaseSignatureArtifact* signatureArtifact =
-                    artifacts.empty()
-                    ? nullptr
-                    : artifacts[static_cast<size_t>(localRow)];
+                    artifacts.empty() ? nullptr : artifacts[localRow];
                 const AZStd::string signatureArtifactId = signatureArtifact
                     ? signatureArtifact->m_signatureArtifactId
                     : AZStd::string{};
+                const int tableRow = static_cast<int>(rowIndex);
 
                 SetSigningCell(
                     m_table,
-                    rowIndex,
+                    tableRow,
                     0,
-                    tr("%1 (%2) | contract status=not evaluated | artifact=%3 (%4) | "
-                       "assembly=%5 (%6)")
+                    tr("%1 | reported fingerprint=%2 | SDK authority fingerprint="
+                       "not available in registry-only view | contract status=not "
+                       "evaluated | artifact=%3 (%4) | assembly=%5 (%6)")
                         .arg(
                             ToSigningQString(envelope.m_resultId),
                             ToSigningQString(envelope.m_resultFingerprint),
@@ -304,7 +344,7 @@ namespace TaintedGrailModdingSDK
                             ToSigningQString(envelope.m_assemblyResultFingerprint)));
                 SetSigningCell(
                     m_table,
-                    rowIndex,
+                    tableRow,
                     1,
                     tr("%1 | %2 | format=%3 | bytes=%4 | %5")
                         .arg(
@@ -316,7 +356,7 @@ namespace TaintedGrailModdingSDK
                             ToSigningQString(envelope.m_archiveFingerprint)));
                 SetSigningCell(
                     m_table,
-                    rowIndex,
+                    tableRow,
                     2,
                     tr("%1 %2 (%3) | review=%4 | decision=%5 | reviewer=%6 | "
                        "reviewed=%7 | capabilities=%8 | evidence=%9")
@@ -338,7 +378,7 @@ namespace TaintedGrailModdingSDK
                                 envelope.m_signerReview.m_evidenceIds)));
                 SetSigningCell(
                     m_table,
-                    rowIndex,
+                    tableRow,
                     3,
                     tr("intent=%1 | decision=%2 | kind=%3 | signer=%4 | locator=%5 | %6")
                         .arg(
@@ -352,7 +392,7 @@ namespace TaintedGrailModdingSDK
                             ToSigningQString(envelope.m_identityFingerprint)));
                 SetSigningCell(
                     m_table,
-                    rowIndex,
+                    tableRow,
                     4,
                     tr("outcome=%1 | attempted=%2 | completed=%3 | captured=%4 | "
                        "failure refs=%5 | diagnostic refs=%6")
@@ -368,14 +408,15 @@ namespace TaintedGrailModdingSDK
                 {
                     SetSigningCell(
                         m_table,
-                        rowIndex,
+                        tableRow,
                         5,
                         tr("%1 [%2] | %3 | media=%4 | bytes=%5 | %6 | created=%7 | "
                            "archive=%8 (%9)")
                             .arg(
                                 ToSigningQString(
                                     signatureArtifact->m_signatureArtifactId),
-                                ToSigningQString(ToString(signatureArtifact->m_kind)),
+                                ToSigningQString(ToString(
+                                    signatureArtifact->m_kind)),
                                 ToSigningQString(signatureArtifact->m_reference),
                                 ToSigningQString(signatureArtifact->m_mediaType),
                                 QString::number(static_cast<qulonglong>(
@@ -389,17 +430,17 @@ namespace TaintedGrailModdingSDK
                 }
                 SetSigningCell(
                     m_table,
-                    rowIndex,
+                    tableRow,
                     6,
                     FailureDetails(envelope, signatureArtifactId));
                 SetSigningCell(
                     m_table,
-                    rowIndex,
+                    tableRow,
                     7,
                     DiagnosticDetails(envelope, signatureArtifactId));
                 SetSigningCell(
                     m_table,
-                    rowIndex,
+                    tableRow,
                     8,
                     tr("reconciliation=%1 | package=%2 | manifest=%3 | pack=%4 %5 | "
                        "profile=%6 | game=%7 | branch=%8 | target=%9")
@@ -415,7 +456,7 @@ namespace TaintedGrailModdingSDK
                             ToSigningQString(envelope.m_runtimeTarget)));
                 SetSigningCell(
                     m_table,
-                    rowIndex,
+                    tableRow,
                     9,
                     tr("SDK read=no | archive-open=no | archive-write=no | key=no | "
                        "credential=no | identity-resolution=no | sign=no | verify=no | "
@@ -423,16 +464,21 @@ namespace TaintedGrailModdingSDK
                        "adapter=no | deploy=no | save=no"));
                 ++rowIndex;
             }
+            if (displayTruncated)
+            {
+                break;
+            }
         }
 
         m_summary->setText(
             tr("Registered release signing-result envelopes: %1 | reported attempts: "
                "%2 | reported successes: %3 | reported failures: %4 | reported skips: "
                "%5 | supplied signature artifacts: %6 | supplied failure records: %7 | "
-               "safe diagnostic references: %8. These are external-result claims only. "
-               "Contract acceptance requires the exact upstream inputs and the release-"
-               "signing evidence service; this pane does not infer, authenticate, or "
-               "verify acceptance.")
+               "supplied diagnostic references: %8 | displayed rows: %9 of at most %10%11. "
+               "These are external-result claims only. Contract acceptance and the SDK-"
+               "derived authority fingerprint require the exact upstream inputs and the "
+               "release-signing evidence service; this pane does not infer, authenticate, "
+               "declare diagnostics safe, or verify acceptance.")
                 .arg(
                     QString::number(static_cast<qulonglong>(envelopes.size())),
                     QString::number(static_cast<qulonglong>(attemptedCount)),
@@ -441,6 +487,12 @@ namespace TaintedGrailModdingSDK
                     QString::number(static_cast<qulonglong>(skippedCount)),
                     QString::number(static_cast<qulonglong>(signatureArtifactCount)),
                     QString::number(static_cast<qulonglong>(failureCount)),
-                    QString::number(static_cast<qulonglong>(diagnosticCount))));
+                    QString::number(static_cast<qulonglong>(diagnosticCount)),
+                    QString::number(static_cast<qulonglong>(rowIndex)),
+                    QString::number(static_cast<qulonglong>(
+                        MaximumReleaseSigningEditorRows)),
+                    displayTruncated
+                        ? tr("; display truncated")
+                        : QString{}));
     }
 } // namespace TaintedGrailModdingSDK
