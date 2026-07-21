@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -18,6 +19,7 @@ from typing import Iterable
 ALLOWED_TOP_LEVEL_DIRECTORIES = {
     ".github",
     "Gems",
+    "Plugins",
     "Research",
     "TaintedGrailModdingEditor",
     "docs",
@@ -41,6 +43,15 @@ ALLOWED_ROOT_FILES = {
     "o3de.lock.json",
 }
 ALLOWED_GEMS = {"ExternalToolchain", "TaintedGrailModdingSDK"}
+ALLOWED_PLUGIN_CATEGORIES = {"Authoring", "Integrations", "RuntimeAdapters"}
+ALLOWED_PLUGIN_ROOT_FILES = {
+    "Plugins/README.md",
+    "Plugins/plugin.schema.json",
+}
+ALLOWED_PLUGIN_CATEGORY_FILES = {
+    f"Plugins/{category}/README.md" for category in ALLOWED_PLUGIN_CATEGORIES
+}
+PLUGIN_PACKAGE_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,127}$")
 ALLOWED_GITHUB_FILES = {
     ".github/CODEOWNERS",
     ".github/ISSUE_TEMPLATE/config.yml",
@@ -57,6 +68,11 @@ REQUIRED_PATHS = {
     ".github/CODEOWNERS",
     "Gems/ExternalToolchain/gem.json",
     "Gems/TaintedGrailModdingSDK/gem.json",
+    "Plugins/README.md",
+    "Plugins/plugin.schema.json",
+    "Plugins/Authoring/README.md",
+    "Plugins/Integrations/README.md",
+    "Plugins/RuntimeAdapters/README.md",
     "TaintedGrailModdingEditor/project.json",
     "docs/tainted-grail-sdk/README.md",
     "Research/o3de-to-unity-conversion-and-runtime-bridge/README.md",
@@ -120,6 +136,8 @@ def validate_paths(paths: Iterable[str]) -> None:
     forbidden: set[str] = set()
     unexpected_gems: set[str] = set()
     unexpected_github: set[str] = set()
+    unexpected_plugins: set[str] = set()
+    plugin_packages: set[tuple[str, str]] = set()
 
     for path in tracked:
         parts = path.split("/")
@@ -140,10 +158,36 @@ def validate_paths(paths: Iterable[str]) -> None:
         if top == "Gems":
             if len(parts) < 2 or parts[1] not in ALLOWED_GEMS:
                 unexpected_gems.add(parts[1] if len(parts) > 1 else path)
+        elif top == "Plugins":
+            if len(parts) == 2:
+                if path not in ALLOWED_PLUGIN_ROOT_FILES:
+                    unexpected_plugins.add(path)
+                continue
+
+            category = parts[1]
+            if category not in ALLOWED_PLUGIN_CATEGORIES:
+                unexpected_plugins.add(path)
+                continue
+            if len(parts) == 3:
+                if path not in ALLOWED_PLUGIN_CATEGORY_FILES:
+                    unexpected_plugins.add(path)
+                continue
+
+            package = parts[2]
+            if package == "README.md" or PLUGIN_PACKAGE_NAME.fullmatch(package) is None:
+                unexpected_plugins.add(path)
+                continue
+            plugin_packages.add((category, package))
         elif top == ".github" and path not in ALLOWED_GITHUB_FILES:
             unexpected_github.add(path)
         elif top == "docs" and (len(parts) < 2 or parts[1] != "tainted-grail-sdk"):
             unexpected_top_level_directories.add(path)
+
+    missing_plugin_manifests = sorted(
+        f"Plugins/{category}/{package}/plugin.json"
+        for category, package in plugin_packages
+        if f"Plugins/{category}/{package}/plugin.json" not in tracked
+    )
 
     problems: list[str] = []
     if forbidden:
@@ -159,6 +203,12 @@ def validate_paths(paths: Iterable[str]) -> None:
         problems.append("unexpected root Gems: " + ", ".join(sorted(unexpected_gems)))
     if unexpected_github:
         problems.append("unexpected .github files: " + ", ".join(sorted(unexpected_github)))
+    if unexpected_plugins:
+        problems.append("unexpected plug-in paths: " + ", ".join(sorted(unexpected_plugins)))
+    if missing_plugin_manifests:
+        problems.append(
+            "plug-in packages missing plugin.json: " + ", ".join(missing_plugin_manifests)
+        )
     if problems:
         raise RepositoryStructureError("; ".join(problems))
 
@@ -187,7 +237,10 @@ def main() -> int:
     except (OSError, UnicodeDecodeError, RepositoryStructureError) as exc:
         print(f"FOA-SDK repository structure validation failed: {exc}", file=sys.stderr)
         return 1
-    print("FOA-SDK repository structure validation passed: tracked tree is product-only.")
+    print(
+        "FOA-SDK repository structure validation passed: tracked tree is product-only "
+        "and plug-in packages are governed."
+    )
     return 0
 
 

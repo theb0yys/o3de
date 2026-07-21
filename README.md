@@ -29,7 +29,11 @@ Generated builds, caches, diagnostics, screenshots, installers, packages, and va
 .github/                              FOA issue forms, ownership and manual workflows
 Gems/
 ├── ExternalToolchain/                bounded external-tool discovery and provider contracts
-└── TaintedGrailModdingSDK/           editor, schemas, services, validators and tests
+└── TaintedGrailModdingSDK/           required editor foundation, schemas, services and tests
+Plugins/                              optional product extension packages
+├── Authoring/                        Avalon AI, UI Framework, Road Atlas and future authoring systems
+├── Integrations/                     Merlin's Workshop and acquisition/tool providers
+└── RuntimeAdapters/                  separate Mono and IL2CPP adapter packages
 Research/                             preserved research inputs and reviewed conclusions
 TaintedGrailModdingEditor/            dedicated O3DE Editor project
 
@@ -45,6 +49,10 @@ SECURITY.md                            vulnerability reporting policy
 SUPPORT.md                             support boundaries
 LICENSE.txt                            repository licence
 ```
+
+`Gems/` contains the two always-present product foundations. `Plugins/` contains optional, independently governed packages. Every plug-in package requires a schema-valid `plugin.json`, deterministic ExtensionAPI registration, explicit compatibility and capabilities, provenance, licence state, and focused tests. A plug-in declaration never grants runtime, deployment, save, signing, publication, catalog-mutation, or evidence-promotion authority.
+
+See [`Plugins/README.md`](Plugins/README.md) and [`Plugins/plugin.schema.json`](Plugins/plugin.schema.json) for the package contract.
 
 Stock O3DE source, engine Gems, templates, scripts, assets, registries, and build files are deliberately absent. They are supplied by the separately pinned engine checkout.
 
@@ -125,11 +133,13 @@ The local gate does not claim a hosted CI result. Repository Actions remain manu
 
 ## Architecture boundary
 
-FOA-SDK owns authoring data, Editor panes, typed contracts, validation, evidence, packaging previews, and governed work-order planning.
+FOA-SDK owns authoring data, Editor panes, typed contracts, validation, evidence, packaging previews, governed work-order planning, and optional plug-in packages.
+
+Required host integration remains in the two product Gems. Optional AI, UI, road, integration, acquisition, and runtime-adapter systems live beneath `Plugins/` and register through the public ExtensionAPI rather than acquiring mutable Foundation internals.
 
 O3DE owns engine and host functionality. The target Unity game owns final runtime interpretation. Cross-engine conversion is performed through deterministic, reviewable file handoff; Unity-native files remain Unity-owned.
 
-No editor action silently promotes evidence, mutates a game installation, launches FoA, injects code, modifies saves, signs artifacts, or publishes a release. Mono and IL2CPP runtime support remain separate adapter paths and require exact-install evidence.
+No editor or plug-in declaration silently promotes evidence, mutates a game installation, launches FoA, injects code, modifies saves, signs artifacts, or publishes a release. Mono and IL2CPP runtime support remain separate adapter paths and require exact-install evidence.
 
 ## Documentation
 
@@ -137,6 +147,7 @@ Start with:
 
 - [FOA-SDK documentation index](docs/tainted-grail-sdk/README.md)
 - [Architecture](docs/tainted-grail-sdk/ARCHITECTURE.md)
+- [Plug-in package root](Plugins/README.md)
 - [Development guide](docs/tainted-grail-sdk/DEVELOPMENT_GUIDE.md)
 - [Developer Preview 0](docs/tainted-grail-sdk/DEVELOPER_PREVIEW_0.md)
 - [External O3DE dependency boundary](docs/tainted-grail-sdk/EXTERNAL_O3DE_DEPENDENCY.md)
