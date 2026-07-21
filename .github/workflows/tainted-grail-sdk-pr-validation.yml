@@ -1,0 +1,52 @@
+name: Tainted Grail SDK PR Static Validation
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "Gems/TaintedGrailModdingSDK/**"
+      - "Gems/ExternalToolchain/**"
+      - "TaintedGrailModdingEditor/**"
+      - "docs/tainted-grail-sdk/**"
+      - "scripts/commit_validation/**"
+      - "o3de.lock.json"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/**"
+      - "Gems/TaintedGrailModdingSDK/**"
+      - "Gems/ExternalToolchain/**"
+      - "TaintedGrailModdingEditor/**"
+      - "docs/tainted-grail-sdk/**"
+      - "scripts/commit_validation/**"
+      - "o3de.lock.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tg-sdk-static-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-validation:
+    name: Python, validators, fixtures, and source policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact workflow commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run non-compiled TG SDK validation layer
+        run: >-
+          python Gems/TaintedGrailModdingSDK/Tools/run_local_validation.py --keep-going --static-only --skip-source-policy
