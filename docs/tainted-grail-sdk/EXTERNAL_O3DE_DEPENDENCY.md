@@ -112,9 +112,9 @@ o3de       pinned upstream checkout
 FOA-O3DE   absent
 ```
 
-## Filtered-history migration
+## History extraction and filtered-history migration
 
-The working tree is now FOA-only, but deleting O3DE directories in a normal commit does not remove them from earlier commits or Git object storage. A fresh clone still inherits the old fork history until the filtered-history migration is completed.
+The working tree is now FOA-only, but deleting O3DE directories in a normal commit does not remove them from earlier commits or Git object storage. A fresh clone still inherits the old fork history until the history extraction and filtered-history migration are completed.
 
 That later migration must:
 
