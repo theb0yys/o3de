@@ -17,6 +17,7 @@
 #include <AzCore/std/containers/vector.h>
 #include <AzCore/std/sort.h>
 #include <AzCore/std/string/string.h>
+#include <AzCore/std/utility/move.h>
 
 #include <cstddef>
 
