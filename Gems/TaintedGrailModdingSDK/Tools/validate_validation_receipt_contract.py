@@ -188,6 +188,11 @@ def validate(repo_root: Path) -> None:
     require_all(
         coordinator,
         (
+            "import developer_preview",
+            "developer_preview.validate_product_root(repo)",
+            "developer_preview.default_build_directory(repo)",
+            '"--product-root"',
+            '"--engine-root"',
             '"local-validation": tool(',
             '"--static-only"',
             '"compiled-tests": (',
@@ -195,6 +200,11 @@ def validate(repo_root: Path) -> None:
             "def status_exit_code(",
             "return status_exit_code(report)",
         ),
+        "Exact-head verification coordinator",
+    )
+    forbid(
+        coordinator,
+        'repo / "engine.json"',
         "Exact-head verification coordinator",
     )
 
@@ -205,6 +215,7 @@ def validate(repo_root: Path) -> None:
     require_all(
         coordinator_tests,
         (
+            "test_external_engine_build_and_evidence_roots_are_separate",
             "test_local_and_compiled_gates_cannot_silently_skip_essential_layers",
             "test_incomplete_status_is_a_gating_failure",
             'self.assertIn("--static-only", local)',
