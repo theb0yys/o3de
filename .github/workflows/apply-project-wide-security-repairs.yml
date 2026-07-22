@@ -40,6 +40,26 @@ jobs:
           {
             python -m py_compile Gems/TaintedGrailModdingSDK/Tools/apply_project_wide_security_repairs.py
             python Gems/TaintedGrailModdingSDK/Tools/apply_project_wide_security_repairs.py
+            python - <<'PY'
+          from pathlib import Path
+
+          validator = Path("Gems/TaintedGrailModdingSDK/Tools/validate_canonical_interchange_compiled_tests.py")
+          text = validator.read_text(encoding="utf-8")
+          old = 'r"ly_add_target\\(\\s*NAME \\$\\{gem_name\\}\\.CanonicalInterchange\\.Tests.*?\\n\\)",'
+          new = 'r"ly_add_target\\(\\s*NAME \\$\\{gem_name\\}\\.CanonicalInterchange\\.Tests.*?\\n\\s*\\)",'
+          if text.count(old) != 1:
+              raise RuntimeError("Unable to repair the canonical target indentation matcher.")
+          validator.write_text(text.replace(old, new), encoding="utf-8")
+
+          test = Path("Gems/TaintedGrailModdingSDK/Tools/tests/test_validate_canonical_interchange_compiled_tests.py")
+          text = test.read_text(encoding="utf-8")
+          text = text.replace("import sys\n", "import sys\nimport unittest\n", 1)
+          old_test = "def test_current_tree_has_core_only_canonical_target() -> None:\n    MODULE.validate(Path(__file__).resolve().parents[4])\n"
+          new_test = "class CanonicalInterchangeCompiledTestValidatorTests(unittest.TestCase):\n    def test_current_tree_has_core_only_canonical_target(self) -> None:\n        MODULE.validate(Path(__file__).resolve().parents[4])\n"
+          if text.count(old_test) != 1:
+              raise RuntimeError("Unable to repair the canonical validator unit-test shape.")
+          test.write_text(text.replace(old_test, new_test), encoding="utf-8")
+          PY
             git rm Gems/TaintedGrailModdingSDK/Tools/apply_project_wide_security_repairs.py
             git rm -r Gems/TaintedGrailModdingSDK/Tools/project_wide_security_repair_bundle
             git rm .github/workflows/apply-project-wide-security-repairs.yml
