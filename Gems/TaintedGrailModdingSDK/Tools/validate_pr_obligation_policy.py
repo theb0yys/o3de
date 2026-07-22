@@ -63,7 +63,7 @@ def validate(root: Path = REPO_ROOT) -> None:
             raise PullRequestObligationPolicyError(
                 f"Pull request template must contain exactly one {marker}."
             )
-        if marker not in runtime:
+        if f'"{identity}"' not in runtime:
             raise PullRequestObligationPolicyError(
                 f"Runtime gate does not govern obligation {identity!r}."
             )
