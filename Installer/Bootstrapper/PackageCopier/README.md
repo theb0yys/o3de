@@ -15,3 +15,7 @@ The staging root must not already exist. Its parent and the entire source path m
 This unit does not copy into a product or game installation directory. It does not launch a process, request elevation, finalize install/repair/upgrade/rollback/uninstall, execute runtime adapters, deploy content, mutate saves, sign, upload, publish, mutate catalogues, or promote evidence.
 
 The next isolated gates are the process launcher and elevation helper. Lifecycle finalization remains separate from both.
+
+## Security hardening
+
+Payload staging now requires the explicit authenticated copy capability, consumes its grant once, signs its receipt, and publishes the staging directory with an atomic no-replace primitive.

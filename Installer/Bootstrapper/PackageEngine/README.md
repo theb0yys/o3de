@@ -91,3 +91,7 @@ The following remain later isolated units:
 6. installation-result receipts.
 
 Each later unit must consume the exact `session_sha256`, receive its own explicit capability, and prove that external workspaces and user-authored content are preserved.
+
+## Trust-anchor hardening
+
+Package-engine tokens and sessions are Schema 2 authenticated records. A token consumes a trusted broker proof for one resolver-bound operation plan, and session acceptance atomically claims the token nonce.

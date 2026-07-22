@@ -35,3 +35,7 @@ The publisher:
 This gate does not copy payloads, launch processes, request elevation, execute runtime adapters, mutate saves, sign artifacts, publish releases, mutate catalogues, promote evidence, or touch product/game directories.
 
 The state record and publication receipt both explicitly preserve those forbidden side-effect flags as false.
+
+## Security hardening
+
+Installation-state publication requires its explicit session capability and a completed authenticated lifecycle result. Grants are one-shot; records and receipts are authenticated; initial creation is no-replace and replacement requires the exact previous-state hash.

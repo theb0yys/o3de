@@ -43,7 +43,8 @@ BUILD_ROOT_ENVIRONMENT_VARIABLE = "FOA_BUILD_ROOT"
 EDITOR_TARGET = "Editor"
 ASSET_PROCESSOR_BATCH_TARGET = "AssetProcessorBatch"
 CATALOG_TEST_TARGET = "TaintedGrailModdingSDK.Catalog.Tests"
-CATALOG_TEST_PATTERN = r"TaintedGrailModdingSDK\.Catalog\.Tests"
+CANONICAL_INTERCHANGE_TEST_TARGET = "TaintedGrailModdingSDK.CanonicalInterchange.Tests"
+CATALOG_TEST_PATTERN = r"TaintedGrailModdingSDK\.(Catalog|CanonicalInterchange)\.Tests"
 MINIMUM_PYTHON = (3, 10, 0)
 MINIMUM_CMAKE = (3, 23, 0)
 
@@ -642,6 +643,7 @@ def build_command(build_dir: Path, cmake: str = "cmake") -> tuple[str, ...]:
         EDITOR_TARGET,
         ASSET_PROCESSOR_BATCH_TARGET,
         CATALOG_TEST_TARGET,
+        CANONICAL_INTERCHANGE_TEST_TARGET,
     )
 
 
@@ -689,6 +691,11 @@ def validation_plan(
             str(product_root),
         ),
         CommandStep(
+            "canonical-interchange-contract",
+            (sys.executable, str(tools / "validate_canonical_interchange_compiled_tests.py")),
+            str(product_root),
+        ),
+        CommandStep(
             "o3de-source-policy",
             (
                 sys.executable,
@@ -700,7 +707,7 @@ def validation_plan(
             str(product_root),
         ),
         CommandStep(
-            "compiled-catalog-tests",
+            "compiled-catalog-and-canonical-interchange-tests",
             (
                 ctest,
                 "--test-dir",
@@ -838,13 +845,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     build = subparsers.add_parser(
         "build",
-        help="Build the Editor, asset preflight, and TG SDK catalog tests.",
+        help="Build the Editor, asset preflight, catalog tests, and Core-only canonical interchange tests.",
     )
     add_common_paths(build)
     build.add_argument("--cmake", default="cmake", help="CMake executable.")
     build.add_argument("--dry-run", action="store_true", help="Print the command without executing it.")
 
-    validate = subparsers.add_parser("validate", help="Run all focused validators and compiled catalog tests.")
+    validate = subparsers.add_parser("validate", help="Run all focused validators and both mandatory compiled test targets.")
     add_common_paths(validate)
     validate.add_argument("--ctest", default="ctest", help="CTest executable.")
     validate.add_argument("--result", type=Path, help="Machine-readable validation result path.")

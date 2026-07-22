@@ -29,3 +29,7 @@ This slice still performs no package copy, process launch, elevation, installati
 The bootstrapper must fail closed for unsupported hosts, missing prerequisites, source or hash drift, unsafe paths, dependency cycles, unreviewed redistribution, partial acquisition, unexpected elevation, stale suite definitions, stale receipts, unsupported lifecycle operations, mismatched logical targets, stale handoffs, expired tokens, capability mismatch, or capability escalation.
 
 Network access, process execution, filesystem mutation, package-engine execution, and elevation are explicit separately reviewed capabilities. They are never inferred from package presence, a valid receipt, a valid handoff, or a valid package-engine token. The bootstrapper grants no FoA launch, deployment, runtime, save, signing, publication, catalog-mutation, or evidence-promotion authority.
+
+## Authenticated execution security
+
+`Security/` owns the shared trust-anchor, resolver-bound operation-plan, one-shot claim, bounded-process, immutable-helper, and atomic no-replace primitives used by every operational bootstrapper lane. Copy, launch, elevation, lifecycle coordination, and installation-state publication must consume the exact authenticated session capability and may not mint authority from caller text.

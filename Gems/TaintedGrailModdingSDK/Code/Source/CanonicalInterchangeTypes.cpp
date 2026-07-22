@@ -78,8 +78,26 @@ namespace TaintedGrailModdingSDK::Interchange
 
     bool IsExactVersionTokenV1(AZStd::string_view value)
     {
-        if (value.empty() || value.size() > MaxSemanticTokenBytesV1) { return false; }
-        for (char current : value) { if (!(IsLowerAlpha(current) || IsDigit(current) || current == '.' || current == '_' || current == '-')) { return false; } }
+        if (value.empty() || value.size() > MaxSemanticTokenBytesV1 ||
+            !IsLowerAlpha(value.front()) || value.back() == '.' ||
+            value.back() == '_' || value.back() == '-')
+        {
+            return false;
+        }
+        char previous = 0;
+        for (char current : value)
+        {
+            if (!IsTokenByte(current))
+            {
+                return false;
+            }
+            if ((current == '.' || current == '_' || current == '-') &&
+                (previous == '.' || previous == '_' || previous == '-'))
+            {
+                return false;
+            }
+            previous = current;
+        }
         return true;
     }
 

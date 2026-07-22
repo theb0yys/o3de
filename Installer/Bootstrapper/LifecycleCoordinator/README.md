@@ -49,3 +49,7 @@ The result always records the following forbidden side effects as false:
 - evidence promotion.
 
 This gate coordinates lifecycle evidence. Installation-state publication remains a later isolated gate.
+
+## Security hardening
+
+Lifecycle grants and results are authenticated, one-shot records and every consumed copy, launch, elevation, or bootstrapper-completion receipt is reverified against the same session trust anchor.

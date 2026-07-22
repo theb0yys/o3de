@@ -188,7 +188,7 @@ def validate(repo_root: Path) -> None:
     require_all(
         preview_command,
         (
-            '"compiled-catalog-tests"',
+            '"compiled-catalog-and-canonical-interchange-tests"',
             '"--no-tests=error"',
             "CATALOG_TEST_PATTERN",
         ),
@@ -202,7 +202,7 @@ def validate(repo_root: Path) -> None:
     require_all(
         preview_command_tests,
         (
-            'compiled = next(step for step in plan if step.name == "compiled-catalog-tests")',
+            'compiled = next(step for step in plan if step.name == "compiled-catalog-and-canonical-interchange-tests")',
             'self.assertIn("--no-tests=error", compiled.command)',
             "self.assertIn(preview.CATALOG_TEST_PATTERN, compiled.command)",
         ),

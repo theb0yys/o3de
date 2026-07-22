@@ -17,3 +17,7 @@ The grant turns on only the existing `elevation` authority field. Acquisition, i
 The result records only whether the operating system accepted the elevation request. It deliberately sets `process_completion_observed = false`; lifecycle success must be established by a later isolated result/receipt gate.
 
 Hosted tests use an injected fake backend and never display a real UAC prompt. They cover deterministic consent and grant derivation, missing-capability rejection, session/launch/consent binding, expiry, tampering, exact executable hashing, backend invocation, and the absence of credential or silent-elevation surfaces.
+
+## Security hardening
+
+Elevation launches only the reviewed controlled bootstrapper. Authenticated consent and grants bind the exact helper request; the bootstrapper receives its reviewed configuration argv plus one one-shot request path and produces a separately authenticated completion receipt.

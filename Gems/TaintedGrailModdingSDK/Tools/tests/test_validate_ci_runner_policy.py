@@ -389,7 +389,10 @@ class LocalValidationEntrypointTests(unittest.TestCase):
             ):
                 command = build_ctest_command(build)
         self.assertIn("--no-tests=error", command.argv)
-        self.assertIn("TaintedGrailModdingSDK.Catalog.Tests", command.argv)
+        self.assertIn(
+            r"TaintedGrailModdingSDK\.(Catalog|CanonicalInterchange)\.Tests",
+            command.argv,
+        )
 
     def test_keep_going_runs_static_fixtures_and_compiled_stages(self) -> None:
         arguments = Namespace(
