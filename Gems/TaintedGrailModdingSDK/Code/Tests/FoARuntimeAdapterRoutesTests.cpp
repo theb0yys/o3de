@@ -241,4 +241,35 @@ namespace TaintedGrailModdingSDK
         const auto result = FoARuntimeAdapterRoutes::Qualify(request, registry);
         EXPECT_FALSE(result.m_planningCompatible);
     }
+
+    TEST(FoARuntimeAdapterRoutesTests, DotAndEmptyPathComponentsFailClosed)
+    {
+        for (const AZStd::string& invalidPath : {
+                 AZStd::string(".."),
+                 AZStd::string("./Plugin.cs"),
+                 AZStd::string("mods//Plugin.cs"),
+                 AZStd::string("mods/./Plugin.cs"),
+                 AZStd::string("mods/../Plugin.cs"),
+                 AZStd::string("mods/") })
+        {
+            auto route = *FoARuntimeAdapterRoutes::FindRoute("adapter.foa.mono");
+            route.m_sources[0].m_path = invalidPath;
+            EXPECT_FALSE(FoARuntimeAdapterRoutes::ValidateRoute(route))
+                << invalidPath.c_str();
+        }
+    }
+
+    TEST(FoARuntimeAdapterRoutesTests, UnknownEvidenceStateFailsClosed)
+    {
+        auto route = *FoARuntimeAdapterRoutes::FindRoute("adapter.foa.mono");
+        route.m_evidenceState = static_cast<FoARuntimeAdapterRoutes::EvidenceState>(99);
+        EXPECT_FALSE(FoARuntimeAdapterRoutes::ValidateRoute(route));
+    }
+
+    TEST(FoARuntimeAdapterRoutesTests, NonNamespacedCapabilityFailsClosed)
+    {
+        auto route = *FoARuntimeAdapterRoutes::FindRoute("adapter.foa.mono");
+        route.m_provenCapabilities[0] = "-not-a-capability";
+        EXPECT_FALSE(FoARuntimeAdapterRoutes::ValidateRoute(route));
+    }
 } // namespace TaintedGrailModdingSDK

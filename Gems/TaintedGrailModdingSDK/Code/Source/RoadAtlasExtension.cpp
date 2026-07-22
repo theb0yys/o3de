@@ -23,6 +23,10 @@ namespace TaintedGrailModdingSDK::RoadAtlasExtension
     {
         constexpr size_t MaximumElementCount = 16384;
         constexpr size_t MaximumGeometryPointCount = 65536;
+        constexpr size_t MaximumConnectedSegmentCount = 4096;
+        constexpr size_t MaximumTagCount = 256;
+        constexpr size_t MaximumEvidenceRequirementCount = 256;
+        constexpr size_t MaximumEvidenceIdsPerRequirement = 256;
 
         bool IsBoundedText(
             const AZStd::string& value,
@@ -65,6 +69,72 @@ namespace TaintedGrailModdingSDK::RoadAtlasExtension
         {
             AZStd::sort(values.begin(), values.end());
             return AZStd::adjacent_find(values.begin(), values.end()) != values.end();
+        }
+
+        bool IsValidElementKind(ElementKind kind)
+        {
+            switch (kind)
+            {
+            case ElementKind::Road:
+            case ElementKind::Name:
+            case ElementKind::Junction:
+            case ElementKind::Segment:
+            case ElementKind::Anchor:
+            case ElementKind::Connector:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        bool IsValidPromotionState(PromotionState state)
+        {
+            switch (state)
+            {
+            case PromotionState::Raw:
+            case PromotionState::Candidate:
+            case PromotionState::Mapped:
+            case PromotionState::Linked:
+            case PromotionState::Confirmed:
+            case PromotionState::ApprovedForPlanning:
+            case PromotionState::Blocked:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        bool IsValidEvidenceRequirementKind(EvidenceRequirementKind kind)
+        {
+            switch (kind)
+            {
+            case EvidenceRequirementKind::NameAuthority:
+            case EvidenceRequirementKind::SourceRegister:
+            case EvidenceRequirementKind::RuntimeCoordinate:
+            case EvidenceRequirementKind::SceneReference:
+            case EvidenceRequirementKind::SegmentGeometry:
+            case EvidenceRequirementKind::JunctionConnectivity:
+            case EvidenceRequirementKind::AnchorVisibility:
+            case EvidenceRequirementKind::ConnectorEndpoint:
+            case EvidenceRequirementKind::ReviewerApproval:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        bool AreBoundedValues(
+            const AZStd::vector<AZStd::string>& values,
+            size_t maximumCount,
+            size_t maximumLength)
+        {
+            return values.size() <= maximumCount
+                && AZStd::all_of(
+                    values.begin(), values.end(),
+                    [maximumLength](const AZStd::string& value)
+                    {
+                        return IsBoundedText(value, maximumLength);
+                    });
         }
 
         AZStd::string PrimaryRef(const Element& element)
@@ -192,6 +262,7 @@ namespace TaintedGrailModdingSDK::RoadAtlasExtension
         AZStd::vector<AZStd::string> elementIds;
         AZStd::vector<AZStd::string> segmentRefs;
         size_t totalGeometryPoints = 0;
+        bool geometryCountExceeded = false;
         for (const Element& element : snapshot.m_elements)
         {
             elementIds.push_back(element.m_elementId);
@@ -241,32 +312,58 @@ namespace TaintedGrailModdingSDK::RoadAtlasExtension
 
             if (!IsStableContractId(element.m_elementId)
                 || !IsStableContractId(element.m_ownerPackId)
-                || element.m_kind == ElementKind::Unknown
-                || element.m_promotionState == PromotionState::Unknown
+                || !IsValidElementKind(element.m_kind)
+                || !IsValidPromotionState(element.m_promotionState)
                 || !IsBoundedText(element.m_displayName, 512)
                 || !IsBoundedText(element.m_regionRef, 512)
                 || !IsBoundedText(element.m_sceneRef, 512)
                 || !IsBoundedText(PrimaryRef(element), 1024)
+                || !IsBoundedText(element.m_roadRef, 1024, true)
+                || !IsBoundedText(element.m_nameRef, 1024, true)
+                || !IsBoundedText(element.m_segmentRef, 1024, true)
+                || !IsBoundedText(element.m_junctionRef, 1024, true)
+                || !IsBoundedText(element.m_anchorRef, 1024, true)
+                || !IsBoundedText(element.m_connectorRef, 1024, true)
+                || !IsBoundedText(element.m_fromElementRef, 1024, true)
+                || !IsBoundedText(element.m_toElementRef, 1024, true)
+                || !IsBoundedText(element.m_worldNodeRef, 1024, true)
+                || !IsBoundedText(element.m_coordinateRef, 1024, true)
+                || !IsBoundedText(element.m_notes, 4096, true)
                 || element.m_runtimeMutationAllowed)
             {
                 AddIssue(
                     result, element.m_elementId, "element.invalid",
-                    "Road Atlas element identity, primary reference, scope, or authority is invalid.");
+                    "Road Atlas element identity, references, text, state, or authority is invalid.");
             }
-            if (HasDuplicates(element.m_connectedSegmentRefs)
-                || HasDuplicates(element.m_tags))
+
+            const bool connectedValuesBounded = AreBoundedValues(
+                element.m_connectedSegmentRefs,
+                MaximumConnectedSegmentCount,
+                1024);
+            const bool tagsBounded = AreBoundedValues(
+                element.m_tags,
+                MaximumTagCount,
+                256);
+            if (!connectedValuesBounded
+                || !tagsBounded
+                || (connectedValuesBounded
+                    && HasDuplicates(element.m_connectedSegmentRefs))
+                || (tagsBounded && HasDuplicates(element.m_tags)))
             {
                 AddIssue(
                     result, element.m_elementId, "element.duplicate-values",
-                    "Road Atlas connected refs and tags must be unique.");
+                    "Road Atlas connected refs and tags must be unique and bounded.");
             }
-            for (const AZStd::string& segmentRef : element.m_connectedSegmentRefs)
+            if (connectedValuesBounded)
             {
-                if (!Contains(segmentRefs, segmentRef))
+                for (const AZStd::string& segmentRef : element.m_connectedSegmentRefs)
                 {
-                    AddIssue(
-                        result, element.m_elementId, "element.missing-segment",
-                        "Road Atlas connectivity references an unknown segment.");
+                    if (!Contains(segmentRefs, segmentRef))
+                    {
+                        AddIssue(
+                            result, element.m_elementId, "element.missing-segment",
+                            "Road Atlas connectivity references an unknown segment.");
+                    }
                 }
             }
             if (!element.m_fromElementRef.empty()
@@ -291,50 +388,74 @@ namespace TaintedGrailModdingSDK::RoadAtlasExtension
                     result, element.m_elementId, "segment.geometry-missing",
                     "Planning-approved segments require at least two exact geometry points.");
             }
-            totalGeometryPoints += element.m_geometry.size();
-            for (const Coordinate& point : element.m_geometry)
+
+            const bool geometryWithinBound = element.m_geometry.size()
+                <= MaximumGeometryPointCount - totalGeometryPoints;
+            if (!geometryWithinBound)
             {
-                if (!std::isfinite(point.m_x) || !std::isfinite(point.m_y)
-                    || !std::isfinite(point.m_z)
-                    || !IsBoundedText(point.m_pointRef, 512))
+                geometryCountExceeded = true;
+            }
+            else
+            {
+                totalGeometryPoints += element.m_geometry.size();
+                for (const Coordinate& point : element.m_geometry)
                 {
-                    AddIssue(
-                        result, element.m_elementId, "segment.geometry-invalid",
-                        "Road Atlas geometry points require finite coordinates and stable source refs.");
+                    if (!std::isfinite(point.m_x) || !std::isfinite(point.m_y)
+                        || !std::isfinite(point.m_z)
+                        || !IsBoundedText(point.m_pointRef, 512))
+                    {
+                        AddIssue(
+                            result, element.m_elementId, "segment.geometry-invalid",
+                            "Road Atlas geometry points require finite coordinates and stable source refs.");
+                    }
                 }
             }
 
+            const bool requirementsWithinBound = element.m_evidenceRequirements.size()
+                <= MaximumEvidenceRequirementCount;
             AZStd::vector<AZStd::string> requirementIds;
-            for (const EvidenceRequirement& requirement : element.m_evidenceRequirements)
-            {
-                requirementIds.push_back(requirement.m_requirementId);
-                if (!IsStableContractId(requirement.m_requirementId)
-                    || requirement.m_kind == EvidenceRequirementKind::Unknown
-                    || (requirement.m_satisfied && requirement.m_evidenceIds.empty())
-                    || HasDuplicates(requirement.m_evidenceIds)
-                    || AZStd::any_of(
-                        requirement.m_evidenceIds.begin(),
-                        requirement.m_evidenceIds.end(),
-                        [](const AZStd::string& evidenceId)
-                        {
-                            return !IsStableContractId(evidenceId);
-                        }))
-                {
-                    AddIssue(
-                        result, element.m_elementId, "evidence.invalid",
-                        "Road Atlas evidence requirements are incomplete or duplicated.");
-                }
-            }
-            if (HasDuplicates(requirementIds)
-                || (element.m_promotionState == PromotionState::ApprovedForPlanning
-                    && !RequirementsSatisfied(element)))
+            if (!requirementsWithinBound)
             {
                 AddIssue(
-                    result, element.m_elementId, "evidence.requirements-unsatisfied",
-                    "Planning-approved elements require a non-empty set of unique, required, satisfied evidence requirements.");
+                    result, element.m_elementId, "evidence.requirement-count",
+                    "Road Atlas evidence requirement count exceeds the contract bound.");
+            }
+            else
+            {
+                for (const EvidenceRequirement& requirement : element.m_evidenceRequirements)
+                {
+                    requirementIds.push_back(requirement.m_requirementId);
+                    if (!IsStableContractId(requirement.m_requirementId)
+                        || !IsValidEvidenceRequirementKind(requirement.m_kind)
+                        || !IsBoundedText(requirement.m_notes, 4096, true)
+                        || requirement.m_evidenceIds.size()
+                            > MaximumEvidenceIdsPerRequirement
+                        || (requirement.m_satisfied && requirement.m_evidenceIds.empty())
+                        || HasDuplicates(requirement.m_evidenceIds)
+                        || AZStd::any_of(
+                            requirement.m_evidenceIds.begin(),
+                            requirement.m_evidenceIds.end(),
+                            [](const AZStd::string& evidenceId)
+                            {
+                                return !IsStableContractId(evidenceId);
+                            }))
+                    {
+                        AddIssue(
+                            result, element.m_elementId, "evidence.invalid",
+                            "Road Atlas evidence requirements are incomplete, unbounded, or duplicated.");
+                    }
+                }
+                if (HasDuplicates(requirementIds)
+                    || (element.m_promotionState == PromotionState::ApprovedForPlanning
+                        && !RequirementsSatisfied(element)))
+                {
+                    AddIssue(
+                        result, element.m_elementId, "evidence.requirements-unsatisfied",
+                        "Planning-approved elements require a non-empty set of unique, required, satisfied evidence requirements.");
+                }
             }
         }
-        if (totalGeometryPoints > MaximumGeometryPointCount)
+        if (geometryCountExceeded || totalGeometryPoints > MaximumGeometryPointCount)
         {
             AddIssue(
                 result, snapshot.m_snapshotId, "snapshot.geometry-count",

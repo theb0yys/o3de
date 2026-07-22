@@ -174,4 +174,61 @@ namespace TaintedGrailModdingSDK
         EXPECT_FALSE(result.m_accepted);
         EXPECT_FALSE(result.m_canUseForPlanning);
     }
+
+    TEST(RoadAtlasExtensionTests, OutOfRangeEnumValuesFailClosed)
+    {
+        auto promotion = MakeRoadSnapshot();
+        promotion.m_elements[0].m_promotionState =
+            static_cast<RoadAtlasExtension::PromotionState>(99);
+        EXPECT_FALSE(RoadAtlasExtension::ValidateSnapshot(
+            promotion, MakeRoadProfile()).m_accepted);
+
+        auto requirement = MakeRoadSnapshot();
+        requirement.m_elements[0].m_evidenceRequirements[0].m_kind =
+            static_cast<RoadAtlasExtension::EvidenceRequirementKind>(99);
+        EXPECT_FALSE(RoadAtlasExtension::ValidateSnapshot(
+            requirement, MakeRoadProfile()).m_accepted);
+    }
+
+    TEST(RoadAtlasExtensionTests, NestedCollectionBoundsFailClosed)
+    {
+        auto tags = MakeRoadSnapshot();
+        tags.m_elements[0].m_tags.resize(257, "tag.road");
+        EXPECT_FALSE(RoadAtlasExtension::ValidateSnapshot(
+            tags, MakeRoadProfile()).m_accepted);
+
+        auto evidence = MakeRoadSnapshot();
+        evidence.m_elements[0].m_evidenceRequirements[0].m_evidenceIds.resize(
+            257,
+            "evidence.road.geometry");
+        EXPECT_FALSE(RoadAtlasExtension::ValidateSnapshot(
+            evidence, MakeRoadProfile()).m_accepted);
+    }
+
+    TEST(RoadAtlasExtensionTests, ControlCharactersInNestedNotesFailClosed)
+    {
+        auto snapshot = MakeRoadSnapshot();
+        snapshot.m_elements[0].m_evidenceRequirements[0].m_notes = "bad\nnotes";
+        EXPECT_FALSE(RoadAtlasExtension::ValidateSnapshot(
+            snapshot, MakeRoadProfile()).m_accepted);
+    }
+
+    TEST(RoadAtlasExtensionTests, GeometryLimitFailsClosedWithoutOverflow)
+    {
+        auto snapshot = MakeRoadSnapshot();
+        snapshot.m_elements[0].m_geometry.resize(65537);
+        for (RoadAtlasExtension::Coordinate& point : snapshot.m_elements[0].m_geometry)
+        {
+            point.m_pointRef = "point.geometry.fixture";
+        }
+        const auto result = RoadAtlasExtension::ValidateSnapshot(
+            snapshot, MakeRoadProfile());
+        EXPECT_FALSE(result.m_accepted);
+        EXPECT_TRUE(AZStd::any_of(
+            result.m_issues.begin(), result.m_issues.end(),
+            [](const RoadAtlasExtension::ValidationIssue& issue)
+            {
+                return issue.m_code == "snapshot.geometry-count";
+            }));
+    }
 } // namespace TaintedGrailModdingSDK
