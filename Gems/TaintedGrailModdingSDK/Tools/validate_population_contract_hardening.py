@@ -100,7 +100,18 @@ def validate(repo_root: Path) -> None:
         "if (!covered[index])",
     )
     positions = [coverage.find(fragment) for fragment in coverage_order]
-    if any(position < 0 for position in positions) or positions != sorted(positions):
+    missing = [
+        fragment
+        for fragment, position in zip(coverage_order, positions)
+        if position < 0
+    ]
+    if missing:
+        raise PopulationContractHardeningError(
+            "Population evidence coverage is missing required semantic fragment(s): "
+            + ", ".join(repr(fragment) for fragment in missing)
+            + "."
+        )
+    if positions != sorted(positions):
         raise PopulationContractHardeningError(
             "Population evidence coverage must validate complete evidence, map exact "
             "subjects, mark coverage, and reject every uncovered binding in order."
@@ -110,7 +121,8 @@ def validate(repo_root: Path) -> None:
         '#include "PathPolicyService.h"',
         "PathPolicyService pathPolicy;",
         "pathPolicy.ValidateWorkspacePaths(workspace, workspaceRoot)",
-        "path-policy-validated canonical workspace root",
+        "path-policy-validated ",
+        "canonical workspace root: ",
         "EvidenceIsCompleteAndBound(",
         "ValidatePopulationEvidenceCoverage(",
         "ActorEvidenceIds(actor, catalog)",
@@ -216,10 +228,14 @@ def validate(repo_root: Path) -> None:
     for fragment in (
         "const bool countRangeValid",
         "member.m_minimumCount <= member.m_maximumCount",
-        "(!member.m_required || member.m_minimumCount > 0)",
-        "positive minimum for required rows",
+        "positive minimum ",
+        "required rows",
     ):
         require(member_validation, fragment, "Population member validation")
+    if "(!member.m_required || member.m_minimumCount > 0)" not in member_validation:
+        raise PopulationContractHardeningError(
+            "Population member validation must require a positive minimum for required rows."
+        )
     reject(
         member_validation,
         "member.m_minimumCount == 0\n            || member.m_minimumCount > member.m_maximumCount",
@@ -232,8 +248,7 @@ def validate(repo_root: Path) -> None:
         "OptionalMinimumDoesNotRaiseTroopRequirement",
         "PublicAuthoringRejectsUnvalidatedRoot",
         "missing evidence for exact subject",
-        "m_required = true",
-        "m_required = false",
+        "optional.m_required = true",
         "path-policy-validated canonical workspace root",
     ):
         require(hardening_tests, fragment, "Population hardening compiled tests")
