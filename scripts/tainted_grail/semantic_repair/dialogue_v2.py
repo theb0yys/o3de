@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-from .errors import RepairError
+from .errors import RepairError, StaleGenerationError
 
 _SCHEMA_VERSION = 1
 API_VERSION = 2
@@ -140,21 +140,109 @@ class RegistrationToken:
     value: str
     owner_id: str
     command_id: str
+    generation: int = 0
+
+    def __post_init__(self) -> None:
+        _nonempty(self.value, "token value")
+        _nonempty(self.owner_id, "owner_id")
+        _nonempty(self.command_id, "command_id")
+        if type(self.generation) is not int or self.generation < 0:
+            raise RepairError("registration generation must be non-negative")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "value": self.value,
+            "owner_id": self.owner_id,
+            "command_id": self.command_id,
+            "registration_generation": self.generation,
+        }
+
+    @classmethod
+    def from_dict(cls, doc: Any) -> "RegistrationToken":
+        expected = {"value", "owner_id", "command_id", "registration_generation"}
+        if not isinstance(doc, dict) or set(doc) != expected:
+            raise RepairError("registration token has unexpected fields")
+        return cls(
+            doc["value"],
+            doc["owner_id"],
+            doc["command_id"],
+            doc["registration_generation"],
+        )
+
+
+@dataclass(frozen=True)
+class RegistrySnapshot:
+    generation: int
+    registrations: tuple[RegistrationToken, ...]
+
+    def __post_init__(self) -> None:
+        if type(self.generation) is not int or self.generation < 0:
+            raise RepairError("registry generation must be non-negative")
+        keys: set[tuple[str, str]] = set()
+        for token in self.registrations:
+            key = (token.owner_id, token.command_id)
+            if key in keys:
+                raise RepairError("registry snapshot contains duplicate owner/command")
+            if token.generation > self.generation:
+                raise RepairError("registration generation exceeds registry generation")
+            keys.add(key)
+        if self.generation == 0 and self.registrations:
+            raise RepairError("generation zero registry must be empty")
+
+    def to_bytes(self) -> bytes:
+        ordered = sorted(
+            self.registrations,
+            key=lambda token: (token.owner_id, token.command_id),
+        )
+        return _canonical_json(
+            {
+                "schema_version": _SCHEMA_VERSION,
+                "kind": "registry-snapshot",
+                "api_version": API_VERSION,
+                "generation": self.generation,
+                "registrations": [token.to_dict() for token in ordered],
+            }
+        )
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "RegistrySnapshot":
+        doc = _parse_object(data, "registry-snapshot")
+        expected = {
+            "schema_version", "kind", "api_version", "generation", "registrations"
+        }
+        if set(doc) != expected:
+            raise RepairError("registry snapshot contains unexpected fields")
+        if doc["api_version"] != API_VERSION:
+            raise RepairError("unsupported registry snapshot API version")
+        registrations = doc["registrations"]
+        if not isinstance(registrations, list):
+            raise RepairError("registry snapshot registrations must be an array")
+        return cls(
+            doc["generation"],
+            tuple(RegistrationToken.from_dict(item) for item in registrations),
+        )
 
 
 @dataclass
 class DialogueRegistryV2:
     api_version: int = API_VERSION
     _registrations: dict[tuple[str, str], RegistrationToken] = field(default_factory=dict)
+    _generation: int = 0
+
+    @property
+    def generation(self) -> int:
+        return self._generation
 
     def register(self, registration: CommandRegistration) -> RegistrationToken:
         key = (registration.owner_id, registration.command_id)
         if key in self._registrations:
             raise RepairError("duplicate owner/command registration")
+        self._generation += 1
         token = RegistrationToken(
             value=f"v2:{registration.owner_id}:{registration.command_id}",
             owner_id=registration.owner_id,
             command_id=registration.command_id,
+            generation=self._generation,
         )
         self._registrations[key] = token
         return token
@@ -186,7 +274,36 @@ class DialogueRegistryV2:
         if fail:
             return False
         del self._registrations[key]
+        self._generation += 1
         return True
+
+    def snapshot(self) -> RegistrySnapshot:
+        return RegistrySnapshot(
+            self._generation,
+            tuple(self._registrations.values()),
+        )
+
+    def to_snapshot_bytes(self) -> bytes:
+        return self.snapshot().to_bytes()
+
+    def apply_snapshot(self, snapshot: RegistrySnapshot) -> bool:
+        if snapshot.generation < self._generation:
+            raise StaleGenerationError(
+                f"snapshot generation {snapshot.generation} is older than current {self._generation}"
+            )
+        if snapshot.generation == self._generation:
+            if snapshot.to_bytes() != self.snapshot().to_bytes():
+                raise RepairError("registry snapshot conflicts at the current generation")
+            return False
+        self._registrations = {
+            (token.owner_id, token.command_id): token
+            for token in snapshot.registrations
+        }
+        self._generation = snapshot.generation
+        return True
+
+    def apply_snapshot_bytes(self, data: bytes) -> bool:
+        return self.apply_snapshot(RegistrySnapshot.from_bytes(data))
 
 
 @dataclass
