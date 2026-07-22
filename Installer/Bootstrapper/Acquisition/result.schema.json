@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/theb0yys/FOA-SDK/blob/main/Installer/Bootstrapper/Acquisition/result.schema.json",
+  "title": "FOA-SDK bootstrapper approved-acquisition result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "request_sha256", "plan_sha256", "confirmation_sha256", "provider_id", "provider_plan_id", "provider_receipt_id", "route", "output_reference", "captured_at_utc", "completed_at_utc", "packages", "verification", "candidate_evidence_created", "effects", "remaining_authority", "result_sha256"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "request_sha256": {"$ref": "#/$defs/sha256"},
+    "plan_sha256": {"$ref": "#/$defs/sha256"},
+    "confirmation_sha256": {"$ref": "#/$defs/sha256"},
+    "provider_id": {"$ref": "#/$defs/namespaced_id"},
+    "provider_plan_id": {"$ref": "#/$defs/typed_sha256"},
+    "provider_receipt_id": {"$ref": "#/$defs/typed_sha256"},
+    "route": {"enum": ["local", "pinned-github"]},
+    "output_reference": {"$ref": "#/$defs/namespaced_id"},
+    "captured_at_utc": {"$ref": "#/$defs/utc"},
+    "completed_at_utc": {"$ref": "#/$defs/utc"},
+    "packages": {"type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/$defs/namespaced_id"}},
+    "verification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bundle_verified", "files", "bytes"],
+      "properties": {
+        "bundle_verified": {"const": true},
+        "files": {"type": "integer", "minimum": 1, "maximum": 100000},
+        "bytes": {"type": "integer", "minimum": 1, "maximum": 1099511627776}
+      }
+    },
+    "candidate_evidence_created": {"const": false},
+    "effects": {"$ref": "#/$defs/effects"},
+    "remaining_authority": {"$ref": "#/$defs/no_authority"},
+    "result_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "namespaced_id": {"type": "string", "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$", "maxLength": 128},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "typed_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "utc": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "effects": {
+      "type": "object", "additionalProperties": false,
+      "required": ["acquisition_performed", "installation_performed", "elevation_performed", "game_launched", "runtime_executed", "deployment_performed", "save_mutated", "signing_performed", "publication_performed", "catalog_mutated", "evidence_promoted"],
+      "properties": {
+        "acquisition_performed": {"const": true},
+        "installation_performed": {"const": false},
+        "elevation_performed": {"const": false},
+        "game_launched": {"const": false},
+        "runtime_executed": {"const": false},
+        "deployment_performed": {"const": false},
+        "save_mutated": {"const": false},
+        "signing_performed": {"const": false},
+        "publication_performed": {"const": false},
+        "catalog_mutated": {"const": false},
+        "evidence_promoted": {"const": false}
+      }
+    },
+    "no_authority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["acquisition", "network", "filesystem_write", "installation", "elevation", "game_launch", "runtime_execution", "deployment", "save_mutation", "signing", "publication", "catalog_mutation", "evidence_promotion"],
+      "properties": {
+        "acquisition": {"const": false}, "network": {"const": false},
+        "filesystem_write": {"const": false}, "installation": {"const": false},
+        "elevation": {"const": false}, "game_launch": {"const": false},
+        "runtime_execution": {"const": false}, "deployment": {"const": false},
+        "save_mutation": {"const": false}, "signing": {"const": false},
+        "publication": {"const": false}, "catalog_mutation": {"const": false},
+        "evidence_promotion": {"const": false}
+      }
+    }
+  }
+}
