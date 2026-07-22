@@ -7,6 +7,8 @@
 
 #include <AzTest/AzTest.h>
 
+#include <AzCore/std/algorithm.h>
+
 #include "AvalonAiExtension.h"
 
 namespace TaintedGrailModdingSDK
