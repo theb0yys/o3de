@@ -47,7 +47,13 @@ Current implemented or contract-level documentation already exists for:
 - Avalon AI API 2.0 authoring contracts;
 - adapter planning, build, staging, deployment, verification, reconciliation, and release metadata.
 
-The system reference will summarize and connect those owners. It will not copy their schemas or imply that contract-only systems can already execute in the target game.
+The system reference summarizes and connects those owners. It does not copy their schemas or imply that contract-only systems can already execute in the target game.
+
+## Imported source-system facts
+
+- [Economy patch registrar](items-economy/PATCH_REGISTRATION_FACT.md) — establishes the pinned upstream registrar's caller-supplied, fail-open registration pattern and explicitly prevents the registrar helper from being misclassified as a native hook.
+
+A source-system fact describes a verified property of the selected source architecture. It is not automatically a fact about the current game runtime. Native type/member facts still require exact-profile evidence and hook promotion.
 
 ## Coverage rule
 
