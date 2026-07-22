@@ -29,7 +29,8 @@ answers the focused Schema-1 structure and identity question.
 The conclusion was written against `504e10b27e46fceae4d68af200118edca27b4d1b` and reconciled through
 `3d50df1ea3aaf97a5148ae4ebb5c5ade8336e6d2` by
 [`CURRENT_MAIN_RECONCILIATION_2026-07-22.md`](CURRENT_MAIN_RECONCILIATION_2026-07-22.md). The Gate 5 design is
-based on later `main` commit `eb840862c9d3e239dec91770495c7669c00d10df`.
+based on later `main` commit `eb840862c9d3e239dec91770495c7669c00d10df` and reconciled through
+`3fb95284f7cbc259a3c4ab0ba4469be0c9d7baaf` by the current-main design reconciliation.
 
 The accepted research direction is:
 
@@ -56,7 +57,8 @@ The accepted conclusion remains research-only and grants no implementation or op
 answered by:
 
 - [`../../../../../docs/tainted-grail-sdk/CANONICAL_INTERCHANGE_GATE_5_DESIGN.md`](../../../../../docs/tainted-grail-sdk/CANONICAL_INTERCHANGE_GATE_5_DESIGN.md);
-- [`../../../../../docs/tainted-grail-sdk/CANONICAL_INTERCHANGE_GATE_5_DESIGN_DECISIONS.md`](../../../../../docs/tainted-grail-sdk/CANONICAL_INTERCHANGE_GATE_5_DESIGN_DECISIONS.md).
+- [`../../../../../docs/tainted-grail-sdk/CANONICAL_INTERCHANGE_GATE_5_DESIGN_DECISIONS.md`](../../../../../docs/tainted-grail-sdk/CANONICAL_INTERCHANGE_GATE_5_DESIGN_DECISIONS.md);
+- [`../../../../../docs/tainted-grail-sdk/CANONICAL_INTERCHANGE_GATE_5_CURRENT_MAIN_RECONCILIATION_2026-07-22.md`](../../../../../docs/tainted-grail-sdk/CANONICAL_INTERCHANGE_GATE_5_CURRENT_MAIN_RECONCILIATION_2026-07-22.md).
 
 The proposed design fixes:
 
@@ -86,6 +88,16 @@ The design is ready for maintainer review but is not implementation authority.
 - Schema-1 migration supports exact `1 -> 1` identity and fails closed for every unavailable route.
 - The exact public schema, test, validator, and proposed changed-file layout is selected.
 - Every operational capability remains absent or false.
+
+## Design validation boundary
+
+A design PR must pass the repository's exact-head hosted static validation. That result proves document, policy,
+fixture, and repository-contract consistency only. It does not prove the proposed C++ contracts compile, the
+canonical bytes match compiled golden fixtures, or any Blender, O3DE round trip, Unity, runtime, deployment, save,
+signing, publication, or compatibility behavior.
+
+Those compiled and operational claims remain unavailable until a separately authorized implementation or later
+gate produces the exact required evidence.
 
 ## Remaining gate decision
 
