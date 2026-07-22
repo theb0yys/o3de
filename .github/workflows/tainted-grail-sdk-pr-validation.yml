@@ -58,11 +58,16 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Record exact repair tree
+        shell: bash
+        run: git rev-parse 'HEAD^{tree}' > tg-sdk-validation-repair-tree.txt
+
       - name: Preserve validation repair sources
         uses: actions/upload-artifact@v4
         with:
           name: tg-sdk-validation-repair-sources-${{ github.run_id }}
           path: |
+            tg-sdk-validation-repair-tree.txt
             .gitattributes
             .github/workflows/tainted-grail-sdk-pr-validation.yml
             .github/workflows/tainted-grail-sdk-foundation.yml
