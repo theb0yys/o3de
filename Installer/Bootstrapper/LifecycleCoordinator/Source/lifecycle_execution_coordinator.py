@@ -15,6 +15,7 @@ for root in (
     INSTALLER_ROOT / "Bootstrapper" / "PackageCopier" / "Source",
     INSTALLER_ROOT / "Bootstrapper" / "ProcessLauncher" / "Source",
     INSTALLER_ROOT / "Bootstrapper" / "ElevationHelper" / "Source",
+    INSTALLER_ROOT / "Bootstrapper" / "ElevatedCompletionReceipt" / "Source",
     INSTALLER_ROOT / "Bootstrapper" / "Security" / "Source",
     INSTALLER_ROOT / "SuiteWizard" / "ViewModel" / "Source",
 ):
@@ -23,6 +24,10 @@ for root in (
 
 from capability_elevation_helper import ElevationError, validate_elevation_result  # noqa: E402
 from capability_process_launcher import ProcessLaunchError, validate_launch_result  # noqa: E402
+from elevated_completion_receipt import (  # noqa: E402
+    ElevatedCompletionReceiptError,
+    validate_elevated_completion_observation,
+)
 from execution_security import (  # noqa: E402
     ExecutionSecurityError,
     seal_authenticated_record,
@@ -94,6 +99,18 @@ def _authority() -> dict[str, bool]:
     return {field: False for field in AUTHORITY_FIELDS}
 
 
+def _bool(value: object, label: str) -> bool:
+    if type(value) is not bool:
+        raise LifecycleCoordinatorError(f"{label} must be a boolean.")
+    return bool(value)
+
+
+def _optional_hash(value: object, label: str) -> str | None:
+    if value is None:
+        return None
+    return _hash(value, label)
+
+
 def build_lifecycle_grant(
     session: Mapping[str, object], *, authority_key_path: Path, operation: str, issuer: str,
     issued_at_utc: str, expires_at_utc: str, nonce: str, allow_elevation_result: bool = False,
@@ -159,6 +176,7 @@ def coordinate_lifecycle(
     copy_receipt: Mapping[str, object] | None = None,
     launch_result: Mapping[str, object] | None = None,
     elevation_result: Mapping[str, object] | None = None,
+    elevated_completion_observation: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
     checked = validate_lifecycle_grant(grant, authority_key_path=authority_key_path)
     completed = utc_datetime(completed_at_utc, "completed_at_utc")
@@ -168,19 +186,36 @@ def coordinate_lifecycle(
         copy = validate_copy_receipt(copy_receipt, authority_key_path=authority_key_path) if copy_receipt is not None else None
         launch = validate_launch_result(launch_result, authority_key_path=authority_key_path) if launch_result is not None else None
         elevation = validate_elevation_result(elevation_result, authority_key_path=authority_key_path) if elevation_result is not None else None
-    except (PackageCopyError, ProcessLaunchError, ElevationError) as exc:
+        elevated_completion = validate_elevated_completion_observation(
+            elevated_completion_observation,
+            authority_key_path=authority_key_path,
+        ) if elevated_completion_observation is not None else None
+    except (PackageCopyError, ProcessLaunchError, ElevationError, ElevatedCompletionReceiptError) as exc:
         raise LifecycleCoordinatorError(f"Lower-level evidence verification failed: {exc}") from exc
     if checked["requires_copy_receipt"] and copy is None:
         raise LifecycleCoordinatorError("This lifecycle operation requires an authenticated package copy receipt.")
-    if (launch is None) == (elevation is None):
-        raise LifecycleCoordinatorError("Provide exactly one authenticated launch or elevation result.")
+    execution_evidence_count = sum(item is not None for item in (launch, elevation, elevated_completion))
+    if execution_evidence_count != 1:
+        raise LifecycleCoordinatorError(
+            "Provide exactly one authenticated launch, elevation result, or elevated completion observation."
+        )
     session_sha = checked["session_sha256"]
-    for label, evidence in (("copy", copy), ("launch", launch), ("elevation", elevation)):
+    for label, evidence in (
+        ("copy", copy),
+        ("launch", launch),
+        ("elevation", elevation),
+        ("elevated completion", elevated_completion),
+    ):
         if evidence is not None and evidence.get("session_sha256") != session_sha:
             raise LifecycleCoordinatorError(f"{label} evidence is not bound to the lifecycle session.")
-    if elevation is not None and checked.get("allow_elevation_result") is not True:
+    if (elevation is not None or elevated_completion is not None) and checked.get("allow_elevation_result") is not True:
         raise LifecycleCoordinatorError("Lifecycle grant does not allow elevation result evidence.")
-    if elevation is not None:
+    if elevated_completion is not None and elevated_completion.get("operation") != checked["operation"]:
+        raise LifecycleCoordinatorError("Elevated completion observation operation does not match the lifecycle grant.")
+    if elevated_completion is not None:
+        status = _text(elevated_completion.get("status"), "elevated_completion.status", 64)
+        completed_ok = _bool(elevated_completion.get("completed"), "elevated_completion.completed")
+    elif elevation is not None:
         status = "elevation-requested-pending-completion-receipt"; completed_ok = False
     elif launch.get("timed_out") is True:
         status = "blocked-timeout"; completed_ok = False
@@ -194,11 +229,19 @@ def coordinate_lifecycle(
         "schema_version": 2, "result_scope": RESULT_SCOPE, "grant_sha256": checked["grant_sha256"],
         "session_sha256": session_sha, "operation": checked["operation"], "status": status,
         "completed": completed_ok, "lifecycle_completed": completed_ok,
-        "elevation_request_confirmed": elevation is not None,
+        "elevation_request_confirmed": elevation is not None or elevated_completion is not None,
+        "elevated_completion_observed": elevated_completion is not None,
         "completed_at_utc": _utc(completed_at_utc, "completed_at_utc"),
         "copy_receipt_sha256": copy["copy_receipt_sha256"] if copy else None,
         "launch_result_sha256": launch["result_sha256"] if launch else None,
-        "elevation_result_sha256": elevation["result_sha256"] if elevation else None,
+        "elevation_result_sha256": (
+            elevation["result_sha256"] if elevation else (
+                elevated_completion["elevation_result_sha256"] if elevated_completion else None
+            )
+        ),
+        "elevated_completion_observation_sha256": (
+            elevated_completion["observation_sha256"] if elevated_completion else None
+        ),
         "product_directory_mutated": False, "game_directory_mutated": False, "runtime_executed": False,
         "save_mutated": False, "signing_performed": False, "publication_performed": False,
         "catalog_mutated": False, "evidence_promoted": False, "statement": RESULT_STATEMENT,
@@ -240,13 +283,16 @@ def validate_lifecycle_result(
     ):
         raise LifecycleCoordinatorError("Lifecycle result is not bound to its authenticated grant.")
     completed = document.get("status") == "completed"
+    elevated = document.get("elevation_result_sha256") is not None
+    elevated_completion = document.get("elevated_completion_observation_sha256") is not None
     if (
         document.get("completed") is not completed
         or document.get("lifecycle_completed") is not completed
-        or document.get("elevation_request_confirmed")
-        is not (document.get("elevation_result_sha256") is not None)
+        or document.get("elevation_request_confirmed") is not elevated
+        or document.get("elevated_completion_observed") is not elevated_completion
     ):
         raise LifecycleCoordinatorError("Lifecycle result completion flags are inconsistent.")
+    _optional_hash(document.get("elevated_completion_observation_sha256"), "result.elevated_completion_observation_sha256")
     return document
 
 
