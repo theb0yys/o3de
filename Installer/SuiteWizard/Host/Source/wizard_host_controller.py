@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Mapping
 
-SUITE_WIZARD_ROOT = Path(__file__).resolve().parents[1]
+SUITE_WIZARD_ROOT = Path(__file__).resolve().parents[2]
 CATALOG_SOURCE = SUITE_WIZARD_ROOT / "Catalog" / "Source"
 if str(CATALOG_SOURCE) not in sys.path:
     sys.path.insert(0, str(CATALOG_SOURCE))
