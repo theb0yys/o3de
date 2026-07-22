@@ -8,6 +8,6 @@ Installer/Packages/<Package>/package.json
 
 `<Package>` must use a stable portable directory name and `package.json` must conform to `../package.schema.json`.
 
-Package manifests describe reviewed source, compatibility, dependencies, conflicts, capabilities, payload fingerprints, install scope, repair/upgrade/uninstall behavior, workspace preservation, legal state, and permanent authority prohibitions.
+Package manifests describe reviewed source, compatibility, dependencies, conflicts, capabilities, payload fingerprints, install scope, repair/upgrade/uninstall behavior, workspace preservation, legal state, and permanent authority prohibitions. Every installable package must declare at least one exact payload file; a zero-file package is invalid and cannot appear in a resolved installation plan.
 
 Plug-in packages retain their canonical `Plugins/<Category>/<Package>/plugin.json`. An installer package may reference a plug-in package but cannot replace its ExtensionAPI declaration or bypass its validation and compatibility gates.
