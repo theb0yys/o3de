@@ -73,6 +73,7 @@ class DeepContractHardeningTests(unittest.TestCase):
     def test_road_atlas_nested_inputs_are_bounded(self) -> None:
         source = read(SOURCE / "RoadAtlasExtension.cpp")
         tests = read(TESTS / "RoadAtlasExtensionTests.cpp")
+        short_circuit = read(TESTS / "NestedCollectionShortCircuitTests.cpp")
         self.assert_fragments(
             source,
             "MaximumConnectedSegmentCount",
@@ -82,6 +83,8 @@ class DeepContractHardeningTests(unittest.TestCase):
             "IsValidPromotionState",
             "IsValidEvidenceRequirementKind",
             "MaximumGeometryPointCount - totalGeometryPoints",
+            "if (connectedValuesBounded)",
+            "if (!requirementsWithinBound)",
         )
         self.assert_fragments(
             tests,
@@ -90,10 +93,17 @@ class DeepContractHardeningTests(unittest.TestCase):
             "ControlCharactersInNestedNotesFailClosed",
             "GeometryLimitFailsClosedWithoutOverflow",
         )
+        self.assert_fragments(
+            short_circuit,
+            "RoadOversizedGeometryIsNotTraversed",
+            "RoadOversizedEvidenceRequirementsAreNotTraversed",
+        )
 
     def test_avalon_nested_plans_and_storage_identity_are_bounded(self) -> None:
         source = read(SOURCE / "AvalonAiExtension.cpp")
         tests = read(TESTS / "AvalonAiExtensionTests.cpp")
+        short_circuit = read(TESTS / "NestedCollectionShortCircuitTests.cpp")
+        manifest = read(MANIFEST)
         self.assert_fragments(
             source,
             "MaximumActorRoles",
@@ -104,6 +114,8 @@ class DeepContractHardeningTests(unittest.TestCase):
             "IsValidBlackboardScope",
             "SameStorageIdentity",
             "blackboard-key.storage-alias",
+            "const bool conditionsWithinBound",
+            "const bool effectsWithinBound",
         )
         self.assert_fragments(
             tests,
@@ -112,6 +124,13 @@ class DeepContractHardeningTests(unittest.TestCase):
             "NestedPlannerCollectionsAreBounded",
             "TopLevelRolesAndCapabilitiesAreBounded",
         )
+        self.assert_fragments(
+            short_circuit,
+            "AvalonOversizedTopLevelCollectionReturnsImmediately",
+            "AvalonOversizedGoalConditionsAreNotTraversed",
+            "AvalonOversizedActionClausesAreNotTraversed",
+        )
+        self.assertIn("Tests/NestedCollectionShortCircuitTests.cpp", manifest)
 
 
 if __name__ == "__main__":
