@@ -12,6 +12,7 @@ Installer/
 ├── suite.schema.json
 ├── package.schema.json
 ├── SuiteWizard/        selectable suite user experience
+│   └── Resolver/       deterministic package decision and dry-run plan layer
 ├── Bootstrapper/       prerequisites, acquisition and verified handoff
 ├── Suites/             reviewed suite definitions
 ├── Packages/           reviewed installable-package definitions
@@ -35,6 +36,10 @@ The suite wizard is the user-facing selection and review surface. It may present
 
 The wizard must display exact versions, source provenance, licence state, compatibility, required disk space, dependencies, conflicts, elevation requirements, and planned filesystem changes before confirmation. It must support dry-run, repair, upgrade, uninstall, and rollback-aware review.
 
+The wizard does not resolve packages itself. It submits explicit selections, exclusions, features, and compatibility context to `Installer/SuiteWizard/Resolver/`, then displays the returned canonical plan and diagnostics without weakening them. Dependency closure, version constraints, compatibility, conflicts, path safety, legal state, deterministic ordering, payload collision detection, and plan fingerprinting remain resolver-owned logic.
+
+A valid resolution plan is still non-executable. The wizard must later bind confirmation to the exact `plan_sha256` before handing the plan to a separately reviewed acquisition or execution layer.
+
 A selection never grants game-launch, runtime-execution, deployment, save-mutation, signing, publication, catalog-mutation, or evidence-promotion authority.
 
 ## Bootstrapper
@@ -52,6 +57,14 @@ Each installable package lives at `Installer/Packages/<Package>/package.json` an
 Suite definitions reference package IDs; they do not duplicate payload inventories. Package definitions describe reviewed source, compatibility, dependencies, payload ownership, install scope, lifecycle behavior, legal status, and permanent authority prohibitions.
 
 Plug-in package manifests remain under `Plugins/`. Installer package definitions may reference those plug-ins, but do not replace `plugin.json` or bypass ExtensionAPI registration.
+
+## Deterministic resolver
+
+The engine-neutral resolver lives at `Installer/SuiteWizard/Resolver/`. Its public entry point is `Source/suite_package_resolver.py`, and its canonical output conforms to `plan.schema.json`.
+
+For identical suite bytes, package-manifest bytes, explicit selections and compatibility context, the resolver emits byte-identical canonical JSON and the same `plan_sha256`. It includes required/default/optional selection decisions, dependency reasons, dependency-first package order, exact manifest fingerprints, payload inventory, total file count and size, elevation state, legal state, warnings and permanent authority boundaries.
+
+The resolver performs no acquisition, file copying, installation, repair, upgrade, rollback, uninstall, elevation, game launch, runtime execution, deployment, save mutation, signing or publication.
 
 ## Existing Windows packaging
 
