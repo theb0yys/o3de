@@ -93,12 +93,22 @@ class SuiteWizardHostTests(unittest.TestCase):
             )
         )
 
-    def test_refresh_resets_transient_choices_and_invalidates_review(self) -> None:
+    def test_refresh_and_context_changes_invalidate_current_review(self) -> None:
         controller = self.controller()
         controller.set_package_included("foa.editor-descriptor", False)
         controller.set_feature_selected("foa.feature.documentation", True)
         controller.resolve_review()
         self.assertTrue(controller.host_snapshot()["review_available"])
+
+        controller.set_context(
+            platform="windows",
+            architecture="x86_64",
+            runtime_target="editor-only",
+            branch="changed-after-review",
+        )
+        self.assertFalse(controller.host_snapshot()["review_available"])
+
+        controller.resolve_review()
         refreshed = controller.refresh_catalog()
         self.assertFalse(refreshed["review_available"])
         packages = {row["package_id"]: row for row in refreshed["packages"]}
@@ -119,25 +129,33 @@ class SuiteWizardHostTests(unittest.TestCase):
                 controller.resolve_review()
 
     def test_graphical_host_uses_native_widgets_and_exposes_no_executor_surface(self) -> None:
-        host_path = SOURCE / "suite_wizard_host.py"
-        source = host_path.read_text(encoding="utf-8")
-        tree = ast.parse(source)
-        imported_roots = {
-            alias.name.split(".")[0]
-            for node in ast.walk(tree)
-            if isinstance(node, ast.Import)
-            for alias in node.names
-        }
-        imported_roots.update(
-            node.module.split(".")[0]
-            for node in ast.walk(tree)
-            if isinstance(node, ast.ImportFrom) and node.module
-        )
-        self.assertIn("tkinter", source)
-        self.assertIn("ttk.Notebook", source)
-        self.assertIn("ttk.Treeview", source)
-        self.assertIn("ttk.Checkbutton", source)
-        self.assertIn("resolve_review", source)
+        paths = [
+            SOURCE / "suite_wizard_host.py",
+            SOURCE / "_suite_wizard_host_impl.py",
+            SOURCE / "wizard_host_controller.py",
+        ]
+        sources = [path.read_text(encoding="utf-8") for path in paths]
+        combined = "\n".join(sources)
+        imported_roots: set[str] = set()
+        for source in sources:
+            tree = ast.parse(source)
+            imported_roots.update(
+                alias.name.split(".")[0]
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Import)
+                for alias in node.names
+            )
+            imported_roots.update(
+                node.module.split(".")[0]
+                for node in ast.walk(tree)
+                if isinstance(node, ast.ImportFrom) and node.module
+            )
+        self.assertIn("tkinter", combined)
+        self.assertIn("ttk.Notebook", combined)
+        self.assertIn("ttk.Treeview", combined)
+        self.assertIn("ttk.Checkbutton", combined)
+        self.assertIn("resolve_review", combined)
+        self.assertIn("trace_add", combined)
         self.assertTrue({"subprocess", "socket", "urllib", "requests"}.isdisjoint(imported_roots))
         for forbidden in (
             "os.system",
@@ -148,7 +166,7 @@ class SuiteWizardHostTests(unittest.TestCase):
             "urlopen",
             "InstallerEngine",
         ):
-            self.assertNotIn(forbidden, source)
+            self.assertNotIn(forbidden, combined)
 
 
 if __name__ == "__main__":
