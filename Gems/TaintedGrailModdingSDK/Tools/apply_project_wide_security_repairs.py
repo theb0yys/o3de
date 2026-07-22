@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import io
 import tarfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 BUNDLE_PARTS = ROOT / "Gems/TaintedGrailModdingSDK/Tools/project_wide_security_repair_bundle"
+EXPECTED_BUNDLE_SHA256 = "79db951561a41c948ec1e1956324b106941ae73be67f176d8ced2848b0197fdb"
 
 def replace_exact(path: Path, old: str, new: str) -> None:
     text = path.read_text(encoding="utf-8")
@@ -30,6 +32,11 @@ def extract_bundle() -> None:
     if not encoded:
         raise RuntimeError('The temporary repair bundle is empty.')
     payload = base64.b64decode(encoded.encode('ascii'), validate=True)
+    actual_digest = hashlib.sha256(payload).hexdigest()
+    if actual_digest != EXPECTED_BUNDLE_SHA256:
+        raise RuntimeError(
+            f'Temporary repair bundle digest mismatch: {actual_digest} != {EXPECTED_BUNDLE_SHA256}'
+        )
     with tarfile.open(fileobj=io.BytesIO(payload), mode="r:gz") as archive:
         for member in archive.getmembers():
             if not member.isfile():
