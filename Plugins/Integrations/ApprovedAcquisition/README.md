@@ -7,7 +7,7 @@
 - `tainted-framework-knowledge` — the canonical Tainted Framework `0.1.33` knowledge, inventory, golden fixtures and provenance records already reviewed in FOA-SDK.
 - `tainted-interface-fallback-assets` — three small FOA-SDK-owned SVG fallback classes used by the semantic UI catalog.
 
-The source set is pinned to repository `theb0yys/FOA-SDK` at exact commit `b6975dde94a04c948bb05705fe2d36b3f38cd82e`. The branch name in the manifest is descriptive only and is never used as retrieval authority.
+The source set is pinned to repository `theb0yys/FOA-SDK` at exact commit `7d3d31371b4327ee3abbaa48b8741b4390bb9e0e`. That commit is the first clean acquisition-branch ancestor containing the approved knowledge and seed bytes, so it remains reachable through the eventual merged history. The branch name in the manifest is descriptive only and is never used as retrieval authority.
 
 ## Inspect and plan
 
