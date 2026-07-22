@@ -302,14 +302,15 @@ def validate_provider_source(root: Path) -> None:
 
 
 def validate_cpp_registry(root: Path) -> None:
-    source = read_text(root, CPP_REL).replace("\r\n", "\n").replace("\r", "\n")
+    source = read_text(root, CPP_REL)
     for fragment in (
         'PinnedMerlinWorkshopCommit =',
         f'"{PINNED_COMMIT}"',
         'merlin.m_providerId = "provider.merlin-workshop";',
         "merlin.m_qualification = QualificationState::ExactInstallBound;",
         "merlin.m_sourceRevision = PinnedMerlinWorkshopCommit;",
-        'merlin.m_licenseExpression =\n                "LicenseRef-Merlins-Workshop-1.1.0";',
+        "merlin.m_licenseExpression =",
+        '"LicenseRef-Merlins-Workshop-1.1.0";',
         "merlin.m_optional = true;",
         "merlin.m_requiresLocalFileRead = true;",
         "merlin.m_requiresNetwork = true;",
