@@ -523,7 +523,7 @@ def validate_catalog_schema2(repo_root: Path) -> None:
     require_fragments(
         actor_design,
         (
-            "Status: active implementation",
+            "Status: implemented vertical slice",
             "actor/troop contracts, reflection",
             "CatalogDatabase validation, queries",
             "schema-1 migration, schema-2-only writing",
@@ -531,11 +531,23 @@ def validate_catalog_schema2(repo_root: Path) -> None:
             "compiled-target wiring",
             "6. **Complete** — immutable population action-lane derivation",
             "Actor and Troop Editor pane",
-            "7. **Next** — deterministic synthetic population fixture",
-            "do not claim that",
+            "7. **Complete** — deterministic synthetic population fixture",
+            "8. **Complete** — public user, architecture/data-format, release-readiness",
+            "9. **Active acceptance gate** — exact-head O3DE configure/build",
+            "twenty-four-pane",
+            "does not claim that compiled tests have run",
             "loaded candidate remains schema 1",
             "direct save is refused",
             "successful bound replacement and `BuildDocument`",
+        ),
+        "Actor/troop implementation status",
+    )
+    reject_fragments(
+        actor_design,
+        (
+            "Status: active implementation",
+            "7. **Next** — deterministic synthetic population fixture",
+            "twenty-three-pane checklist",
         ),
         "Actor/troop implementation status",
     )
@@ -545,7 +557,9 @@ def validate_catalog_schema2(repo_root: Path) -> None:
             "5. **Complete** — Core and Framework positive/negative population-authoring test sources",
             "compiled-target wiring",
             "6. **Complete** — immutable population action-lane derivation",
-            "7. **Next** — deterministic synthetic population fixture",
+            "7. **Complete** — deterministic synthetic population fixture",
+            "8. **Complete** — public user, architecture/data-format, release-readiness",
+            "9. **Active acceptance gate** — exact-head O3DE configure/build",
         ),
         "Actor/troop implementation sequence",
     )
@@ -620,8 +634,17 @@ def validate_catalog_schema2(repo_root: Path) -> None:
         (
             "Actor and Troop Editor Design",
             "ACTOR_TROOP_EDITOR_DESIGN.md",
+            "approved population design and implementation history",
+            "deterministic fixture",
+            "registered Actor/Troop pane",
+            "exact-head O3DE configure, build, compiled tests",
+        ),
+        "Documentation hub",
+    )
+    reject_fragments(
+        docs_hub,
+        (
             "completed Core, schema-2 persistence, Framework candidate-publication, population-authoring test-source",
-            "immutable action-lane, and registered Actor/Troop pane units",
         ),
         "Documentation hub",
     )
