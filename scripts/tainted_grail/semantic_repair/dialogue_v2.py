@@ -9,6 +9,7 @@ from .errors import RepairError, StaleGenerationError
 
 _SCHEMA_VERSION = 1
 API_VERSION = 2
+DEFAULT_MAX_GENERATION_GAP = 64
 
 
 def _canonical_json(doc: dict[str, Any]) -> bytes:
@@ -35,6 +36,12 @@ def _parse_object(data: bytes, expected_kind: str) -> dict[str, Any]:
 def _nonempty(value: Any, field_name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise RepairError(f"{field_name} must be non-empty text")
+    return value
+
+
+def _generation_gap_limit(value: int) -> int:
+    if type(value) is not int or value <= 0:
+        raise RepairError("max_generation_gap must be a positive integer")
     return value
 
 
@@ -286,7 +293,13 @@ class DialogueRegistryV2:
     def to_snapshot_bytes(self) -> bytes:
         return self.snapshot().to_bytes()
 
-    def apply_snapshot(self, snapshot: RegistrySnapshot) -> bool:
+    def apply_snapshot(
+        self,
+        snapshot: RegistrySnapshot,
+        *,
+        max_generation_gap: int = DEFAULT_MAX_GENERATION_GAP,
+    ) -> bool:
+        limit = _generation_gap_limit(max_generation_gap)
         if snapshot.generation < self._generation:
             raise StaleGenerationError(
                 f"snapshot generation {snapshot.generation} is older than current {self._generation}"
@@ -295,6 +308,11 @@ class DialogueRegistryV2:
             if snapshot.to_bytes() != self.snapshot().to_bytes():
                 raise RepairError("registry snapshot conflicts at the current generation")
             return False
+        gap = snapshot.generation - self._generation
+        if gap > limit:
+            raise StaleGenerationError(
+                f"snapshot generation gap {gap} exceeds limit {limit}"
+            )
         self._registrations = {
             (token.owner_id, token.command_id): token
             for token in snapshot.registrations
@@ -302,8 +320,16 @@ class DialogueRegistryV2:
         self._generation = snapshot.generation
         return True
 
-    def apply_snapshot_bytes(self, data: bytes) -> bool:
-        return self.apply_snapshot(RegistrySnapshot.from_bytes(data))
+    def apply_snapshot_bytes(
+        self,
+        data: bytes,
+        *,
+        max_generation_gap: int = DEFAULT_MAX_GENERATION_GAP,
+    ) -> bool:
+        return self.apply_snapshot(
+            RegistrySnapshot.from_bytes(data),
+            max_generation_gap=max_generation_gap,
+        )
 
 
 @dataclass
