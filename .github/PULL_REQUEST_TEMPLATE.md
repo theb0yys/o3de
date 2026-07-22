@@ -70,12 +70,13 @@ Rollback/revert plan:
 <!-- Include exact commands, configurations, fixtures, and manual steps. -->
 
 - [ ] The automatic PR static-validation workflow passed for this exact head.
-- [ ] Reviewed-range `git diff --check <base> HEAD` passed.
+- [ ] Hosted reviewed-range `git diff --check <base> HEAD` passed and its base/head artifact is recorded.
 - [ ] Relevant Python, mutation, malformed-input, and negative tests passed.
 - [ ] Persistence round-trip/migration tests passed when applicable.
-- [ ] O3DE prerequisites and configure passed for the applicable host.
+- [ ] Hosted Windows O3DE prerequisites passed and their artifact identity is recorded.
+- [ ] Full O3DE configure passed for the exact pinned engine and external build directory.
 - [ ] O3DE build completed for required targets.
-- [ ] compiled `TaintedGrailModdingSDK.Catalog.Tests` executed and passed; zero matching tests is an error.
+- [ ] Compiled `TaintedGrailModdingSDK.Catalog.Tests` executed and passed; zero matching tests is an error.
 - [ ] Manual editor/UI workflow verification passed, or the permitted risk acceptance is explicit.
 
 Results:
