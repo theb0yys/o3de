@@ -1,6 +1,6 @@
 # Candidate Hook Family — Menu Initialization and Options Button Lookup
 
-This source contains two Harmony method targets and one reflected field pattern. The Mono source is recorded separately from the repository's IL2CPP implementation; no target or behavior is inherited across runtimes.
+This source contains two Harmony method targets and two concrete reflected field targets. The Mono source is recorded separately from the repository's IL2CPP implementation; no target or behavior is inherited across runtimes.
 
 ## Main menu initialization
 
@@ -132,15 +132,15 @@ limitations:
   - New-game flow, localization, controller navigation, focus order, and accessibility require separate review.
 ```
 
-## Options-button field lookup
+## Main-menu options-button field lookup
 
 ```yaml
-hook_id: tg.hook.ui.options-button-field
-title: Native options button field lookup
+hook_id: tg.hook.ui.main-menu-options-button-field
+title: Main-menu native options button field lookup
 status: candidate
 hook_class: reflection
 domain: ui-menus-and-input
-purpose: resolve the native options ButtonConfig field from VMenuUI or VTitleScreenUI as the template and placement anchor for a mod-owned button
+purpose: resolve the native options ButtonConfig field from VMenuUI as the template and placement anchor for a mod-owned button
 profile:
   game_version: unknown
   branch: unknown
@@ -149,19 +149,19 @@ profile:
   framework: Harmony AccessTools; exact version unknown
 target:
   assembly: TG.Main
-  namespace: Awaken.TG.Main.UI.Menu or Awaken.TG.Main.UI.TitleScreen
-  type: VMenuUI or VTitleScreenUI
+  namespace: Awaken.TG.Main.UI.Menu
+  type: VMenuUI
   member: options
   signature: reflected field expected to contain Awaken.TG.Main.Utility.UI.ButtonConfig
 patch:
   style: reflect
-  ordering: after the corresponding view OnInitialize postfix
+  ordering: after the VMenuUI OnInitialize postfix
   cleanup: not-applicable to field lookup; cloned-object cleanup remains unresolved
 context:
-  lifecycle_point: during the mod-owned initialization postfix
+  lifecycle_point: during the mod-owned main-menu initialization postfix
   thread: Unity main thread expected but unverified
   frequency: event
-  inputs: initialized view instance and concrete view type
+  inputs: initialized VMenuUI instance
   outputs: ButtonConfig value or null
   side_effects: reflection lookup itself is read-only; the caller may clone the returned GameObject
 safety:
@@ -171,7 +171,7 @@ safety:
   performance_risk: low
   story_risk: none
 compatibility:
-  known_conflicts: field rename/type change, stripped metadata, runtime-specific layout, and UI replacement mods
+  known_conflicts: field rename/type change, stripped metadata, runtime-specific layout, and main-menu replacement mods
   load_order: not-applicable to lookup; caller patch ordering remains unspecified
   version_stability: low because the field is private-name reflection
 evidence:
@@ -183,7 +183,7 @@ evidence:
     MenuButtonPatch.cs: b289d4a510bf0cb1a0f146710f3892cd7b33ffc7
   evidence_ids: none registered; source-only candidate
 validation:
-  static: field name and expected cast extracted
+  static: field name, declaring type, and expected cast extracted
   target_resolution: not performed against an exact current TG.Main assembly
   load: not established for an FOA-SDK supported profile
   behavior: not established
@@ -192,12 +192,76 @@ permissions:
   allowed: documentation, offline metadata verification, bounded read-only diagnostics planning
   prohibited: runtime reflection execution, UI cloning, cross-runtime inference, deployment, evidence promotion
 limitations:
-  - The source does not verify field visibility, declaring-type ownership, or metadata preservation.
+  - The source does not verify field visibility, inheritance ownership, or metadata preservation.
+  - Mono results must not be projected onto the separate IL2CPP source path.
+```
+
+## Title-screen options-button field lookup
+
+```yaml
+hook_id: tg.hook.ui.title-screen-options-button-field
+title: Title-screen native options button field lookup
+status: candidate
+hook_class: reflection
+domain: ui-menus-and-input
+purpose: resolve the native options ButtonConfig field from VTitleScreenUI as the template and placement anchor for a mod-owned button
+profile:
+  game_version: unknown
+  branch: unknown
+  runtime: Mono
+  loader: BepInEx v5 Mono; exact version unknown
+  framework: Harmony AccessTools; exact version unknown
+target:
+  assembly: TG.Main
+  namespace: Awaken.TG.Main.UI.TitleScreen
+  type: VTitleScreenUI
+  member: options
+  signature: reflected field expected to contain Awaken.TG.Main.Utility.UI.ButtonConfig
+patch:
+  style: reflect
+  ordering: after the VTitleScreenUI OnInitialize postfix
+  cleanup: not-applicable to field lookup; cloned-object cleanup remains unresolved
+context:
+  lifecycle_point: during the mod-owned title-screen initialization postfix
+  thread: Unity main thread expected but unverified
+  frequency: event
+  inputs: initialized VTitleScreenUI instance
+  outputs: ButtonConfig value or null
+  side_effects: reflection lookup itself is read-only; the caller may clone the returned GameObject
+safety:
+  nullability: missing field or incompatible value returns null and causes the caller to skip
+  failure_mode: fail-open
+  save_risk: none
+  performance_risk: low
+  story_risk: none
+compatibility:
+  known_conflicts: field rename/type change, stripped metadata, runtime-specific layout, and title-screen replacement mods
+  load_order: not-applicable to lookup; caller patch ordering remains unspecified
+  version_stability: low because the field is private-name reflection
+evidence:
+  source_repository: theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods
+  source_commit: d7e740e7f167b73152b53409e483dab07d80d048
+  source_paths:
+    - mods/foa-mod-manager/src/Patches/MenuButtonPatch.cs
+  source_blobs:
+    MenuButtonPatch.cs: b289d4a510bf0cb1a0f146710f3892cd7b33ffc7
+  evidence_ids: none registered; source-only candidate
+validation:
+  static: field name, declaring type, and expected cast extracted
+  target_resolution: not performed against an exact current TG.Main assembly
+  load: not established for an FOA-SDK supported profile
+  behavior: not established
+  combined_mods: not established
+permissions:
+  allowed: documentation, offline metadata verification, bounded read-only diagnostics planning
+  prohibited: runtime reflection execution, UI cloning, cross-runtime inference, deployment, evidence promotion
+limitations:
+  - The source does not verify field visibility, inheritance ownership, or metadata preservation.
   - Mono results must not be projected onto the separate IL2CPP source path.
 ```
 
 ## Extracted source facts
 
-The source attempts to patch `OnInitialize` on `VMenuUI` and `VTitleScreenUI` by method name. Each postfix asks for a field named `options`, expects a `ButtonConfig`, clones its GameObject under the same parent, prevents duplicate creation by object name, clears inherited click handlers, and initializes a mod-owned callback. Missing targets and structural mismatches log and skip.
+The source attempts to patch `OnInitialize` on `VMenuUI` and `VTitleScreenUI` by method name. Each postfix asks its concrete view type for a field named `options`, expects a `ButtonConfig`, clones its GameObject under the same parent, prevents duplicate creation by object name, clears inherited click handlers, and initializes a mod-owned callback. Missing targets and structural mismatches log and skip.
 
 The structural guards are worth retaining as a pattern. They do not resolve the missing exact signatures, unload cleanup, controller navigation, localization, or runtime-specific UI identity.
