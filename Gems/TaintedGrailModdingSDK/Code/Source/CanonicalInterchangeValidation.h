@@ -14,6 +14,13 @@
 
 namespace TaintedGrailModdingSDK::Interchange
 {
+    // Validation compares referenced provenance records by canonical identity.
+    // Mutable evidence bodies remain outside this Core value contract.
+    inline bool operator==(const ProvenanceRecordV1& left, const ProvenanceRecordV1& right)
+    {
+        return left.m_provenanceId == right.m_provenanceId;
+    }
+
     namespace IssueCodeV1
     {
         inline constexpr AZStd::string_view UnsupportedVersion = "interchange.schema.unsupported-version";
