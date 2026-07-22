@@ -2,27 +2,55 @@
 
 `Installer/Launcher/Windows/` owns the user-facing Windows entrypoint for the installer flow.
 
-It builds `FOA-SDK-Installer.exe`, a thin launcher that starts the existing graphical Suite Wizard receipt host:
+It builds `FOA-SDK-Installer.exe`, a thin launcher that opens the quick installer by default:
 
 ```text
 FOA-SDK-Installer.exe
-  → Installer/SuiteWizard/Host/Source/suite_wizard_receipt_host.py
-  → Suite Wizard review, acknowledgement, confirmation, and receipt export
+  → Installer/SuiteWizard/QuickHost/Source/quick_installer_host.py
+  → one-click default install preparation
+  → automatic confirmation timestamp and receipt export
 ```
+
+The old detailed Suite Wizard receipt host is still available, but only as an advanced/audit path:
+
+```powershell
+FOA-SDK-Installer.exe --advanced-review
+```
+
+## Default user flow
+
+Normal double-click use opens a quick installer screen with an **Install** button. That path:
+
+- uses the reviewed default FOA-SDK suite;
+- keeps the selected default packages visible;
+- handles the internal acknowledgement set automatically as part of the Install click;
+- fills the confirmation identity from the local user account;
+- fills the UTC timestamp automatically;
+- writes a verified `.foa-receipt.json` under the local FOA-SDK receipt directory.
+
+The user should not have to manually type timestamps, hashes, acknowledgement IDs, or receipt metadata in the default path.
 
 ## Boundary
 
-The launcher does not resolve packages, copy payloads, launch game/runtime processes, request elevation, coordinate lifecycle execution, publish installation state, mutate products, mutate saves, sign artifacts, publish to the network, mutate catalogues, or promote evidence.
+The launcher and quick host do not copy payloads, launch game/runtime processes, request elevation, coordinate lifecycle execution, publish installation state, mutate products, mutate saves, sign artifacts, publish to the network, mutate catalogues, or promote evidence.
 
-It only provides a user-facing executable entrypoint into the already-reviewed graphical wizard. Any later installer execution still has to pass through the capability-gated PackageEngine, admission, handoff, lifecycle, publication, registry, and editor-readiness chain.
+They provide the user-facing executable and quick preparation flow. Any later installer execution still has to pass through the capability-gated PackageEngine, admission, handoff, lifecycle, publication, registry, and editor-readiness chain.
 
 ## Build
 
-From PowerShell on Windows with the .NET SDK installed:
+From PowerShell on Windows with the .NET SDK installed, run this from the repository root:
 
 ```powershell
-Installer/Launcher/Windows/build-foa-installer-launcher.ps1 \
-  -Configuration Release \
+.\Installer\Launcher\Windows\build-foa-installer-launcher.ps1 `
+  -Configuration Release `
+  -RuntimeIdentifier win-x64
+```
+
+If you are already in `Installer\Launcher\Windows`, run:
+
+```powershell
+.\build-foa-installer-launcher.ps1 `
+  -Configuration Release `
   -RuntimeIdentifier win-x64
 ```
 
@@ -35,9 +63,9 @@ Installer/Launcher/Windows/artifacts/FOA-SDK-Installer.exe
 For a self-contained binary:
 
 ```powershell
-Installer/Launcher/Windows/build-foa-installer-launcher.ps1 \
-  -Configuration Release \
-  -RuntimeIdentifier win-x64 \
+.\Installer\Launcher\Windows\build-foa-installer-launcher.ps1 `
+  -Configuration Release `
+  -RuntimeIdentifier win-x64 `
   -SelfContained
 ```
 
@@ -46,25 +74,33 @@ Installer/Launcher/Windows/build-foa-installer-launcher.ps1 \
 From the product checkout:
 
 ```powershell
-Installer/Launcher/Windows/artifacts/FOA-SDK-Installer.exe
+.\Installer\Launcher\Windows\artifacts\FOA-SDK-Installer.exe
 ```
 
 Or provide explicit paths:
 
 ```powershell
-FOA-SDK-Installer.exe \
-  --installer-root C:\path\to\FOA-SDK\Installer \
+FOA-SDK-Installer.exe `
+  --installer-root C:\path\to\FOA-SDK\Installer `
   --python C:\path\to\pythonw.exe
 ```
 
 The launcher also checks `FOA_SDK_PYTHON` and bundled runtime locations under `runtime/python/pythonw.exe`.
 
+## Advanced review
+
+Use this only when you specifically need the full audit/receipt host:
+
+```powershell
+FOA-SDK-Installer.exe --advanced-review
+```
+
+That advanced path exposes the detailed review, acknowledgement, confirmation, and receipt tabs.
+
 ## Smoke test
 
-The CI-friendly smoke mode waits for the underlying host to run its native graphical smoke path and returns the host exit code:
+The CI-friendly smoke mode runs the quick installer path, writes a temporary verified receipt, and returns the host exit code:
 
 ```powershell
 FOA-SDK-Installer.exe --installer-root C:\path\to\FOA-SDK\Installer --smoke-test
 ```
-
-Smoke mode is explicit; normal double-click use opens the graphical wizard instead of running an automatic flow.
