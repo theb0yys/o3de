@@ -119,6 +119,27 @@ if(PAL_TRAIT_BUILD_TESTS_SUPPORTED AND PAL_TRAIT_TEST_GOOGLE_TEST_SUPPORTED)
         NAME Gem::${gem_name}.Catalog.Tests
         LABELS REQUIRES_tiaf
     )
+
+    ly_add_target(
+        NAME ${gem_name}.CanonicalInterchange.Tests ${PAL_TRAIT_TEST_TARGET_TYPE}
+        NAMESPACE Gem
+        NO_UNITY
+        FILES_CMAKE
+            taintedgrailmoddingsdk_canonical_interchange_tests_files.cmake
+        INCLUDE_DIRECTORIES
+            PRIVATE
+                Source
+                Tests
+        BUILD_DEPENDENCIES
+            PRIVATE
+                Gem::${gem_name}.Core.Static
+                AZ::AzTest
+    )
+
+    ly_add_googletest(
+        NAME Gem::${gem_name}.CanonicalInterchange.Tests
+        LABELS REQUIRES_tiaf
+    )
 endif()
 
 # Tool Gems are resolved for both Editor/Project Manager tools and builder hosts.
