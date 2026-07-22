@@ -44,6 +44,14 @@ compatibility:
   known_conflicts: menu replacement mods, options-button mutations, sibling-order assumptions, and patches on OnInitialize
   load_order: unspecified
   version_stability: low until the method overload and native view shape are verified
+evidence:
+  source_repository: theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods
+  source_commit: d7e740e7f167b73152b53409e483dab07d80d048
+  source_paths:
+    - mods/foa-mod-manager/src/Patches/MenuButtonPatch.cs
+  source_blobs:
+    MenuButtonPatch.cs: b289d4a510bf0cb1a0f146710f3892cd7b33ffc7
+  evidence_ids: none registered; source-only candidate
 validation:
   static: source target and guarded postfix behavior extracted
   target_resolution: not performed against an exact current TG.Main assembly
@@ -101,6 +109,14 @@ compatibility:
   known_conflicts: title-screen replacement mods, options-button mutations, sibling-order assumptions, and patches on OnInitialize
   load_order: unspecified
   version_stability: low until the method overload and native view shape are verified
+evidence:
+  source_repository: theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods
+  source_commit: d7e740e7f167b73152b53409e483dab07d80d048
+  source_paths:
+    - mods/foa-mod-manager/src/Patches/MenuButtonPatch.cs
+  source_blobs:
+    MenuButtonPatch.cs: b289d4a510bf0cb1a0f146710f3892cd7b33ffc7
+  evidence_ids: none registered; source-only candidate
 validation:
   static: source target and guarded postfix behavior extracted
   target_resolution: not performed against an exact current TG.Main assembly
@@ -120,7 +136,7 @@ limitations:
 
 ```yaml
 hook_id: tg.hook.ui.options-button-field
- title: Native options button field lookup
+title: Native options button field lookup
 status: candidate
 hook_class: reflection
 domain: ui-menus-and-input
@@ -158,6 +174,14 @@ compatibility:
   known_conflicts: field rename/type change, stripped metadata, runtime-specific layout, and UI replacement mods
   load_order: not-applicable to lookup; caller patch ordering remains unspecified
   version_stability: low because the field is private-name reflection
+evidence:
+  source_repository: theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods
+  source_commit: d7e740e7f167b73152b53409e483dab07d80d048
+  source_paths:
+    - mods/foa-mod-manager/src/Patches/MenuButtonPatch.cs
+  source_blobs:
+    MenuButtonPatch.cs: b289d4a510bf0cb1a0f146710f3892cd7b33ffc7
+  evidence_ids: none registered; source-only candidate
 validation:
   static: field name and expected cast extracted
   target_resolution: not performed against an exact current TG.Main assembly
@@ -171,15 +195,6 @@ limitations:
   - The source does not verify field visibility, declaring-type ownership, or metadata preservation.
   - Mono results must not be projected onto the separate IL2CPP source path.
 ```
-
-## Evidence
-
-- source repository: `theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods`
-- source commit: `d7e740e7f167b73152b53409e483dab07d80d048`
-- source path: `mods/foa-mod-manager/src/Patches/MenuButtonPatch.cs`
-- source blob: `b289d4a510bf0cb1a0f146710f3892cd7b33ffc7`
-- runtime family: Mono source tree only
-- evidence IDs: none registered; source-only candidates
 
 ## Extracted source facts
 
