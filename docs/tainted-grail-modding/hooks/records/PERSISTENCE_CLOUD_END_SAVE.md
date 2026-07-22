@@ -44,6 +44,18 @@ compatibility:
   known_conflicts: other EndSave patches, cloud-service replacements, and save lifecycle mods
   load_order: unspecified
   version_stability: unknown until exact-profile resolution and behavior validation
+evidence:
+  source_repository: theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods
+  source_commit: d7e740e7f167b73152b53409e483dab07d80d048
+  source_paths:
+    - mods/smart-save-backups/src/Patches/CloudServiceEndSavePatch.cs
+    - mods/smart-save-backups/src/Plugin.cs
+    - mods/smart-save-backups/src/SmartSaveBackups.csproj
+  source_blobs:
+    CloudServiceEndSavePatch.cs: 29aa7491292de7faa8e6d8df2662d51201b2296d
+    Plugin.cs: fa64649b90d2e63009cc1e7e9819d14da7884ee3
+    SmartSaveBackups.csproj: 051be4f9e25b51e62a8243a81dde47114e97141d
+  evidence_ids: none registered; source-only candidate
 validation:
   static: exact type name, member name, one-string parameter lookup, and postfix extracted
   target_resolution: not performed against an exact current TG.Main assembly
@@ -101,6 +113,18 @@ compatibility:
   known_conflicts: other EndSave patches, cloud-service replacements, and save lifecycle mods
   load_order: unspecified
   version_stability: unknown until exact-profile resolution and behavior validation
+evidence:
+  source_repository: theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods
+  source_commit: d7e740e7f167b73152b53409e483dab07d80d048
+  source_paths:
+    - mods/smart-save-backups/src/Patches/CloudServiceEndSavePatch.cs
+    - mods/smart-save-backups/src/Plugin.cs
+    - mods/smart-save-backups/src/SmartSaveBackups.csproj
+  source_blobs:
+    CloudServiceEndSavePatch.cs: 29aa7491292de7faa8e6d8df2662d51201b2296d
+    Plugin.cs: fa64649b90d2e63009cc1e7e9819d14da7884ee3
+    SmartSaveBackups.csproj: 051be4f9e25b51e62a8243a81dde47114e97141d
+  evidence_ids: none registered; source-only candidate
 validation:
   static: exact type name, member name, one-string parameter lookup, and postfix extracted
   target_resolution: not performed against an exact current TG.Main assembly
@@ -158,6 +182,18 @@ compatibility:
   known_conflicts: other EndSave patches, service substitutions, and save lifecycle mods
   load_order: unspecified
   version_stability: unknown until exact-profile resolution and behavior validation
+evidence:
+  source_repository: theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods
+  source_commit: d7e740e7f167b73152b53409e483dab07d80d048
+  source_paths:
+    - mods/smart-save-backups/src/Patches/CloudServiceEndSavePatch.cs
+    - mods/smart-save-backups/src/Plugin.cs
+    - mods/smart-save-backups/src/SmartSaveBackups.csproj
+  source_blobs:
+    CloudServiceEndSavePatch.cs: 29aa7491292de7faa8e6d8df2662d51201b2296d
+    Plugin.cs: fa64649b90d2e63009cc1e7e9819d14da7884ee3
+    SmartSaveBackups.csproj: 051be4f9e25b51e62a8243a81dde47114e97141d
+  evidence_ids: none registered; source-only candidate
 validation:
   static: exact type name, member name, one-string parameter lookup, and postfix extracted
   target_resolution: not performed against an exact current TG.Main assembly
@@ -215,6 +251,18 @@ compatibility:
   known_conflicts: other EndSave patches, cloud-service replacements, and save lifecycle mods
   load_order: unspecified
   version_stability: unknown until exact-profile resolution and behavior validation
+evidence:
+  source_repository: theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods
+  source_commit: d7e740e7f167b73152b53409e483dab07d80d048
+  source_paths:
+    - mods/smart-save-backups/src/Patches/CloudServiceEndSavePatch.cs
+    - mods/smart-save-backups/src/Plugin.cs
+    - mods/smart-save-backups/src/SmartSaveBackups.csproj
+  source_blobs:
+    CloudServiceEndSavePatch.cs: 29aa7491292de7faa8e6d8df2662d51201b2296d
+    Plugin.cs: fa64649b90d2e63009cc1e7e9819d14da7884ee3
+    SmartSaveBackups.csproj: 051be4f9e25b51e62a8243a81dde47114e97141d
+  evidence_ids: none registered; source-only candidate
 validation:
   static: exact type name, member name, one-string parameter lookup, and postfix extracted
   target_resolution: not performed against an exact current TG.Main assembly
@@ -229,16 +277,6 @@ limitations:
   - Slot completion ordering versus disk/cloud flush is not proven.
   - The downstream backup implementation must be reviewed and tested independently.
 ```
-
-## Shared evidence
-
-- source repository: `theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods`
-- source commit: `d7e740e7f167b73152b53409e483dab07d80d048`
-- source path: `mods/smart-save-backups/src/Patches/CloudServiceEndSavePatch.cs`
-- source blob: `29aa7491292de7faa8e6d8df2662d51201b2296d`
-- registration and downstream owner: `mods/smart-save-backups/src/Plugin.cs`
-- project source: `mods/smart-save-backups/src/SmartSaveBackups.csproj`
-- evidence IDs: none registered; source-only candidates
 
 ## Extracted source facts
 
