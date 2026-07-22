@@ -147,18 +147,10 @@ class ApprovedAcquisitionValidatorTests(unittest.TestCase):
         golden.parent.mkdir(parents=True, exist_ok=True)
         golden.write_bytes(module.canonical_json_bytes(module.build_plan(approved, provider="pinned-github")))
 
-        runner = root / "Gems/TaintedGrailModdingSDK/Tools/run_local_validation.py"
-        runner.parent.mkdir(parents=True, exist_ok=True)
-        runner.write_text(
-            '\n'.join((
-                '"validate_approved_acquisition.py"',
-                'ApprovedAcquisition/Tests',
-                'approved_acquisition.py',
-                '"acquire"',
-                '"--provider"',
-                '"local"',
-                '"verify"',
-            )),
+        bridge = root / "Gems/TaintedGrailModdingSDK/Tools/tests/test_approved_acquisition.py"
+        bridge.parent.mkdir(parents=True, exist_ok=True)
+        bridge.write_text(
+            "ApprovedAcquisition/Tests/test_approved_acquisition.py\nload_tests\nApprovedAcquisitionTests\n",
             encoding="utf-8",
         )
         integrations = root / "Plugins/Integrations/README.md"
@@ -170,9 +162,6 @@ class ApprovedAcquisitionValidatorTests(unittest.TestCase):
             "local pinned-GitHub b6975dde94a04c948bb05705fe2d36b3f38cd82e "
             "NO upstream PNG outside the FOA-SDK checkout candidate evidence Merlin Mono IL2CPP\n",
             encoding="utf-8",
-        )
-        (public.parent / "README.md").write_text(
-            "APPROVED_ACQUISITION_PROVIDERS.md\n", encoding="utf-8"
         )
         return root
 
@@ -193,14 +182,16 @@ class ApprovedAcquisitionValidatorTests(unittest.TestCase):
     def test_seed_tamper_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
-            (repo / "Plugins/Integrations/ApprovedAcquisition/Seeds/Assets/frame.svg").write_text("tampered", encoding="utf-8")
+            path = repo / "Plugins/Integrations/ApprovedAcquisition/Seeds/Assets/frame.svg"
+            path.write_text("tampered", encoding="utf-8")
             with self.assertRaisesRegex(validator.ApprovedAcquisitionValidationError, "source bytes drifted"):
                 validator.validate_approved_acquisition(repo)
 
     def test_unapproved_png_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
-            (repo / "Plugins/Integrations/ApprovedAcquisition/Seeds/Assets/upstream.png").write_bytes(b"png")
+            path = repo / "Plugins/Integrations/ApprovedAcquisition/Seeds/Assets/upstream.png"
+            path.write_bytes(b"png")
             with self.assertRaisesRegex(validator.ApprovedAcquisitionValidationError, "Unapproved payload"):
                 validator.validate_approved_acquisition(repo)
 
@@ -215,16 +206,17 @@ class ApprovedAcquisitionValidatorTests(unittest.TestCase):
     def test_stale_golden_plan_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
-            (repo / "Plugins/Integrations/ApprovedAcquisition/Tests/Fixtures/pinned-github-all.plan.json").write_text("{}\n", encoding="utf-8")
+            path = repo / "Plugins/Integrations/ApprovedAcquisition/Tests/Fixtures/pinned-github-all.plan.json"
+            path.write_text("{}\n", encoding="utf-8")
             with self.assertRaisesRegex(validator.ApprovedAcquisitionValidationError, "golden plan"):
                 validator.validate_approved_acquisition(repo)
 
-    def test_runner_removal_fails(self) -> None:
+    def test_bridge_removal_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
-            path = repo / "Gems/TaintedGrailModdingSDK/Tools/run_local_validation.py"
-            path.write_text(path.read_text().replace("ApprovedAcquisition/Tests", "removed"), encoding="utf-8")
-            with self.assertRaisesRegex(validator.ApprovedAcquisitionValidationError, "ApprovedAcquisition/Tests"):
+            path = repo / "Gems/TaintedGrailModdingSDK/Tools/tests/test_approved_acquisition.py"
+            path.write_text(path.read_text().replace("load_tests", "removed"), encoding="utf-8")
+            with self.assertRaisesRegex(validator.ApprovedAcquisitionValidationError, "load_tests"):
                 validator.validate_approved_acquisition(repo)
 
 
