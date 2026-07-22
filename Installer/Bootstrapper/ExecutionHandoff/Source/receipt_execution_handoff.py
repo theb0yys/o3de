@@ -108,6 +108,10 @@ def _utc(value: object, label: str) -> str:
     return result
 
 
+def _utc_datetime(value: object, label: str) -> dt.datetime:
+    return dt.datetime.fromisoformat(_utc(value, label)[:-1] + "+00:00")
+
+
 def _logical_reference(value: object, label: str) -> str:
     result = _text(value, label)
     if len(result) > 128 or LOGICAL_REFERENCE_RE.fullmatch(result) is None:
@@ -206,6 +210,18 @@ def build_handoff(
     checked_prior = _prior_reference(checked_operation, prior_installation_reference)
     actor = _actor(requested_by, "requested_by")
     requested_at = _utc(requested_at_utc, "requested_at_utc")
+    confirmation = _object(checked_receipt.get("confirmation"), "receipt.confirmation")
+    confirmed_at = _utc(
+        confirmation.get("confirmed_at_utc"),
+        "receipt.confirmation.confirmed_at_utc",
+    )
+    if _utc_datetime(requested_at, "requested_at_utc") < _utc_datetime(
+        confirmed_at,
+        "receipt.confirmation.confirmed_at_utc",
+    ):
+        raise ExecutionHandoffError(
+            "requested_at_utc must not precede the embedded confirmation time."
+        )
 
     plan = _object(checked_receipt.get("plan"), "receipt.plan")
     _validate_operation_support(plan, checked_operation)

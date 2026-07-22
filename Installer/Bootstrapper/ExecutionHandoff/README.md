@@ -20,7 +20,7 @@ A handoff is a self-contained canonical JSON document containing:
 - an all-false authority record;
 - `handoff_sha256` over every preceding field.
 
-Creation re-verifies the complete embedded receipt before producing bytes. Repair, upgrade, and uninstall require every selected package to declare the corresponding lifecycle support. Rollback requires every selected package to declare rollback protection. Elevation, when required by the verified plan, appears only as `package-engine.elevation` in `required_capabilities`; elevation authority remains false.
+Creation re-verifies the complete embedded receipt before producing bytes. The caller-supplied request time must be equal to or later than the embedded confirmation time. Repair, upgrade, and uninstall require every selected package to declare the corresponding lifecycle support. Rollback requires every selected package to declare rollback protection. Elevation, when required by the verified plan, appears only as `package-engine.elevation` in `required_capabilities`; elevation authority remains false.
 
 No capability token, executable path, installation directory, private workspace path, environment value, or clock reading is serialized.
 
