@@ -88,7 +88,7 @@ class ApprovedAcquisitionValidatorTests(unittest.TestCase):
             "provider_id": "extension.approved-acquisition",
             "schema_version": 1,
             "source": {
-                "commit": "b6975dde94a04c948bb05705fe2d36b3f38cd82e",
+                "commit": "7d3d31371b4327ee3abbaa48b8741b4390bb9e0e",
                 "display_branch": "fixture",
                 "repository": "theb0yys/FOA-SDK",
             },
@@ -159,7 +159,7 @@ class ApprovedAcquisitionValidatorTests(unittest.TestCase):
         public = root / "docs/tainted-grail-sdk/APPROVED_ACQUISITION_PROVIDERS.md"
         public.parent.mkdir(parents=True, exist_ok=True)
         public.write_text(
-            "local pinned-GitHub b6975dde94a04c948bb05705fe2d36b3f38cd82e "
+            "local pinned-GitHub 7d3d31371b4327ee3abbaa48b8741b4390bb9e0e "
             "NO upstream PNG outside the FOA-SDK checkout candidate evidence Merlin Mono IL2CPP\n",
             encoding="utf-8",
         )
