@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 from __future__ import annotations
 
+import hashlib
 import os
 import sys
 import unittest
@@ -52,29 +53,41 @@ class CapabilityElevationHelperTests(unittest.TestCase):
         with InstallerSecurityFixture(elevated=True) as fixture:
             grant = self._grant(fixture)
             consent = grant["consent"]
-            wrong = fixture.root / "wrong.key"; wrong.write_bytes(bytes.fromhex("24" * 32)); os.chmod(wrong, 0o600)
+            wrong = fixture.root / "wrong.key"
+            wrong.write_bytes(bytes.fromhex("24" * 32))
+            os.chmod(wrong, 0o600)
             with self.assertRaises(ElevationError):
                 validate_consent(consent, authority_key_path=wrong)
 
-    def test_request_launches_only_reviewed_bootstrapper_and_is_one_shot(self) -> None:
+    def test_request_launches_verified_private_bootstrapper_and_is_one_shot(self) -> None:
         with InstallerSecurityFixture(elevated=True) as fixture:
             grant = self._grant(fixture)
             calls: list[tuple[Path, list[str], Path]] = []
+
             def backend(executable: Path, parameters: list[str], cwd: Path) -> int:
-                calls.append((executable, parameters, cwd)); return 42
+                calls.append((executable, parameters, cwd))
+                return 42
+
             result = request_elevation(
                 grant, fixture.execution_root, fixture.request_root,
                 authority_key_path=fixture.authority_key, claim_root=fixture.claim_root,
                 request_reference="request.foa-sdk.elevation-0001", requested_at_utc="2026-07-22T12:07:00Z",
                 backend=backend,
             )
-            self.assertEqual(calls[0][0], fixture.bootstrapper_path)
+            launched = calls[0][0]
+            self.assertNotEqual(launched, fixture.bootstrapper_path)
+            self.assertTrue(launched.is_relative_to(fixture.claim_root / "private-executables"))
+            self.assertEqual(
+                hashlib.sha256(launched.read_bytes()).hexdigest(),
+                hashlib.sha256(fixture.bootstrapper_path.read_bytes()).hexdigest(),
+            )
             self.assertEqual(calls[0][1][-2], "--request")
             self.assertTrue(Path(calls[0][1][-1]).name.endswith(".json"))
             self.assertIn("--authority-key", calls[0][1])
             self.assertTrue(result["controlled_bootstrapper_only"])
+            self.assertTrue(result["private_bootstrapper_bundle_used"])
             self.assertEqual(validate_elevation_result(result, authority_key_path=fixture.authority_key), result)
-            with self.assertRaisesRegex(ElevationError, "already been consumed"):
+            with self.assertRaisesRegex(ElevationError, "already been consumed|already exists for this authority"):
                 request_elevation(
                     grant, fixture.execution_root, fixture.request_root,
                     authority_key_path=fixture.authority_key, claim_root=fixture.claim_root,
@@ -86,24 +99,28 @@ class CapabilityElevationHelperTests(unittest.TestCase):
         with InstallerSecurityFixture(elevated=True) as fixture:
             grant = self._grant(fixture)
             captured: dict[str, object] = {}
+
             def backend(executable: Path, parameters: list[str], cwd: Path) -> int:
                 from controlled_elevation_bootstrapper import load_request
                 request_path = Path(parameters[-1])
                 captured["request"] = load_request(request_path, authority_key_path=fixture.authority_key)
                 return 42
+
             request_elevation(
                 grant, fixture.execution_root, fixture.request_root,
                 authority_key_path=fixture.authority_key, claim_root=fixture.claim_root,
                 request_reference="request.foa-sdk.elevation-bootstrap", requested_at_utc="2026-07-22T12:07:00Z",
                 backend=backend,
             )
-            completion_claims = fixture.root / "completion-claims"; completion_claims.mkdir()
+            completion_claims = fixture.root / "completion-claims"
+            completion_claims.mkdir()
             completion = execute_bootstrap_request(
                 captured["request"], fixture.execution_root, authority_key_path=fixture.authority_key,
                 claim_root=completion_claims, completed_at_utc="2026-07-22T12:08:00Z",
             )
             self.assertTrue(completion["process_completion_observed"])
             self.assertTrue(completion["exact_environment_applied"])
+            self.assertTrue(completion["private_bundle_removed"])
             self.assertEqual(completion["return_code"], 0)
 
 
