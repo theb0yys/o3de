@@ -62,7 +62,6 @@ set(FILES
     Source/AdapterReleaseArtifactProvenanceServicePart1.inl
     Source/AdapterReleaseArtifactProvenanceServicePart2.inl
     Source/AdapterReleaseAssemblyEvidenceService.cpp
-    Source/AdapterReleaseAssemblyEvidenceService.h
     Source/AdapterReleaseAssemblyResultContracts.cpp
     Source/AdapterReleaseAssemblyResultContracts.h
     Source/AdapterReleaseSigningEvidenceService.cpp
@@ -109,6 +108,8 @@ set(FILES
     Source/CanonicalInterchangeCanonical.h
     Source/CanonicalInterchangeTypes.cpp
     Source/CanonicalInterchangeTypes.h
+    Source/CanonicalInterchangeValidation.cpp
+    Source/CanonicalInterchangeValidation.h
     Source/DeterministicContractJson.h
     Source/ExternalToolInterchangeCanonical.cpp
     Source/ExternalToolInterchangeCanonical.h
