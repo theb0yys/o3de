@@ -22,6 +22,11 @@ namespace TaintedGrailModdingSDK::AvalonAiExtension
         constexpr size_t MaximumKeys = 512;
         constexpr size_t MaximumGoals = 512;
         constexpr size_t MaximumActions = 1024;
+        constexpr size_t MaximumActorRoles = 128;
+        constexpr size_t MaximumCapabilities = 256;
+        constexpr size_t MaximumConditionsPerGoal = 256;
+        constexpr size_t MaximumConditionsPerAction = 256;
+        constexpr size_t MaximumEffectsPerAction = 256;
 
         bool IsBoundedText(
             const AZStd::string& value,
@@ -111,16 +116,61 @@ namespace TaintedGrailModdingSDK::AvalonAiExtension
             return pack;
         }
 
+        bool IsValidBlackboardAccess(BlackboardAccess value)
+        {
+            switch (value)
+            {
+            case BlackboardAccess::Authoritative:
+            case BlackboardAccess::Derived:
+            case BlackboardAccess::PackageLocal:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        bool IsValidBlackboardScope(BlackboardScope value)
+        {
+            switch (value)
+            {
+            case BlackboardScope::Actor:
+            case BlackboardScope::World:
+                return true;
+            default:
+                return false;
+            }
+        }
+
         bool IsValidComparison(PlanningComparison value)
         {
-            return value >= PlanningComparison::Equal
-                && value <= PlanningComparison::LessThanOrEqual;
+            switch (value)
+            {
+            case PlanningComparison::Equal:
+            case PlanningComparison::NotEqual:
+            case PlanningComparison::GreaterThan:
+            case PlanningComparison::GreaterThanOrEqual:
+            case PlanningComparison::LessThan:
+            case PlanningComparison::LessThanOrEqual:
+                return true;
+            default:
+                return false;
+            }
         }
 
         bool IsValidInterruptPolicy(InterruptPolicy value)
         {
-            return value >= InterruptPolicy::Never
-                && value <= InterruptPolicy::Always;
+            switch (value)
+            {
+            case InterruptPolicy::Never:
+            case InterruptPolicy::OnInvalidTarget:
+            case InterruptPolicy::OnThreatIncrease:
+            case InterruptPolicy::OnDamage:
+            case InterruptPolicy::OnGoalChange:
+            case InterruptPolicy::Always:
+                return true;
+            default:
+                return false;
+            }
         }
 
         bool ValidateCondition(const PlanningCondition& condition)
@@ -132,6 +182,16 @@ namespace TaintedGrailModdingSDK::AvalonAiExtension
         bool ValidateEffect(const PlanningEffect& effect)
         {
             return IsStableContractId(effect.m_factId);
+        }
+
+        bool SameStorageIdentity(
+            const BlackboardKey& left,
+            const BlackboardKey& right)
+        {
+            return left.m_namespace == right.m_namespace
+                && left.m_name == right.m_name
+                && left.m_schemaVersion == right.m_schemaVersion
+                && left.m_scope == right.m_scope;
         }
 
         bool ConditionLess(
@@ -247,7 +307,9 @@ namespace TaintedGrailModdingSDK::AvalonAiExtension
             || manifest.m_goals.empty() || manifest.m_goals.size() > MaximumGoals
             || manifest.m_actions.empty() || manifest.m_actions.size() > MaximumActions
             || manifest.m_supportedActorRoles.empty()
-            || manifest.m_requiredCapabilities.empty())
+            || manifest.m_supportedActorRoles.size() > MaximumActorRoles
+            || manifest.m_requiredCapabilities.empty()
+            || manifest.m_requiredCapabilities.size() > MaximumCapabilities)
         {
             AddIssue(
                 result, manifest.m_packageId, "manifest.collection-bounds",
@@ -278,8 +340,9 @@ namespace TaintedGrailModdingSDK::AvalonAiExtension
         }
 
         AZStd::vector<AZStd::string> keyIds;
-        for (const BlackboardKey& key : manifest.m_blackboardKeys)
+        for (size_t keyIndex = 0; keyIndex < manifest.m_blackboardKeys.size(); ++keyIndex)
         {
+            const BlackboardKey& key = manifest.m_blackboardKeys[keyIndex];
             keyIds.push_back(key.m_keyId);
             if (!IsStableContractId(key.m_keyId)
                 || key.m_namespace != manifest.m_blackboardNamespace
@@ -287,12 +350,27 @@ namespace TaintedGrailModdingSDK::AvalonAiExtension
                 || !IsBoundedText(key.m_name, 128)
                 || key.m_schemaVersion < 1
                 || key.m_schemaVersion > manifest.m_blackboardSchemaVersion
+                || !IsValidBlackboardAccess(key.m_access)
                 || key.m_access != BlackboardAccess::PackageLocal
+                || !IsValidBlackboardScope(key.m_scope)
                 || !IsBoundedText(key.m_valueType, 128))
             {
                 AddIssue(
                     result, key.m_keyId, "blackboard-key.invalid",
-                    "Package keys must have stable IDs and remain package-local, namespaced, typed, and schema-compatible.");
+                    "Package keys must have stable IDs and remain package-local, namespaced, typed, scoped, and schema-compatible.");
+            }
+            for (size_t priorIndex = 0; priorIndex < keyIndex; ++priorIndex)
+            {
+                if (key.m_keyId != manifest.m_blackboardKeys[priorIndex].m_keyId
+                    && SameStorageIdentity(
+                        key,
+                        manifest.m_blackboardKeys[priorIndex]))
+                {
+                    AddIssue(
+                        result, key.m_keyId, "blackboard-key.storage-alias",
+                        "Distinct stable key IDs cannot alias one blackboard storage identity.");
+                    break;
+                }
             }
         }
         if (HasDuplicates(keyIds))
@@ -311,6 +389,12 @@ namespace TaintedGrailModdingSDK::AvalonAiExtension
                 AddIssue(
                     result, goal.m_goalId, "goal.invalid",
                     "Avalon AI goal identity or priority is invalid.");
+            }
+            if (goal.m_conditions.size() > MaximumConditionsPerGoal)
+            {
+                AddIssue(
+                    result, goal.m_goalId, "goal.condition-count",
+                    "Avalon AI goal condition count exceeds the contract bound.");
             }
             for (const PlanningCondition& condition : goal.m_conditions)
             {
@@ -350,6 +434,13 @@ namespace TaintedGrailModdingSDK::AvalonAiExtension
                 AddIssue(
                     result, action.m_actionId, "action.target-key-invalid",
                     "Avalon AI action target-key ID must resolve to one declared package key.");
+            }
+            if (action.m_conditions.size() > MaximumConditionsPerAction
+                || action.m_effects.size() > MaximumEffectsPerAction)
+            {
+                AddIssue(
+                    result, action.m_actionId, "action.planning-count",
+                    "Avalon AI action conditions or effects exceed the contract bound.");
             }
             for (const PlanningCondition& condition : action.m_conditions)
             {
