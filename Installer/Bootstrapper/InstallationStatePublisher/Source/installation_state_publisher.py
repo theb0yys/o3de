@@ -116,6 +116,29 @@ def _state_status(operation: str) -> str:
     return "active"
 
 
+def _validate_lifecycle_publication_policy(lifecycle: Mapping[str, object]) -> None:
+    if lifecycle.get("status") != "completed" or lifecycle.get("lifecycle_completed") is not True:
+        raise InstallationStatePublisherError(
+            "Installation state can only be published from a completed lifecycle result."
+        )
+    elevation_confirmed = lifecycle.get("elevation_request_confirmed")
+    elevated_observed = lifecycle.get("elevated_completion_observed")
+    elevated_observation_sha = lifecycle.get("elevated_completion_observation_sha256")
+    if elevation_confirmed is True:
+        if elevated_observed is not True or elevated_observation_sha is None:
+            raise InstallationStatePublisherError(
+                "Elevated lifecycle publication requires an authenticated elevated completion observation."
+            )
+        _hash(elevated_observation_sha, "lifecycle.elevated_completion_observation_sha256")
+    elif elevation_confirmed is False:
+        if elevated_observed is not False or elevated_observation_sha is not None:
+            raise InstallationStatePublisherError(
+                "Non-elevated lifecycle publication must not include elevated completion evidence."
+            )
+    else:
+        raise InstallationStatePublisherError("Lifecycle elevation_request_confirmed flag is invalid.")
+
+
 def _reject_symlink_components(path: Path, label: str) -> None:
     current = path
     while True:
@@ -168,14 +191,7 @@ def build_publication_grant(
         raise InstallationStatePublisherError(
             "Authenticated session does not grant package-engine.publish-installation-state."
         )
-    if checked_lifecycle.get("status") != "completed" or checked_lifecycle.get("lifecycle_completed") is not True:
-        raise InstallationStatePublisherError(
-            "Installation state can only be published from a completed lifecycle result."
-        )
-    if checked_lifecycle.get("elevation_request_confirmed") is not False:
-        raise InstallationStatePublisherError(
-            "Elevation-pending lifecycle results require an authenticated completion receipt."
-        )
+    _validate_lifecycle_publication_policy(checked_lifecycle)
     if (
         checked_lifecycle.get("session_sha256") != checked_session.get("session_sha256")
         or checked_lifecycle.get("operation") != checked_session.get("operation")
@@ -282,6 +298,10 @@ def build_state_record(
         "receipt_sha256": handoff["receipt_sha256"],
         "plan_sha256": handoff["plan_sha256"],
         "lifecycle_result_sha256": lifecycle["result_sha256"],
+        "elevation_request_confirmed": lifecycle.get("elevation_request_confirmed"),
+        "elevated_completion_observed": lifecycle.get("elevated_completion_observed"),
+        "elevation_result_sha256": lifecycle.get("elevation_result_sha256"),
+        "elevated_completion_observation_sha256": lifecycle.get("elevated_completion_observation_sha256"),
         "operation_plan_sha256": session["operation_plan_sha256"],
         "published_at_utc": _utc(published_at_utc, "published_at_utc"),
         "product_or_game_directory_mutated": False,
@@ -339,6 +359,15 @@ def validate_state_record(
         or document.get("state_reference") != checked_grant["state_reference"]
     ):
         raise InstallationStatePublisherError("State record is not bound to its authenticated grant.")
+    lifecycle = _object(checked_grant.get("lifecycle_result"), "record.lifecycle_result")
+    for field in (
+        "elevation_request_confirmed",
+        "elevated_completion_observed",
+        "elevation_result_sha256",
+        "elevated_completion_observation_sha256",
+    ):
+        if document.get(field) != lifecycle.get(field):
+            raise InstallationStatePublisherError("State record elevated lifecycle fields do not match the grant.")
     return document
 
 
