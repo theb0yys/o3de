@@ -185,8 +185,9 @@ def main() -> int:
                 '"foundation"',
                 '"governance-hardening"',
                 '"catalog-contract"',
+                '"canonical-interchange-contract"',
                 '"o3de-source-policy"',
-                '"compiled-catalog-tests"',
+                '"compiled-catalog-and-canonical-interchange-tests"',
             ),
             script_path,
         )
@@ -202,6 +203,7 @@ def main() -> int:
                 "test_build_directory_rejects_cache_for_another_engine_tree",
                 "test_engine_pin_fails_closed_for_wrong_checkout",
                 "test_configure_command_uses_external_engine_and_product_project",
+                "test_build_command_has_fixed_profile_editor_asset_and_catalog_targets",
                 "test_validation_plan_separates_product_and_engine_tools",
                 "test_dry_run_never_invokes_executor",
                 "test_execution_stops_and_propagates_original_exit_code",

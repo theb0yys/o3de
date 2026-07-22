@@ -54,6 +54,7 @@ class DeveloperPreviewCommandTests(unittest.TestCase):
             "validate_foundation.py",
             "validate_governance_hardening.py",
             "validate_catalog_tests.py",
+            "validate_canonical_interchange_compiled_tests.py",
         ):
             (root / "Gems/TaintedGrailModdingSDK/Tools" / name).write_text("", encoding="utf-8")
         return root
@@ -216,8 +217,13 @@ class DeveloperPreviewCommandTests(unittest.TestCase):
         self.assertEqual(command[0:2], ("cmake", "--build"))
         self.assertIn("profile", command)
         self.assertEqual(
-            command[-3:],
-            ("Editor", "AssetProcessorBatch", "TaintedGrailModdingSDK.Catalog.Tests"),
+            command[-4:],
+            (
+                "Editor",
+                "AssetProcessorBatch",
+                "TaintedGrailModdingSDK.Catalog.Tests",
+                "TaintedGrailModdingSDK.CanonicalInterchange.Tests",
+            ),
         )
 
     def test_validation_plan_separates_product_and_engine_tools(self) -> None:
@@ -233,14 +239,15 @@ class DeveloperPreviewCommandTests(unittest.TestCase):
                 "foundation",
                 "governance-hardening",
                 "catalog-contract",
+                "canonical-interchange-contract",
                 "o3de-source-policy",
-                "compiled-catalog-tests",
+                "compiled-catalog-and-canonical-interchange-tests",
             ],
         )
         source_policy = next(step for step in plan if step.name == "o3de-source-policy")
         self.assertIn(str(engine / "scripts/commit_validation/validate_file_or_folder.py"), source_policy.command)
         self.assertIn(str(product / "Gems/TaintedGrailModdingSDK"), source_policy.command)
-        compiled = next(step for step in plan if step.name == "compiled-catalog-tests")
+        compiled = next(step for step in plan if step.name == "compiled-catalog-and-canonical-interchange-tests")
         self.assertIn("--no-tests=error", compiled.command)
         self.assertIn(preview.CATALOG_TEST_PATTERN, compiled.command)
         self.assertTrue(all(step.cwd == str(product) for step in plan))

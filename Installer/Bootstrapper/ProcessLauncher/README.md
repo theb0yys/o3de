@@ -25,3 +25,7 @@ Process creation uses an exact argument array with `shell=False`, closed standar
 The result records the executable, argv and environment fingerprints, return code or timeout state, bounded stdout/stderr hashes and sizes, and explicit `process_launched=true`, `shell_used=false`, and `elevation_requested=false` values. The result grants no later authority and does not finalize install, repair, upgrade, rollback or uninstall.
 
 The elevation helper and lifecycle finalizers remain separate installer gates.
+
+## Security hardening
+
+Callers select only a reviewed helper reference. Executable hash, argv, working directory, environment, timeout, and output limit derive from the authenticated operation plan. Execution uses a verified private copy, bounded streaming output, process-tree termination, and a one-shot claim.

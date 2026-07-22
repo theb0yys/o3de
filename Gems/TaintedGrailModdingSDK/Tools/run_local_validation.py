@@ -42,6 +42,7 @@ VALIDATORS = (
     "validate_ci_runner_policy.py",
     "validate_installer_workflow.py",
     "validate_core_framework_build_graph.py",
+    "validate_canonical_interchange_compiled_tests.py",
     "validate_downstream_compiled_tests.py",
     "validate_research_contract_hardening.py",
     "validate_tainted_system_ports.py",
@@ -265,7 +266,7 @@ def validate_ctest_build_directory(build_directory: Path) -> Path:
 def build_ctest_command(build_directory: Path) -> ValidationCommand:
     build_directory = validate_ctest_build_directory(build_directory)
     return ValidationCommand(
-        "Compiled TG SDK catalog tests",
+        "Compiled TG SDK catalog and canonical interchange tests",
         (
             find_ctest(build_directory),
             "--test-dir",
@@ -273,7 +274,7 @@ def build_ctest_command(build_directory: Path) -> ValidationCommand:
             "-C",
             "profile",
             "-R",
-            "TaintedGrailModdingSDK.Catalog.Tests",
+            r"TaintedGrailModdingSDK\.(Catalog|CanonicalInterchange)\.Tests",
             "--output-on-failure",
             "--no-tests=error",
         ),
@@ -379,7 +380,7 @@ def parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Run FOA-SDK Python tests, validators, fixtures, pinned O3DE source "
-            "policy, and mandatory compiled Catalog CTest coverage."
+            "policy, and mandatory compiled Catalog plus CanonicalInterchange CTest coverage."
         )
     )
     parser.add_argument("--list", action="store_true")
