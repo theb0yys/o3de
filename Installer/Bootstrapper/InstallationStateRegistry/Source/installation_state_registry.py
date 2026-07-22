@@ -88,6 +88,12 @@ def _optional_reference(value: object, label: str) -> str | None:
     return _reference(value, label)
 
 
+def _optional_hash(value: object, label: str) -> str | None:
+    if value is None:
+        return None
+    return _hash(value, label)
+
+
 def _utc(value: object, label: str) -> str:
     result = _text(value, label, 64)
     if not result.endswith("Z") or "T" not in result:
@@ -132,7 +138,22 @@ def _state_file_name(state_reference: str) -> str:
     return f"{state_reference}.json"
 
 
-def _load_state_record(path: Path) -> tuple[dict[str, object], str]:
+def _validate_published_state_record(
+    record: Mapping[str, object], *, authority_key_path: Path | None
+) -> dict[str, object]:
+    try:
+        if authority_key_path is None:
+            return validate_state_record(record)  # type: ignore[call-arg]
+        return validate_state_record(record, authority_key_path=authority_key_path)
+    except TypeError as exc:
+        raise InstallationStateRegistryError(
+            "authority_key_path is required to validate authenticated installation-state records."
+        ) from exc
+    except InstallationStatePublisherError as exc:
+        raise InstallationStateRegistryError(f"State record failed validation: {exc}") from exc
+
+
+def _load_state_record(path: Path, *, authority_key_path: Path | None) -> tuple[dict[str, object], str]:
     if path.is_symlink() or not path.is_file():
         raise InstallationStateRegistryError(f"State registry entry is not a regular non-symlink file: {path.name}")
     data = path.read_bytes()
@@ -142,8 +163,11 @@ def _load_state_record(path: Path) -> tuple[dict[str, object], str]:
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise InstallationStateRegistryError(f"State registry entry is not valid UTF-8 JSON: {path.name}") from exc
     try:
-        record = validate_state_record(_object(raw, f"{path.name}.record"))
-    except InstallationStatePublisherError as exc:
+        record = _validate_published_state_record(
+            _object(raw, f"{path.name}.record"),
+            authority_key_path=authority_key_path,
+        )
+    except InstallationStateRegistryError as exc:
         raise InstallationStateRegistryError(f"State registry entry failed validation: {path.name}: {exc}") from exc
     canonical = canonical_json(record)
     if canonical != data:
@@ -154,7 +178,10 @@ def _load_state_record(path: Path) -> tuple[dict[str, object], str]:
 
 
 def _record_summary(record: Mapping[str, object], state_file_sha256: str) -> dict[str, object]:
-    summary = _object(record.get("summary"), "state_record.summary")
+    publication_grant = _object(record.get("publication_grant"), "state_record.publication_grant")
+    session = _object(publication_grant.get("session"), "state_record.publication_grant.session")
+    lifecycle = _object(publication_grant.get("lifecycle_result"), "state_record.publication_grant.lifecycle_result")
+    summary = _object(session.get("summary"), "state_record.publication_grant.session.summary")
     row = {
         "state_reference": _reference(record.get("state_reference"), "state_record.state_reference"),
         "state_status": _text(record.get("state_status"), "state_record.state_status", 32),
@@ -167,23 +194,26 @@ def _record_summary(record: Mapping[str, object], state_file_sha256: str) -> dic
         "published_at_utc": _utc(record.get("published_at_utc"), "state_record.published_at_utc"),
         "session_sha256": _hash(record.get("session_sha256"), "state_record.session_sha256"),
         "handoff_sha256": _hash(record.get("handoff_sha256"), "state_record.handoff_sha256"),
+        "receipt_sha256": _hash(record.get("receipt_sha256"), "state_record.receipt_sha256"),
+        "plan_sha256": _hash(record.get("plan_sha256"), "state_record.plan_sha256"),
         "lifecycle_result_sha256": _hash(
             record.get("lifecycle_result_sha256"),
             "state_record.lifecycle_result_sha256",
         ),
-        "copy_receipt_sha256": None if record.get("copy_receipt_sha256") is None else _hash(
-            record.get("copy_receipt_sha256"),
-            "state_record.copy_receipt_sha256",
+        "operation_plan_sha256": _hash(record.get("operation_plan_sha256"), "state_record.operation_plan_sha256"),
+        "copy_receipt_sha256": _optional_hash(
+            lifecycle.get("copy_receipt_sha256"),
+            "state_record.lifecycle.copy_receipt_sha256",
         ),
-        "launch_result_sha256": None if record.get("launch_result_sha256") is None else _hash(
-            record.get("launch_result_sha256"),
-            "state_record.launch_result_sha256",
+        "launch_result_sha256": _optional_hash(
+            lifecycle.get("launch_result_sha256"),
+            "state_record.lifecycle.launch_result_sha256",
         ),
         "state_record_sha256": _hash(record.get("state_record_sha256"), "state_record.state_record_sha256"),
         "state_file_sha256": _hash(state_file_sha256, "state_file_sha256"),
         "package_order": [
-            _reference(item, f"state_record.package_order[{index}]")
-            for index, item in enumerate(_array(record.get("package_order"), "state_record.package_order"))
+            _reference(item, f"session.package_order[{index}]")
+            for index, item in enumerate(_array(session.get("package_order"), "session.package_order"))
         ],
         "summary": {
             "package_count": summary.get("package_count"),
@@ -198,6 +228,7 @@ def _record_summary(record: Mapping[str, object], state_file_sha256: str) -> dic
 
 def build_registry_snapshot(
     records: list[Mapping[str, object]], *, state_root_reference: str, observed_at_utc: str,
+    authority_key_path: Path | None = None,
 ) -> dict[str, object]:
     summaries: list[dict[str, object]] = []
     seen_state: set[str] = set()
@@ -205,10 +236,7 @@ def build_registry_snapshot(
     for index, raw in enumerate(records):
         record = dict(_object(raw, f"records[{index}]"))
         state_file_hash = _hash(record.pop("state_file_sha256", None), f"records[{index}].state_file_sha256")
-        try:
-            checked_record = validate_state_record(record)
-        except InstallationStatePublisherError as exc:
-            raise InstallationStateRegistryError(f"Registry snapshot input record failed validation: {exc}") from exc
+        checked_record = _validate_published_state_record(record, authority_key_path=authority_key_path)
         row = _record_summary(checked_record, state_file_hash)
         if row["state_reference"] in seen_state:
             raise InstallationStateRegistryError("Duplicate state_reference in registry snapshot input.")
@@ -252,14 +280,17 @@ def build_registry_snapshot(
     return {**base, "snapshot_sha256": sha256(base)}
 
 
-def query_state_registry(state_root: Path, *, state_root_reference: str, observed_at_utc: str) -> dict[str, object]:
+def query_state_registry(
+    state_root: Path, *, state_root_reference: str, observed_at_utc: str,
+    authority_key_path: Path | None = None,
+) -> dict[str, object]:
     root = Path(state_root)
     if not root.is_absolute() or root.is_symlink() or not root.is_dir():
         raise InstallationStateRegistryError("State root must be an absolute existing non-symlink directory.")
     _reject_symlink_components(root, "State root")
     rows: list[dict[str, object]] = []
     for entry in sorted(root.glob("*.json"), key=lambda item: item.name.casefold()):
-        record, state_file_hash = _load_state_record(entry)
+        record, state_file_hash = _load_state_record(entry, authority_key_path=authority_key_path)
         row = dict(record)
         row["state_file_sha256"] = state_file_hash
         rows.append(row)
@@ -267,6 +298,7 @@ def query_state_registry(state_root: Path, *, state_root_reference: str, observe
         rows,
         state_root_reference=state_root_reference,
         observed_at_utc=observed_at_utc,
+        authority_key_path=authority_key_path,
     )
 
 
