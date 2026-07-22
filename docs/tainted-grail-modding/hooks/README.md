@@ -91,6 +91,7 @@ limitations:
 10. An offline specification receipt has no runtime or promotion authority.
 11. Synthetic locking, recovery, concurrency, cancellation, serialization and CI policy tests do not establish game-runtime behavior.
 12. Journal proofs, abandonment reviews, publication intents and reproducible CI receipts remain synthetic project facts and grant no runtime or promotion authority.
+13. Compaction chains, reviewer quorums, backup limits, replay-window receipts and cross-version fixtures remain offline governance artifacts and cannot promote runtime compatibility.
 
 ## Evidence boundary
 
@@ -210,6 +211,12 @@ Batch 008 preserves the complete no-runtime and no-promotion boundary and leaves
 [Semantic Hook Batch 009](BATCH_009.md) adds terminal-journal compaction proofs, lock-abandonment review records, recoverable multi-file publication intents, cancellation/recovery goldens, bounded API generation gaps and reproducible CI policy receipts.
 
 Batch 009 preserves the complete no-runtime and no-promotion boundary and leaves every existing prohibition unchanged.
+
+### Batch 010
+
+[Semantic Hook Batch 010](BATCH_010.md) adds interrupted-compaction matrices, rotated checkpoint chains, intent-journal checkpoint integration, reviewer-quorum abandonment decisions, bounded publication backups, API replay-window receipts and Python 3.11–3.13 CI receipt fixtures.
+
+Batch 010 preserves the complete no-runtime and no-promotion boundary and leaves every existing prohibition unchanged.
 
 ## Initial domain indexes
 
