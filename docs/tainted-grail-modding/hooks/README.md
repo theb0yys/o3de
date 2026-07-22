@@ -107,7 +107,7 @@ The extraction programme will:
 
 [Semantic Hook Batch 001](BATCH_001.md) dispositions seven selected source files into:
 
-- nine complete source-only candidate hook records;
+- ten complete source-only candidate hook records;
 - one canonical source-system fact;
 - one research blocker requiring decomposition;
 - one explicit `not-a-hook` rejection.
