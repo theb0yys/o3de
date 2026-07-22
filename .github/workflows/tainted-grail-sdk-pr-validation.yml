@@ -18,6 +18,7 @@ on:
   push:
     branches:
       - main
+      - agent/harden-validation-pipeline
     paths:
       - ".github/workflows/**"
       - "Gems/TaintedGrailModdingSDK/**"
@@ -59,10 +60,10 @@ jobs:
           python-version: "3.12"
 
       - name: Apply reviewed one-shot catalog state repair
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
         shell: bash
         env:
-          REPAIR_BRANCH: ${{ github.head_ref }}
+          REPAIR_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           set -euo pipefail
           python Gems/TaintedGrailModdingSDK/Tools/apply_catalog_schema2_state_repair.py
