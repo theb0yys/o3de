@@ -90,6 +90,7 @@ limitations:
 9. A deterministic adverse implementation finding may produce `prohibited-current-source` without claiming that the underlying modding goal is permanently impossible.
 10. An offline specification receipt has no runtime or promotion authority.
 11. Synthetic locking, recovery, concurrency, cancellation, serialization and CI policy tests do not establish game-runtime behavior.
+12. Journal proofs, abandonment reviews, publication intents and reproducible CI receipts remain synthetic project facts and grant no runtime or promotion authority.
 
 ## Evidence boundary
 
@@ -203,6 +204,12 @@ Batch 007 adds no runtime adapter or evidence authority and leaves every existin
 [Semantic Hook Batch 008](BATCH_008.md) adds owner/generation locks, deterministic recovery plans, two-writer publication fixtures, cancellation checkpoints, stale-generation API v2 snapshots and negative CI policy tests.
 
 Batch 008 preserves the complete no-runtime and no-promotion boundary and leaves every existing prohibition unchanged.
+
+### Batch 009
+
+[Semantic Hook Batch 009](BATCH_009.md) adds terminal-journal compaction proofs, lock-abandonment review records, recoverable multi-file publication intents, cancellation/recovery goldens, bounded API generation gaps and reproducible CI policy receipts.
+
+Batch 009 preserves the complete no-runtime and no-promotion boundary and leaves every existing prohibition unchanged.
 
 ## Initial domain indexes
 
