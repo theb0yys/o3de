@@ -221,7 +221,6 @@ jobs:
       contents: read
     env:
       O3DE_COMMIT: "68683f23fb747380d3efa2424bd5f30242e9c5a2"
-      BUILD_DIR: ${{ runner.temp }}\foa-gate5-canonical-interchange
       TEST_TARGET: TaintedGrailModdingSDK.CanonicalInterchange.Tests
       TEST_PATTERN: TaintedGrailModdingSDK\.CanonicalInterchange\.Tests
       CONFIGURATION: profile
@@ -277,9 +276,10 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
+          $buildDir = Join-Path $env:RUNNER_TEMP "foa-gate5-canonical-interchange"
           cmake --preset windows-vs-unity `
             -S "$env:GITHUB_WORKSPACE\o3de" `
-            -B "$env:BUILD_DIR" `
+            -B $buildDir `
             -A x64 `
             "-DLY_PROJECTS=$env:GITHUB_WORKSPACE\TaintedGrailModdingEditor"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -288,7 +288,8 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          cmake --build "$env:BUILD_DIR" `
+          $buildDir = Join-Path $env:RUNNER_TEMP "foa-gate5-canonical-interchange"
+          cmake --build $buildDir `
             --config "$env:CONFIGURATION" `
             --target "$env:TEST_TARGET" `
             --parallel 2
@@ -298,7 +299,8 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          ctest --test-dir "$env:BUILD_DIR" `
+          $buildDir = Join-Path $env:RUNNER_TEMP "foa-gate5-canonical-interchange"
+          ctest --test-dir $buildDir `
             -C "$env:CONFIGURATION" `
             --output-on-failure `
             --no-tests=error `
@@ -331,8 +333,8 @@ jobs:
           name: gate5-canonical-interchange-compiled-${{ github.run_id }}
           path: |
             ${{ runner.temp }}\gate5-canonical-interchange-evidence\*.json
-            ${{ env.BUILD_DIR }}\Testing\Temporary\LastTest.log
-            ${{ env.BUILD_DIR }}\Testing\Temporary\LastTestsFailed.log
+            ${{ runner.temp }}\foa-gate5-canonical-interchange\Testing\Temporary\LastTest.log
+            ${{ runner.temp }}\foa-gate5-canonical-interchange\Testing\Temporary\LastTestsFailed.log
           if-no-files-found: error
           retention-days: 7
 
