@@ -211,3 +211,68 @@ jobs:
             tg-sdk-reviewed-range.txt
           if-no-files-found: error
           retention-days: 7
+
+  windows-prerequisites:
+    name: Windows O3DE prerequisites
+    if: github.event_name != 'pull_request_target'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      O3DE_COMMIT: 68683f23fb747380d3efa2424bd5f30242e9c5a2
+      O3DE_ROOT: ${{ runner.temp }}/o3de-policy
+      FOA_BUILD_ROOT: ${{ runner.temp }}/foa-build/tg-sdk-developer-preview-0-windows-profile
+    steps:
+      - name: Check out exact pull-request head
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Check out exact non-PR commit
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check out exact external O3DE policy surface
+        shell: pwsh
+        run: |
+          git clone --filter=blob:none --no-checkout https://github.com/o3de/o3de.git $env:O3DE_ROOT
+          git -C $env:O3DE_ROOT sparse-checkout init --no-cone
+          @('/engine.json', '/CMakePresets.json', '/scripts/commit_validation/') |
+            git -C $env:O3DE_ROOT sparse-checkout set --stdin
+          git -C $env:O3DE_ROOT checkout --detach $env:O3DE_COMMIT
+          $actual = git -C $env:O3DE_ROOT rev-parse HEAD
+          if ($actual -cne $env:O3DE_COMMIT) {
+            throw "External O3DE commit mismatch: $actual"
+          }
+
+      - name: Execute Windows prerequisite gate
+        shell: pwsh
+        run: |
+          python Gems/TaintedGrailModdingSDK/Tools/developer_preview.py prerequisites `
+            --engine-root $env:O3DE_ROOT `
+            --build-dir $env:FOA_BUILD_ROOT 2>&1 |
+            Tee-Object -FilePath tg-sdk-windows-prerequisites.log
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+      - name: Preserve Windows prerequisite evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tg-sdk-windows-prerequisites-${{ github.run_id }}
+          path: tg-sdk-windows-prerequisites.log
+          if-no-files-found: error
+          retention-days: 7
