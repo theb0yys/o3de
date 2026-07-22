@@ -30,6 +30,7 @@ from execution_security import (  # noqa: E402
     copy_reviewed_bundle,
     file_sha256,
     publish_bytes_create_once,
+    read_strict_json_file,
     remove_tree,
     resolve_reviewed_path,
     select_helper,
@@ -274,13 +275,36 @@ def validate_bootstrap_request(request: Mapping[str, object], *, authority_key_p
     return document
 
 
+def _claim_path(claim_root: Path, grant_sha256: str) -> Path:
+    return Path(claim_root) / "claim.package-elevation-grant" / f"{grant_sha256}.claim.json"
+
+
+def _reject_consumed_grant(claim_root: Path, grant_sha256: str) -> None:
+    target = _claim_path(claim_root, grant_sha256)
+    if target.is_symlink():
+        raise ElevationError(f"Elevation claim path must not be a symbolic link: {target}")
+    if target.exists():
+        if not target.is_file():
+            raise ElevationError(f"Elevation claim path is not a regular file: {target}")
+        raise ElevationError(f"Artifact has already been consumed: {grant_sha256}")
+
+
 def _publish_request(request: Mapping[str, object], root: Path) -> Path:
     directory = Path(root)
     if not directory.is_absolute() or directory.is_symlink() or not directory.is_dir():
         raise ElevationError("Bootstrap request root must be an absolute existing non-symlink directory.")
     target = directory / f"{request['request_sha256']}.foa-elevation-request.json"
+    payload = canonical_json(request)
+    if target.exists() and not target.is_symlink():
+        try:
+            existing = read_strict_json_file(target, "Bootstrap request", require_canonical=True)
+        except ExecutionSecurityError as exc:
+            raise ElevationError(str(exc)) from exc
+        if existing == dict(request):
+            return target
+        raise ElevationError("Bootstrap request destination already exists with different canonical content.")
     try:
-        return publish_bytes_create_once(target, canonical_json(request), label="Bootstrap request")
+        return publish_bytes_create_once(target, payload, label="Bootstrap request")
     except ExecutionSecurityError as exc:
         raise ElevationError(str(exc)) from exc
 
@@ -305,16 +329,23 @@ def request_elevation(
     requested = utc_datetime(requested_at_utc, "requested_at_utc")
     if requested < utc_datetime(checked["issued_at_utc"], "issued_at_utc") or requested > utc_datetime(checked["expires_at_utc"], "expires_at_utc"):
         raise ElevationError("Elevation grant is not valid at request time.")
+    grant_sha = str(checked["grant_sha256"])
+    _reject_consumed_grant(Path(claim_root), grant_sha)
     bootstrapper = _object(checked["bootstrapper"], "grant.bootstrapper")
-    private_directory: Path | None = None
+    private_directory = Path(claim_root) / "private-executables" / grant_sha
     request_path: Path | None = None
+    if private_directory.exists() and not private_directory.is_symlink():
+        try:
+            remove_tree(private_directory)
+        except OSError as exc:
+            raise ElevationError(f"Stale private bootstrapper bundle could not be removed: {exc}") from exc
     try:
         cwd = resolve_reviewed_path(
             execution_root, str(bootstrapper["working_directory"]), file_required=False,
             label="Elevation bootstrapper working directory",
         )
         private_bootstrapper, private_directory = copy_reviewed_bundle(
-            Path(execution_root), bootstrapper, Path(claim_root), str(checked["grant_sha256"])
+            Path(execution_root), bootstrapper, Path(claim_root), grant_sha
         )
         actual_hash, executable_size = file_sha256(private_bootstrapper)
         if actual_hash != bootstrapper["executable_sha256"]:
@@ -327,22 +358,27 @@ def request_elevation(
         try:
             claim = claim_once(
                 claim_root, authority_key_path=authority_key_path,
-                claim_kind="claim.package-elevation-grant", artifact_sha256=str(checked["grant_sha256"]),
+                claim_kind="claim.package-elevation-grant", artifact_sha256=grant_sha,
                 nonce=str(checked["nonce"]), claimed_at_utc=requested_at_utc,
             )
         except ExecutionSecurityError as exc:
             raise ElevationError(f"Elevation grant consumption failed: {exc}") from exc
         parameters = [*list(bootstrapper["argv"]), "--request", str(request_path)]
         backend_code = (backend or _windows_runas)(private_bootstrapper, parameters, cwd)
-    except (OSError, ExecutionSecurityError, ElevationError):
-        if request_path is not None and request_path.exists() and not request_path.is_symlink():
+    except (OSError, ExecutionSecurityError, ElevationError) as exc:
+        if request_path is not None and request_path.exists() and not request_path.is_symlink() and not _claim_path(Path(claim_root), grant_sha).exists():
             try:
                 request_path.unlink()
             except OSError:
                 pass
-        if private_directory is not None:
-            remove_tree(private_directory)
-        raise
+        if private_directory.exists() and not _claim_path(Path(claim_root), grant_sha).exists():
+            try:
+                remove_tree(private_directory)
+            except OSError:
+                pass
+        if isinstance(exc, ElevationError):
+            raise
+        raise ElevationError(f"Elevation request preflight failed: {exc}") from exc
     base = {
         "schema_version": 2,
         "result_scope": RESULT_SCOPE,
