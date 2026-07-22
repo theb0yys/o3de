@@ -46,11 +46,14 @@ class InstallationStateRegistryTests(unittest.TestCase):
     def publish_state(
         self,
         root: Path,
+        operation: str = "install",
         *,
         expected_previous_state_sha256: str | None = None,
         published_at_utc: str = "2026-07-22T12:08:00Z",
         nonce: str | None = None,
     ) -> dict[str, object]:
+        if operation != "install":
+            raise InstallationStateRegistryError("Authenticated registry helper currently publishes install state only.")
         fixture = InstallerSecurityFixture()
         self.addCleanup(fixture.close)
         self.authority_key_path = fixture.authority_key
