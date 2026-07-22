@@ -59,7 +59,7 @@ REQUIRED_SOURCE = (
     "path_is_blocked",
     "prohibited by blocked_sources",
     "os.open",
-    "os.O_CREAT | os.O_EXCL",
+    'path.open("xb")',
     "os.O_NOFOLLOW",
     "os.fsync",
     "os.replace(temporary, destination)",
