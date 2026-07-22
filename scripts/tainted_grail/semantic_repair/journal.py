@@ -1,4 +1,4 @@
-"""Append-only synthetic crash-recovery journal with hash chaining."""
+"""Append-only synthetic crash-recovery journal with ownership and recovery plans."""
 from __future__ import annotations
 
 import hashlib
@@ -8,10 +8,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
-from .errors import JournalCorruptionError, SimulatedCrash
+from .errors import JournalCorruptionError, LockOwnershipError, SimulatedCrash
+from .ownership import ExclusiveResourceLock, ResourceLease
 
 _SCHEMA_VERSION = 1
 _ZERO_HASH = "0" * 64
+_RESERVED_OWNERSHIP_KEYS = {"journal_owner_id", "journal_lock_generation"}
 
 
 def _canonical(value: Any) -> bytes:
@@ -44,6 +46,18 @@ class CrashRecoveryJournal:
 
     def __init__(self, path: Path):
         self.path = Path(path)
+        self.lock = ExclusiveResourceLock(
+            self.path.with_name(f".{self.path.name}.lock"),
+            f"journal:{self.path.name}",
+        )
+
+    def acquire(
+        self,
+        owner_id: str,
+        *,
+        expected_generation: int | None = None,
+    ) -> ResourceLease:
+        return self.lock.acquire(owner_id, expected_generation=expected_generation)
 
     def append(
         self,
@@ -53,11 +67,54 @@ class CrashRecoveryJournal:
         *,
         crash_after_bytes: int | None = None,
     ) -> JournalRecord:
+        if self.lock.current_identity() is not None:
+            raise LockOwnershipError("journal is locked; append_owned is required")
+        return self._append_unlocked(
+            transaction_id,
+            phase,
+            payload,
+            crash_after_bytes=crash_after_bytes,
+        )
+
+    def append_owned(
+        self,
+        lease: ResourceLease,
+        transaction_id: str,
+        phase: str,
+        payload: dict[str, Any] | None = None,
+        *,
+        crash_after_bytes: int | None = None,
+    ) -> JournalRecord:
+        self.lock.assert_owned(lease)
+        supplied = dict(payload or {})
+        if _RESERVED_OWNERSHIP_KEYS.intersection(supplied):
+            raise ValueError("journal ownership fields are reserved")
+        supplied.update(
+            {
+                "journal_owner_id": lease.identity.owner_id,
+                "journal_lock_generation": lease.identity.generation,
+            }
+        )
+        return self._append_unlocked(
+            transaction_id,
+            phase,
+            supplied,
+            crash_after_bytes=crash_after_bytes,
+        )
+
+    def _append_unlocked(
+        self,
+        transaction_id: str,
+        phase: str,
+        payload: dict[str, Any] | None,
+        *,
+        crash_after_bytes: int | None,
+    ) -> JournalRecord:
         if not transaction_id or not phase:
             raise ValueError("transaction_id and phase must be non-empty")
         records, torn = self.read_records(allow_torn_tail=True)
         if torn:
-            records = list(self.recover())
+            records = list(self._recover_unlocked())
         previous_hash = records[-1].record_hash if records else _ZERO_HASH
         sequence = records[-1].sequence + 1 if records else 1
         core = {
@@ -150,6 +207,15 @@ class CrashRecoveryJournal:
         return records, torn
 
     def recover(self) -> tuple[JournalRecord, ...]:
+        if self.lock.current_identity() is not None:
+            raise LockOwnershipError("journal is locked; recover_owned is required")
+        return self._recover_unlocked()
+
+    def recover_owned(self, lease: ResourceLease) -> tuple[JournalRecord, ...]:
+        self.lock.assert_owned(lease)
+        return self._recover_unlocked()
+
+    def _recover_unlocked(self) -> tuple[JournalRecord, ...]:
         records, torn = self.read_records(allow_torn_tail=True)
         if torn:
             valid_bytes = b"".join(_canonical(record.to_dict()) + b"\n" for record in records)
@@ -157,6 +223,11 @@ class CrashRecoveryJournal:
             temp.write_bytes(valid_bytes)
             os.replace(temp, self.path)
         return tuple(records)
+
+    def recovery_plan(self):
+        from .recovery import build_recovery_plan
+
+        return build_recovery_plan(self)
 
     def latest(self, transaction_id: str | None = None) -> JournalRecord | None:
         records, _ = self.read_records(allow_torn_tail=True)
