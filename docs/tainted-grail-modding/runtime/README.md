@@ -45,6 +45,8 @@ Completed independently for both routes:
 
 IL2CPP additionally requires exact generated-interop manifests for `Assembly-CSharp.dll` and `TG.Main.dll`; those inputs are never projected onto Mono.
 
+Within every Mono-specific plan, IL2CPP remains a separate later package: its independently implemented source, dependencies, generated interop, binaries, evidence, deployment and release decisions cannot satisfy the Mono route.
+
 Still required separately for each route:
 
 - external source build against an exact lawful local profile;
