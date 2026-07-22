@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/theb0yys/FOA-SDK/blob/main/Installer/Bootstrapper/Acquisition/request.schema.json",
+  "title": "FOA-SDK bootstrapper approved-acquisition request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "request_scope", "plan_sha256", "view_model_sha256", "confirmation_sha256", "provider_id", "provider_plan_id", "route", "bindings", "output_reference", "authorized_by", "authorized_at_utc", "statement", "authority", "request_sha256"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "request_scope": {"const": "approved-acquisition-only"},
+    "plan_sha256": {"$ref": "#/$defs/sha256"},
+    "view_model_sha256": {"$ref": "#/$defs/sha256"},
+    "confirmation_sha256": {"$ref": "#/$defs/sha256"},
+    "provider_id": {"$ref": "#/$defs/namespaced_id"},
+    "provider_plan_id": {"$ref": "#/$defs/typed_sha256"},
+    "route": {"enum": ["local", "pinned-github"]},
+    "bindings": {
+      "type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["installer_package_id", "provider_package_id"],
+        "properties": {
+          "installer_package_id": {"$ref": "#/$defs/namespaced_id"},
+          "provider_package_id": {"$ref": "#/$defs/namespaced_id"}
+        }
+      }
+    },
+    "output_reference": {"$ref": "#/$defs/namespaced_id"},
+    "authorized_by": {"type": "string", "minLength": 1, "maxLength": 160},
+    "authorized_at_utc": {"$ref": "#/$defs/utc"},
+    "statement": {"const": "I explicitly authorize only the exact approved acquisition request bound to this reviewed installer plan and confirmation. This authorization grants no installation, elevation, launch, runtime execution, deployment, save mutation, signing, publication, catalog mutation, or evidence promotion authority."},
+    "authority": {"$ref": "#/$defs/authority"},
+    "request_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "allOf": [
+    {"if": {"properties": {"route": {"const": "local"}}}, "then": {"properties": {"authority": {"properties": {"network": {"const": false}}}}}},
+    {"if": {"properties": {"route": {"const": "pinned-github"}}}, "then": {"properties": {"authority": {"properties": {"network": {"const": true}}}}}}
+  ],
+  "$defs": {
+    "namespaced_id": {"type": "string", "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$", "maxLength": 128},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "typed_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "utc": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "authority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["acquisition", "network", "filesystem_write", "installation", "elevation", "game_launch", "runtime_execution", "deployment", "save_mutation", "signing", "publication", "catalog_mutation", "evidence_promotion"],
+      "properties": {
+        "acquisition": {"const": true}, "network": {"type": "boolean"},
+        "filesystem_write": {"const": true}, "installation": {"const": false},
+        "elevation": {"const": false}, "game_launch": {"const": false},
+        "runtime_execution": {"const": false}, "deployment": {"const": false},
+        "save_mutation": {"const": false}, "signing": {"const": false},
+        "publication": {"const": false}, "catalog_mutation": {"const": false},
+        "evidence_promotion": {"const": false}
+      }
+    }
+  }
+}
