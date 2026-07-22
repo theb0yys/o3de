@@ -1,10 +1,10 @@
 {
   "capabilities": [
-    "runtime-adapter.il2cpp.build-plan",
-    "runtime-adapter.il2cpp.describe",
-    "runtime-adapter.il2cpp.execution-gate.review",
-    "runtime-adapter.il2cpp.interop.verify",
-    "runtime-adapter.il2cpp.result.verify"
+    "runtime.il2cpp.build-plan",
+    "runtime.il2cpp.execution-gate",
+    "runtime.il2cpp.interop-verify",
+    "runtime.il2cpp.package-verify",
+    "runtime.il2cpp.result-verify"
   ],
   "category": "runtime-adapter",
   "compatibility": {
