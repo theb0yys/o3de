@@ -178,7 +178,7 @@ def validate_ci_runner_policy(repo_root: Path) -> None:
         "pull_request_target",
         "trusted base commit",
         "pull request to draft",
-        "required status checks",
+        "status checks",
         "--static-only",
         "--ctest-build-dir",
         "compiled Catalog CTest",
