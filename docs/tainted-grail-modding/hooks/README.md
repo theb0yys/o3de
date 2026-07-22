@@ -105,12 +105,7 @@ The extraction programme will:
 
 ### Batch 001
 
-[Semantic Hook Batch 001](BATCH_001.md) dispositions seven selected source files into:
-
-- ten complete source-only candidate hook records;
-- one canonical source-system fact;
-- one research blocker requiring decomposition;
-- one explicit `not-a-hook` rejection.
+[Semantic Hook Batch 001](BATCH_001.md) dispositions seven selected source files into ten candidates, one source-system fact, one decomposition blocker, and one explicit rejection.
 
 Candidate records:
 
@@ -121,11 +116,32 @@ Candidate records:
 
 Other outcomes:
 
-- [Avalon Mounts plugin aggregation blocker](blockers/AVALON_MOUNTS_PLUGIN.md)
+- [Avalon Mounts aggregation blocker](blockers/AVALON_MOUNTS_PLUGIN.md)
 - [Template ExamplePatch rejection](rejections/TEMPLATE_EXAMPLE_PATCH.md)
 - [Economy patch registrar fact](../systems/items-economy/PATCH_REGISTRATION_FACT.md)
 
-No Batch 001 record is promoted beyond `candidate`.
+### Batch 002
+
+[Semantic Hook Batch 002](BATCH_002.md) decomposes Avalon Mounts and processes the first eight Tainted Economy registrar callers.
+
+Candidate records:
+
+- [Seven Avalon Mounts runtime targets](records/MOUNTS_RUNTIME_TARGETS.md)
+- [Crafting and recipe UI](records/ECONOMY_CRAFTING_RECIPE.md)
+- [Harvest yield](records/ECONOMY_HARVEST.md)
+- [Reward and wealth routes](records/ECONOMY_REWARDS.md)
+- [Service-cost getters](records/ECONOMY_SERVICE_COSTS.md)
+- [Container loot](records/ECONOMY_CONTAINER_LOOT.md)
+- [Vendor price](records/ECONOMY_VENDOR_PRICE.md)
+
+Other outcomes:
+
+- [Avalon Mounts lifecycle/frame/compatibility facts](../systems/mounts/AVALON_MOUNTS_RUNTIME_FACTS.md)
+- [Avalon Mounts diagnostics/privacy blocker](blockers/AVALON_MOUNTS_DIAGNOSTICS_PRIVACY.md)
+- [Resolved aggregate blocker history](blockers/AVALON_MOUNTS_PLUGIN.md)
+- [Processed economy registrar fact](../systems/items-economy/PATCH_REGISTRATION_FACT.md)
+
+Batch 002 adds 27 source-only candidate records and promotes none.
 
 ## Initial domain indexes
 
