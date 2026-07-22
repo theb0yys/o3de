@@ -107,11 +107,21 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Check out exact workflow commit
+      - name: Check out exact pull-request head
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+          lfs: true
+
+      - name: Check out exact non-PR commit
+        if: github.event_name != 'pull_request'
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 1
+          fetch-depth: 0
           lfs: true
 
       - name: Set up Python
@@ -124,6 +134,51 @@ jobs:
         shell: bash
         run: |
           python Gems/TaintedGrailModdingSDK/Tools/validate_pr_obligations.py --event "$GITHUB_EVENT_PATH"
+
+      - name: Verify exact reviewed range
+        shell: bash
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          : > tg-sdk-reviewed-range.log
+          head_sha="$(git rev-parse HEAD)"
+
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              base_sha="$PR_BASE_SHA"
+              expected_head_sha="$PR_HEAD_SHA"
+              ;;
+            push)
+              base_sha="$PUSH_BEFORE_SHA"
+              expected_head_sha="$GITHUB_SHA"
+              ;;
+            workflow_dispatch)
+              base_sha="$(git rev-parse HEAD^)"
+              expected_head_sha="$GITHUB_SHA"
+              ;;
+            *)
+              echo "Unsupported reviewed-range event: $GITHUB_EVENT_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          if [[ ! "$base_sha" =~ ^[0-9a-f]{40}$ || ! "$head_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Reviewed range requires full base and head SHAs." >&2
+            exit 1
+          fi
+          if [[ "$head_sha" != "$expected_head_sha" ]]; then
+            echo "Checked-out head $head_sha differs from event head $expected_head_sha." >&2
+            exit 1
+          fi
+
+          git cat-file -e "${base_sha}^{commit}"
+          git diff --check "$base_sha" "$head_sha" 2>&1 | tee tg-sdk-reviewed-range.log
+          printf 'event=%s\nbase=%s\nhead=%s\n' \
+            "$GITHUB_EVENT_NAME" "$base_sha" "$head_sha" \
+            > tg-sdk-reviewed-range.txt
 
       - name: Validate merge-obligation policy contract
         shell: bash
@@ -145,11 +200,14 @@ jobs:
           python -c "import tkinter; print(f'Tk {tkinter.TkVersion}')"
           xvfb-run -a python Installer/SuiteWizard/Host/Source/suite_wizard_host.py --installer-root Installer --smoke-test 2>&1 | tee -a tg-sdk-static-validation.log
 
-      - name: Preserve exact-run validation log
+      - name: Preserve exact-run validation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: tg-sdk-static-validation-${{ github.run_id }}
-          path: tg-sdk-static-validation.log
+          path: |
+            tg-sdk-static-validation.log
+            tg-sdk-reviewed-range.log
+            tg-sdk-reviewed-range.txt
           if-no-files-found: error
           retention-days: 7
