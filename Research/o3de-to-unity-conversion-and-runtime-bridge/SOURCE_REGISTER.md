@@ -74,13 +74,13 @@ BepInEx release channels, and community reports about FoA Mono/IL2CPP branches o
 citations. Until the exact direct URL, relevant version or revision, retrieval date, and scoped claim are added
 here, those claims remain `unverified` and cannot authorize design or implementation.
 
-## Current reconciliation sources
+## Porting-method reconciliation sources
 
 Observed 22 July 2026 against `main` commit `8fb3f0a729e4be4e513ba896ba52708a73d03eae`.
 
 | ID | Durable source | Supports | Limitation |
 | --- | --- | --- | --- |
-| `SRC-REPO-019` | https://github.com/theb0yys/FOA-SDK/blob/8fb3f0a729e4be4e513ba896ba52708a73d03eae/README.md#L5-L56 | Current product identity, O3DE authoring/FoA runtime separation, product layout, and non-authority status | Product state may change after this commit |
+| `SRC-REPO-019` | https://github.com/theb0yys/FOA-SDK/blob/8fb3f0a729e4be4e513ba896ba52708a73d03eae/README.md#L5-L56 | Product identity, O3DE authoring/FoA runtime separation, product layout, and non-authority status | Product state may change after this commit |
 | `SRC-REPO-020` | https://github.com/theb0yys/FOA-SDK/compare/195f5c15f0c59d47bd54e661b37d7457af9d1d95...8fb3f0a729e4be4e513ba896ba52708a73d03eae | Exact baseline reconciliation; eight commits limited to Suite Wizard catalogue discovery, installer documentation, and tests | Does not prove later branch state |
 | `SRC-REPO-021` | https://github.com/theb0yys/FOA-SDK/blob/8fb3f0a729e4be4e513ba896ba52708a73d03eae/Plugins/README.md#L37-L85 | Authoring, integration, and runtime-adapter category ownership; Mono/IL2CPP package separation | Package declaration does not grant operational authority |
 | `SRC-REPO-022` | https://github.com/theb0yys/FOA-SDK/blob/8fb3f0a729e4be4e513ba896ba52708a73d03eae/Gems/TaintedGrailModdingSDK/Code/Source/FoARuntimeAdapterRoutes.cpp#L99-L183 | Exact Mono and IL2CPP route observations, provenance, evidence states, and blocked capabilities | Route observations do not select an active operator target or authorize execution |
@@ -88,19 +88,19 @@ Observed 22 July 2026 against `main` commit `8fb3f0a729e4be4e513ba896ba52708a73d
 | `SRC-REPO-024` | https://github.com/theb0yys/FOA-SDK/blob/2e45192157cfe4fa5086330f99bb0cb82ed18111/Research/o3de-to-unity-conversion-and-runtime-bridge/areas/07-foa-runtime-adapters/README.md | Runtime-adapter separation, re-entry order, and current blocked capabilities | No executable adapter package is approved |
 | `SRC-REPO-025` | https://github.com/theb0yys/FOA-SDK/blob/8fb3f0a729e4be4e513ba896ba52708a73d03eae/Research/o3de-to-unity-conversion-and-runtime-bridge/gates/IMPLEMENTATION_GATE_MAPPING.md#L13-L88 | Controlling gate order and rejected reorderings | Mapping does not satisfy any gate |
 
-## Canonical interchange reconciliation sources
+## Canonical interchange conclusion sources
 
-Observed 22 July 2026 against current `main` commit `504e10b27e46fceae4d68af200118edca27b4d1b`.
+Observed 22 July 2026 against `main` commit `504e10b27e46fceae4d68af200118edca27b4d1b`.
 
 | ID | Durable source | Supports | Limitation |
 | --- | --- | --- | --- |
 | `SRC-REPO-026` | https://github.com/theb0yys/FOA-SDK/compare/195f5c15f0c59d47bd54e661b37d7457af9d1d95...504e10b27e46fceae4d68af200118edca27b4d1b | Exact 179-commit drift reconciliation | Broad comparison; individual claims still require scoped files |
-| `SRC-REPO-027` | https://github.com/theb0yys/FOA-SDK/blob/504e10b27e46fceae4d68af200118edca27b4d1b/README.md | Current product identity and authoring/runtime separation | Product state may change after this commit |
+| `SRC-REPO-027` | https://github.com/theb0yys/FOA-SDK/blob/504e10b27e46fceae4d68af200118edca27b4d1b/README.md | Product identity and authoring/runtime separation | Product state may change after this commit |
 | `SRC-REPO-028` | https://github.com/theb0yys/FOA-SDK/blob/504e10b27e46fceae4d68af200118edca27b4d1b/docs/tainted-grail-sdk/ARCHITECTURE.md | Exact identity, ownership, evidence, and fail-closed architecture | Does not itself select Schema-1 field shapes |
 | `SRC-REPO-029` | https://github.com/theb0yys/FOA-SDK/blob/504e10b27e46fceae4d68af200118edca27b4d1b/docs/tainted-grail-sdk/EDITOR_TOOLCHAIN_UNITY_INTERCHANGE_DESIGN.md | Manifest-and-payload design, identity, loss, lock, security, test, and gate requirements | Gates 1–13 remain separately reviewed |
 | `SRC-REPO-030` | https://github.com/theb0yys/FOA-SDK/blob/504e10b27e46fceae4d68af200118edca27b4d1b/Research/o3de-to-unity-conversion-and-runtime-bridge/gates/IMPLEMENTATION_GATE_MAPPING.md | Gate 5 placement and continued Phase 9 prerequisite | Does not authorize Gate 5 |
-| `SRC-REPO-031` | https://github.com/theb0yys/FOA-SDK/blob/504e10b27e46fceae4d68af200118edca27b4d1b/Gems/TaintedGrailModdingSDK/Code/Source/DeterministicContractJson.h | Current byte-oriented deterministic JSON and numeric serialization behavior | Generic helper is not automatically the Schema-1 canonical profile |
-| `SRC-REPO-032` | https://github.com/theb0yys/FOA-SDK/blob/504e10b27e46fceae4d68af200118edca27b4d1b/Gems/TaintedGrailModdingSDK/Code/Tests/DeterministicContractJsonTests.cpp | Exact current non-finite, round-trip precision, and escaped-byte behavior | Focused helper tests do not prove interchange canonicalization |
+| `SRC-REPO-031` | https://github.com/theb0yys/FOA-SDK/blob/504e10b27e46fceae4d68af200118edca27b4d1b/Gems/TaintedGrailModdingSDK/Code/Source/DeterministicContractJson.h | Byte-oriented deterministic JSON and numeric serialization behavior | Generic helper is not automatically the Schema-1 canonical profile |
+| `SRC-REPO-032` | https://github.com/theb0yys/FOA-SDK/blob/504e10b27e46fceae4d68af200118edca27b4d1b/Gems/TaintedGrailModdingSDK/Code/Tests/DeterministicContractJsonTests.cpp | Exact non-finite, round-trip precision, and escaped-byte behavior | Focused helper tests do not prove interchange canonicalization |
 | `SRC-REPO-033` | https://github.com/theb0yys/FOA-SDK/blob/504e10b27e46fceae4d68af200118edca27b4d1b/Gems/TaintedGrailModdingSDK/Code/Source/FoundationModels.h | Existing workspace, profile, pack, source, evidence, catalog, identity, validation, and governance fields | Existing models must not be copied into a parallel authority system |
 | `SRC-REPO-034` | https://github.com/theb0yys/FOA-SDK/blob/504e10b27e46fceae4d68af200118edca27b4d1b/o3de.lock.json | Exact O3DE 2.7.0 lock at `68683f23fb747380d3efa2424bd5f30242e9c5a2` | Engine pin does not qualify a provider or payload format |
 | `SRC-O3DE-006` | https://www.docs.o3de.org/docs/user-guide/assets/scene-settings/scene-format-support/ | O3DE right-handed Z-up basis, forward orientation, metre unit, and conversion need | Documentation does not prove cross-host fixture success |
@@ -110,6 +110,19 @@ Observed 22 July 2026 against current `main` commit `504e10b27e46fceae4d68af2001
 | `SRC-RFC-001` | https://www.rfc-editor.org/rfc/rfc8785.html | Comparative JSON canonicalization, duplicate-key and deterministic serialization considerations | Accepted Schema-1 profile is not an unqualified JCS implementation |
 | `SRC-UNICODE-001` | https://www.unicode.org/reports/tr15/tr15-57.html | Unicode normalization definitions and conformance implications | Schema 1 deliberately does not normalize Unicode |
 
+## Current-main addendum sources
+
+Observed 22 July 2026 against `main` commit `3d50df1ea3aaf97a5148ae4ebb5c5ade8336e6d2`.
+
+| ID | Durable source | Supports | Limitation |
+| --- | --- | --- | --- |
+| `SRC-REPO-035` | https://github.com/theb0yys/FOA-SDK/compare/504e10b27e46fceae4d68af200118edca27b4d1b...3d50df1ea3aaf97a5148ae4ebb5c5ade8336e6d2 | Exact 26-commit current-main reconciliation | Broad comparison; scoped files remain controlling |
+| `SRC-REPO-036` | https://github.com/theb0yys/FOA-SDK/blob/3d50df1ea3aaf97a5148ae4ebb5c5ade8336e6d2/Plugins/README.md#L5-L86 | Optional Authoring/Integration/RuntimeAdapter ownership, ExtensionRequestBus boundary, and absent operational authority | Plug-in infrastructure does not authorize interchange implementation |
+| `SRC-REPO-037` | https://github.com/theb0yys/FOA-SDK/blob/3d50df1ea3aaf97a5148ae4ebb5c5ade8336e6d2/ROADMAP.md#L475-L503 | Phase 9 extension status, Road Atlas/Avalon AI Tool Gems, and continued provider/runtime gating | Active Phase 9 work is not an explicit Gate 5 entry acceptance |
+| `SRC-REPO-038` | https://github.com/theb0yys/FOA-SDK/blob/3d50df1ea3aaf97a5148ae4ebb5c5ade8336e6d2/Research/o3de-to-unity-conversion-and-runtime-bridge/gates/IMPLEMENTATION_GATE_MAPPING.md#L13-L41 | Unchanged Phase 9 prerequisite, Gate 5 placement, and focused-design requirement | Mapping records order but satisfies no gate |
+| `SRC-REPO-039` | `areas/02-authoring-interchange-and-assets/CURRENT_MAIN_RECONCILIATION_2026-07-22.md` at this containing revision | Scoped reconciliation of the accepted conclusion against PRs #117–#118 | Research-only addendum; no implementation authority |
+
 The accepted Area 02 research conclusion is
-`areas/02-authoring-interchange-and-assets/CANONICAL_INTERCHANGE_SCHEMA_AND_IDENTITY_RESEARCH.md`. It remains
-research-only and is not implementation authority.
+`areas/02-authoring-interchange-and-assets/CANONICAL_INTERCHANGE_SCHEMA_AND_IDENTITY_RESEARCH.md`, reconciled to
+current main by `areas/02-authoring-interchange-and-assets/CURRENT_MAIN_RECONCILIATION_2026-07-22.md`. Both remain
+research-only and are not implementation authority.
