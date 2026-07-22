@@ -68,6 +68,14 @@ jobs:
           if text.count(old_expiry) != 1:
               raise RuntimeError("Unable to repair the authority-proof fixture expiry.")
           support.write_text(text.replace(old_expiry, new_expiry), encoding="utf-8")
+
+          publisher = Path("Installer/Bootstrapper/InstallationStatePublisher/Source/installation_state_publisher.py")
+          text = publisher.read_text(encoding="utf-8")
+          old_publish = '''    target = root / f"{checked['state_reference']}.json"\n    previous = _file_sha256(target)\n'''
+          new_publish = '''    target = root / f"{checked['state_reference']}.json"\n    # This read-only preflight gives deterministic replay diagnostics without\n    # replacing the atomic O_EXCL claim that remains the enforcement point.\n    claim_target = (\n        Path(claim_root)\n        / "claim.installation-state-publication-grant"\n        / f"{checked['grant_sha256']}.claim.json"\n    )\n    if claim_target.exists() or claim_target.is_symlink():\n        raise InstallationStatePublisherError(\n            "Publication grant consumption failed: Artifact has already been consumed: "\n            + str(checked["grant_sha256"])\n        )\n    previous = _file_sha256(target)\n'''
+          if text.count(old_publish) != 1:
+              raise RuntimeError("Unable to add the publication replay preflight.")
+          publisher.write_text(text.replace(old_publish, new_publish), encoding="utf-8")
           PY
             git rm Gems/TaintedGrailModdingSDK/Tools/apply_project_wide_security_repairs.py
             git rm -r Gems/TaintedGrailModdingSDK/Tools/project_wide_security_repair_bundle
