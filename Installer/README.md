@@ -13,7 +13,7 @@ Installer/
 ├── package.schema.json
 ├── SuiteWizard/        selectable suite user experience
 │   ├── Catalog/        reviewed catalogue discovery and explicit selection
-│   ├── Host/           native graphical choice, review, and confirmation surface
+│   ├── Host/           native graphical choice, review, confirmation, and receipt surface
 │   ├── Receipt/        deterministic local confirmation-receipt persistence
 │   ├── Resolver/       deterministic package decision and dry-run plan layer
 │   └── ViewModel/      deterministic presentation and review-confirmation layer
@@ -42,13 +42,13 @@ The wizard must display exact versions, source provenance, licence state, compat
 
 `Installer/SuiteWizard/Catalog/` provides the engine-neutral discovery and selection interface. It emits reviewed suite/package/feature rows with an exact `catalog_sha256`, binds explicit choices into a `selection_sha256`, rejects stale catalogue state, then delegates resolution and presentation to the existing resolver and view-model contracts.
 
-`Installer/SuiteWizard/Host/` provides the current native graphical review and confirmation host. It renders the exact catalogue fingerprint, suite/package/feature rows and compatibility context, translates user controls into explicit selection inputs, and displays the resolver-owned package order, planned files, warnings, acknowledgements and complete review fingerprint chain. Its Confirm page collects the full required acknowledgement set plus caller-supplied identity and UTC time, compares the displayed `plan_sha256` and `view_model_sha256` with the exact current review, then delegates confirmation creation and verification to the existing ViewModel contract.
+`Installer/SuiteWizard/Host/` provides the current native graphical review, confirmation, and receipt host. It renders the exact catalogue fingerprint, suite/package/feature rows and compatibility context, translates user controls into explicit selection inputs, and displays the resolver-owned package order, planned files, warnings, acknowledgements and complete review fingerprint chain. Its Confirm page collects the full required acknowledgement set plus caller-supplied identity and UTC time, compares the displayed `plan_sha256` and `view_model_sha256` with the exact current review, then delegates confirmation creation and verification to the existing ViewModel contract. Its Receipt page exports or verifies only the exact current confirmation through the reviewed Receipt contract and displays the complete `plan_sha256` → `view_model_sha256` → `confirmation_sha256` → `receipt_sha256` chain.
 
 The wizard does not resolve packages itself. It submits explicit selections, exclusions, features, and compatibility context to `Installer/SuiteWizard/Resolver/`, then displays the returned canonical plan and diagnostics without weakening them. Dependency closure, version constraints, compatibility, conflicts, path safety, legal state, deterministic ordering, payload collision detection, and plan fingerprinting remain resolver-owned logic.
 
 `Installer/SuiteWizard/ViewModel/` verifies the resolver plan, derives stable UI rows and required acknowledgements, and creates a review-only confirmation bound to exact `plan_sha256` and `view_model_sha256` values. Any catalogue, selection, plan, display-model, acknowledgement, confirmer identity, timestamp, or confirmation mutation invalidates the current review chain.
 
-`Installer/SuiteWizard/Receipt/` re-verifies the exact plan, view-model and confirmation before any persistence. It emits a self-contained canonical receipt with `receipt_sha256`, publishes only to an explicitly selected existing external directory, rejects symbolic-link paths and noncanonical bytes, accepts a byte-identical existing receipt idempotently, and never overwrites a different file.
+`Installer/SuiteWizard/Receipt/` re-verifies the exact plan, view-model and confirmation before any persistence. It emits a self-contained canonical receipt with `receipt_sha256`, publishes only to an explicitly selected existing external directory, rejects symbolic-link paths and noncanonical bytes, accepts a byte-identical existing receipt idempotently, and never overwrites a different file. The graphical host delegates to this contract and does not implement a second writer.
 
 A valid resolution plan, confirmation and receipt are still non-executable. Receipt publication is local evidence persistence, not network publication, installation or deployment. A separately reviewed acquisition or execution layer must later reverify the exact accepted chain before receiving any operational capability.
 
@@ -103,10 +103,11 @@ Installer changes require, as applicable:
 5. graphical acknowledgement coverage, exact plan/view-model binding, deterministic confirmation creation and confirmation invalidation;
 6. deterministic view-model and exact-hash confirmation;
 7. deterministic canonical receipt derivation, atomic create-once persistence, idempotency and exact-chain re-verification;
-8. dependency/conflict and compatibility tests;
-9. path, symlink, case-collision, and traversal rejection;
-10. exact inventory, hash, provenance, licence, and redistribution review;
-11. clean install, repair, upgrade, rollback, and uninstall smoke tests;
-12. preservation of external workspaces and user-authored content;
-13. generated-output hygiene;
-14. explicit proof that no release, signing, runtime, deployment, save, acquisition, installation, elevation or network-publication authority was introduced by review-only contracts.
+8. graphical receipt export/verification coverage, exact displayed hash binding, cancellation safety and receipt invalidation;
+9. dependency/conflict and compatibility tests;
+10. path, symlink, case-collision, and traversal rejection;
+11. exact inventory, hash, provenance, licence, and redistribution review;
+12. clean install, repair, upgrade, rollback, and uninstall smoke tests;
+13. preservation of external workspaces and user-authored content;
+14. generated-output hygiene;
+15. explicit proof that no release, signing, runtime, deployment, save, acquisition, installation, elevation or network-publication authority was introduced by review-only contracts.
