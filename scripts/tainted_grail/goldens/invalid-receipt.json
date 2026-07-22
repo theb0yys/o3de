@@ -1,0 +1,26 @@
+{
+  "authority": "offline-structure-validation-only",
+  "case_count": 2,
+  "invalid_manifest_count": 1,
+  "manifest_count": 1,
+  "manifests": [
+    {
+      "case_count": 2,
+      "errors": [
+        "$.cases[1].case_id: duplicate case id",
+        "$.cases[1].expected: expected non-empty string",
+        "$.cases[1].promotion_effect: expected non-empty string",
+        "$.decision: promotion must be none",
+        "$.profile.required_runtime_fingerprints: runner accepts only required-but-absent specification state"
+      ],
+      "fixture_set_id": "tg.fixture.synthetic.invalid",
+      "path": "synthetic-invalid.json",
+      "sha256": "bf28dda6fb158d86fa0bda6fecafcf72b7690066f7768f274d08a166a43810b4",
+      "status": "invalid"
+    }
+  ],
+  "promotion": "none",
+  "runtime_authority": "none",
+  "schema_version": 1,
+  "status": "invalid"
+}
