@@ -40,6 +40,18 @@ compatibility:
   known_conflicts: patches that skip or replace VReadablePopupUI.OnSteal can change __runOriginal behavior
   load_order: unspecified
   version_stability: unknown until exact-profile target resolution
+evidence:
+  source_repository: theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods
+  source_commit: d7e740e7f167b73152b53409e483dab07d80d048
+  source_paths:
+    - mods/wyrd-hunt/src/Patches/ReadableStealPatch.cs
+    - mods/wyrd-hunt/src/Plugin.cs
+    - mods/wyrd-hunt/src/WyrdHunt.csproj
+  source_blobs:
+    ReadableStealPatch.cs: 4d58a71ebab00c050ce3907e25b9dac4085212d2
+    Plugin.cs: 1b302b6d7b6d014c1c4a7a991698cc09b1a83b1b
+    WyrdHunt.csproj: 390132066dddd79c7631f37c72616f74a68c0f88
+  evidence_ids: none registered; source-only candidate
 validation:
   static: source target, postfix style, and __runOriginal guard extracted
   target_resolution: not performed against an exact current TG.Main assembly
@@ -54,16 +66,6 @@ limitations:
   - Harmony __runOriginal semantics must be verified for the exact patch combination.
   - ThreatEventHooks.OnReadableSteal must be reviewed before save, story, and progression risks can be classified.
 ```
-
-## Evidence
-
-- source repository: `theb0yys/Tainted-Grail-The-Fall-of-Avalon-mods`
-- source commit: `d7e740e7f167b73152b53409e483dab07d80d048`
-- source path: `mods/wyrd-hunt/src/Patches/ReadableStealPatch.cs`
-- source blob: `4d58a71ebab00c050ce3907e25b9dac4085212d2`
-- registration owner: `mods/wyrd-hunt/src/Plugin.cs`
-- project source: `mods/wyrd-hunt/src/WyrdHunt.csproj`
-- evidence IDs: none registered; source-only candidate
 
 ## Extracted source facts
 
