@@ -17,7 +17,7 @@ This batch applies the completion rule from the pinned file inventory. Every sel
 | `mods/wyrd-hunt/src/Patches/NpcDeathPatch.cs` | `7e4915918da28cdcb3b257ea46cf31ae2d427c0f` | candidate hook record | `records/ACTORS_NPC_DEATH.md` |
 | `mods/wyrd-hunt/src/Patches/ReadableStealPatch.cs` | `4d58a71ebab00c050ce3907e25b9dac4085212d2` | candidate hook record | `records/CRIME_READABLE_STEAL.md` |
 | `mods/smart-save-backups/src/Patches/CloudServiceEndSavePatch.cs` | `29aa7491292de7faa8e6d8df2662d51201b2296d` | four-target candidate hook family | `records/PERSISTENCE_CLOUD_END_SAVE.md` |
-| `mods/foa-mod-manager/src/Patches/MenuButtonPatch.cs` | `b289d4a510bf0cb1a0f146710f3892cd7b33ffc7` | method-patch and reflection candidate family | `records/UI_MENU_INITIALIZE.md` |
+| `mods/foa-mod-manager/src/Patches/MenuButtonPatch.cs` | `b289d4a510bf0cb1a0f146710f3892cd7b33ffc7` | four-target method-patch and reflection candidate family | `records/UI_MENU_INITIALIZE.md` |
 | `mods/TaintedEconomy/src/Patches/PatchRegistration.cs` | `f6997889aa3468e8692602423b8ce8481648ad26` | canonical source-system fact; not a hook | `../systems/items-economy/PATCH_REGISTRATION_FACT.md` |
 | `mods/avalon-mounts/src/Plugin.cs` | `896e0f4e63c57b1800eb3ac09468cefe0ca8509d` | research blocker requiring decomposition | `blockers/AVALON_MOUNTS_PLUGIN.md` |
 | `templates/mod-template/src/Patches/ExamplePatch.cs` | `4ea2d9fcb2885f9beee694d83d60f3d87b30468e` | explicit `not-a-hook` rejection | `rejections/TEMPLATE_EXAMPLE_PATCH.md` |
@@ -25,11 +25,11 @@ This batch applies the completion rule from the pinned file inventory. Every sel
 ## Batch counts
 
 - selected source files: 7
-- candidate hook records: 9
+- candidate hook records: 10
   - two direct Harmony postfix records;
   - four cloud-service `EndSave(string)` variants;
   - two UI initialization method targets;
-  - one reflected UI field target.
+  - two exact reflected UI field targets.
 - canonical system facts: 1
 - research blockers: 1
 - explicit rejection records: 1
