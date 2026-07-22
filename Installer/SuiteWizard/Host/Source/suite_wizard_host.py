@@ -478,7 +478,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--installer-root",
         type=Path,
-        default=Path(__file__).resolve().parents[2],
+        default=Path(__file__).resolve().parents[3],
         help="Path to the product-owned Installer directory.",
     )
     return parser
