@@ -1,53 +1,94 @@
 name: Tainted Grail SDK PR Static Validation
 
 on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - ready_for_review
+      - converted_to_draft
+    paths:
+      - ".github/workflows/**"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+      - "Gems/TaintedGrailModdingSDK/**"
+      - "Gems/ExternalToolchain/**"
+      - "Installer/**"
+      - "Plugins/**"
+      - "Research/**"
+      - "TaintedGrailModdingEditor/**"
+      - "docs/tainted-grail-sdk/**"
+      - "scripts/commit_validation/**"
+      - "*.md"
+      - ".gitattributes"
+      - "o3de.lock.json"
   push:
     branches:
-      - agent/full-review-remediation
+      - main
+    paths:
+      - ".github/workflows/**"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+      - "Gems/TaintedGrailModdingSDK/**"
+      - "Gems/ExternalToolchain/**"
+      - "Installer/**"
+      - "Plugins/**"
+      - "Research/**"
+      - "TaintedGrailModdingEditor/**"
+      - "docs/tainted-grail-sdk/**"
+      - "scripts/commit_validation/**"
+      - "*.md"
+      - ".gitattributes"
+      - "o3de.lock.json"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: tg-sdk-remediation-${{ github.ref }}
-  cancel-in-progress: false
+  group: tg-sdk-static-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  apply-remediation:
+  static-validation:
+    name: Python, validators, and fixtures
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     steps:
-      - name: Check out remediation branch
+      - name: Check out exact workflow commit
         uses: actions/checkout@v4
         with:
-          ref: agent/full-review-remediation
-          fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
+          fetch-depth: 1
+          lfs: true
 
-      - name: Apply exact candidate-evidence repairs
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate mandatory merge obligations
+        if: github.event_name == 'pull_request'
         shell: bash
         run: |
-          set -euo pipefail
-          python .github/remediation/apply_candidate_evidence_repairs.py
-          git diff --check
-          python -m unittest discover \
-            -s Gems/TaintedGrailModdingSDK/Tools/tests \
-            -p 'test_validate_pr_obligations.py' -v
+          python Gems/TaintedGrailModdingSDK/Tools/validate_pr_obligations.py --event "$GITHUB_EVENT_PATH"
 
-      - name: Restore read-only workflow and publish repair
+      - name: Validate merge-obligation policy contract
         shell: bash
         run: |
-          set -euo pipefail
-          cp .github/remediation/final_pr_validation.yml \
-            .github/workflows/tainted-grail-sdk-pr-validation.yml
-          rm .github/remediation/final_pr_validation.yml
-          rm .github/remediation/apply_candidate_evidence_repairs.py
-          rm .github/workflows/apply-full-review-candidate-repairs.yml
-          rmdir .github/remediation 2>/dev/null || true
-          git add -A
-          git diff --cached --check
-          git config user.name 'FOA-SDK Remediation Bot'
-          git config user.email '264552926+theb0yys@users.noreply.github.com'
-          git commit -s -m 'Wire candidate evidence through public API'
-          git push origin HEAD:agent/full-review-remediation
+          python Gems/TaintedGrailModdingSDK/Tools/validate_pr_obligation_policy.py
+
+      - name: Run non-compiled TG SDK validation layer
+        shell: bash
+        run: |
+          set -o pipefail
+          python Gems/TaintedGrailModdingSDK/Tools/run_local_validation.py --keep-going --static-only --skip-source-policy 2>&1 | tee tg-sdk-static-validation.log
+
+      - name: Preserve exact-run validation log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tg-sdk-static-validation-${{ github.run_id }}
+          path: tg-sdk-static-validation.log
+          if-no-files-found: error
+          retention-days: 7
