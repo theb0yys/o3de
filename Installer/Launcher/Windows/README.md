@@ -39,22 +39,20 @@ The launcher and quick host do not copy payloads, launch game/runtime processes,
 
 They provide the user-facing executable and quick preparation flow. Any later installer execution still has to pass through the capability-gated PackageEngine, admission, handoff, lifecycle, publication, registry, and editor-readiness chain.
 
-## Build
+## Build locally
 
-From PowerShell on Windows with the .NET SDK installed, run this from the repository root:
+Use the CMD entrypoint on Windows. It does not depend on PowerShell script execution policy.
 
-```powershell
-.\Installer\Launcher\Windows\build-foa-installer-launcher.ps1 `
-  -Configuration Release `
-  -RuntimeIdentifier win-x64
+From the repository root:
+
+```bat
+Installer\Launcher\Windows\build-foa-installer-launcher.cmd -Configuration Release -RuntimeIdentifier win-x64
 ```
 
 If you are already in `Installer\Launcher\Windows`, run:
 
-```powershell
-.\build-foa-installer-launcher.ps1 `
-  -Configuration Release `
-  -RuntimeIdentifier win-x64
+```bat
+build-foa-installer-launcher.cmd -Configuration Release -RuntimeIdentifier win-x64
 ```
 
 The expected output is:
@@ -65,11 +63,24 @@ Installer/Launcher/Windows/artifacts/FOA-SDK-Installer.exe
 
 For a self-contained binary:
 
-```powershell
-.\Installer\Launcher\Windows\build-foa-installer-launcher.ps1 `
-  -Configuration Release `
-  -RuntimeIdentifier win-x64 `
-  -SelfContained
+```bat
+Installer\Launcher\Windows\build-foa-installer-launcher.cmd -Configuration Release -RuntimeIdentifier win-x64 -SelfContained
+```
+
+The PowerShell script remains available for environments that explicitly allow scripts, but the CMD wrapper is the supported Windows front door.
+
+## CI artifact
+
+The workflow `FOA-SDK Installer Launcher Build` builds the same launcher on `windows-latest` and uploads this artifact:
+
+```text
+FOA-SDK-Installer-win-x64
+```
+
+That artifact contains:
+
+```text
+FOA-SDK-Installer.exe
 ```
 
 ## Run
