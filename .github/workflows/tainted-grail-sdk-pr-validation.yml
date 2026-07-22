@@ -278,9 +278,12 @@ jobs:
           $ErrorActionPreference = "Stop"
           $buildDir = Join-Path $env:RUNNER_TEMP "foa-gate5-canonical-interchange"
           $evidenceRoot = Join-Path $env:RUNNER_TEMP "gate5-canonical-interchange-evidence"
-          python Gems/TaintedGrailModdingSDK/Tools/developer_preview.py configure `
-            --engine-root "$env:GITHUB_WORKSPACE\o3de" `
-            --build-dir $buildDir 2>&1 |
+          cmake --preset windows-vs-unity `
+            -S "$env:GITHUB_WORKSPACE\o3de" `
+            -B $buildDir `
+            -A x64 `
+            "-DLY_PROJECTS=$env:GITHUB_WORKSPACE\TaintedGrailModdingEditor" `
+            "-DO3DE_FETCHCONTENT_FORCE_GIT=ON" 2>&1 |
             Tee-Object -FilePath (Join-Path $evidenceRoot "configure.log")
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -327,6 +330,7 @@ jobs:
             test_pattern = $env:TEST_PATTERN
             configuration = $env:CONFIGURATION
             configure_preset = "windows-vs-unity"
+            fetchcontent_force_git = $true
             operational_authority = $false
           } | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $evidenceRoot "receipt.json")
 
