@@ -217,10 +217,9 @@ namespace TaintedGrailModdingSDK
     {
         auto snapshot = MakeRoadSnapshot();
         snapshot.m_elements[0].m_geometry.resize(65537);
-        for (size_t index = 0; index < snapshot.m_elements[0].m_geometry.size(); ++index)
+        for (RoadAtlasExtension::Coordinate& point : snapshot.m_elements[0].m_geometry)
         {
-            snapshot.m_elements[0].m_geometry[index].m_pointRef =
-                "point.geometry." + AZStd::to_string(index);
+            point.m_pointRef = "point.geometry.fixture";
         }
         const auto result = RoadAtlasExtension::ValidateSnapshot(
             snapshot, MakeRoadProfile());
