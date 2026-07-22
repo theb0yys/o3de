@@ -22,10 +22,6 @@ for source_root in (
     if str(source_root) not in sys.path:
         sys.path.insert(0, str(source_root))
 
-from admission_bound_execution_handoff import (  # noqa: E402
-    AdmissionBoundExecutionHandoffError,
-    validate_admission_bound_handoff,
-)
 from execution_security import (  # noqa: E402
     ExecutionSecurityError,
     canonical_json,
@@ -135,6 +131,11 @@ def _capabilities(value: object, label: str) -> list[str]:
 
 
 def _checked_binding(binding: Mapping[str, object]) -> dict[str, object]:
+    # Lazy import avoids the legacy ProcessLauncher -> PackageEngine import cycle during module discovery.
+    from admission_bound_execution_handoff import (  # noqa: PLC0415
+        AdmissionBoundExecutionHandoffError,
+        validate_admission_bound_handoff,
+    )
     try:
         return validate_admission_bound_handoff(binding)
     except AdmissionBoundExecutionHandoffError as exc:
@@ -588,13 +589,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "token_claim_sha256": session["token_claim_sha256"],
             }
         sys.stdout.buffer.write(canonical_json(result)); return 0
-    except (
-        OSError,
-        AdmissionBoundExecutionHandoffError,
-        ExecutionHandoffError,
-        ExecutionSecurityError,
-        PackageEngineError,
-    ) as exc:
+    except (OSError, ExecutionHandoffError, ExecutionSecurityError, PackageEngineError) as exc:
         print(f"Package engine intake failed: {exc}", file=sys.stderr); return 1
 
 
