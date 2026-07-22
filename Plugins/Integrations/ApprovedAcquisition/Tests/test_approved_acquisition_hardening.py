@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import sys
@@ -8,14 +9,20 @@ import unittest
 from pathlib import Path
 
 TEST_ROOT = Path(__file__).resolve().parent
-if str(TEST_ROOT) not in sys.path:
-    sys.path.insert(0, str(TEST_ROOT))
-
-from test_approved_acquisition import (  # noqa: E402
-    ApprovedAcquisitionTests,
-    acquisition,
-    canonical,
+BASE_TEST_PATH = TEST_ROOT / "test_approved_acquisition.py"
+BASE_SPEC = importlib.util.spec_from_file_location(
+    "foa_approved_acquisition_base_tests",
+    BASE_TEST_PATH,
 )
+if BASE_SPEC is None or BASE_SPEC.loader is None:
+    raise RuntimeError(f"Unable to load approved acquisition base tests: {BASE_TEST_PATH}")
+BASE_TESTS = importlib.util.module_from_spec(BASE_SPEC)
+sys.modules[BASE_SPEC.name] = BASE_TESTS
+BASE_SPEC.loader.exec_module(BASE_TESTS)
+
+ApprovedAcquisitionTests = BASE_TESTS.ApprovedAcquisitionTests
+acquisition = BASE_TESTS.acquisition
+canonical = BASE_TESTS.canonical
 
 
 class ApprovedAcquisitionHardeningTests(unittest.TestCase):
