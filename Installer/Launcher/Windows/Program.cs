@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 using System.Diagnostics;
-using System.Text;
 using System.Windows.Forms;
 
 namespace FOA.SDK.InstallerLauncher;
@@ -20,10 +19,10 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        ApplicationConfiguration.Initialize();
         try
         {
             LaunchOptions options = LaunchOptions.Parse(args);
+            ApplicationConfiguration.Initialize();
             PathBundle paths = PathBundle.Resolve(options);
             string python = ResolvePython(options, paths);
             ProcessStartInfo startInfo = BuildStartInfo(options, paths, python);
@@ -44,6 +43,7 @@ internal static class Program
             }
             else
             {
+                ApplicationConfiguration.Initialize();
                 MessageBox.Show(ex.Message, Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return 1;
@@ -148,7 +148,8 @@ internal static class Program
         DirectoryInfo? InstallerRoot,
         string? PythonPath,
         bool SmokeTest,
-        bool Detach
+        bool Detach,
+        bool NoDialog
     )
     {
         public static LaunchOptions Parse(string[] args)
@@ -157,6 +158,7 @@ internal static class Program
             string? pythonPath = null;
             bool smokeTest = false;
             bool detach = false;
+            bool noDialog = false;
             for (int index = 0; index < args.Length; index++)
             {
                 string current = args[index];
@@ -170,9 +172,13 @@ internal static class Program
                         break;
                     case "--smoke-test":
                         smokeTest = true;
+                        noDialog = true;
                         break;
                     case "--detach":
                         detach = true;
+                        break;
+                    case "--no-dialog":
+                        noDialog = true;
                         break;
                     case "--help":
                     case "-h":
@@ -181,7 +187,7 @@ internal static class Program
                         throw new ArgumentException($"Unknown option: {current}\n\n{HelpText()}");
                 }
             }
-            return new LaunchOptions(installerRoot, pythonPath, smokeTest, detach);
+            return new LaunchOptions(installerRoot, pythonPath, smokeTest, detach, noDialog);
         }
 
         public static bool WantsConsoleError(string[] args)
@@ -201,7 +207,7 @@ internal static class Program
 
         private static string HelpText()
         {
-            return "Usage: FOA-SDK-Installer.exe [--installer-root <Installer>] [--python <pythonw.exe>] [--smoke-test] [--detach]";
+            return "Usage: FOA-SDK-Installer.exe [--installer-root <Installer>] [--python <pythonw.exe>] [--smoke-test] [--detach] [--no-dialog]";
         }
     }
 
