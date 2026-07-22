@@ -19,6 +19,7 @@ namespace TaintedGrailModdingSDK::GameInformationAcquisition
     {
         constexpr const char* PinnedTaintedGrailCommit =
             "d7e740e7f167b73152b53409e483dab07d80d048";
+        constexpr size_t MaximumObservationCount = 65536;
 
         void SetError(AZStd::string* error, AZStd::string message)
         {
@@ -112,6 +113,27 @@ namespace TaintedGrailModdingSDK::GameInformationAcquisition
                 values.push_back(value);
             }
         }
+
+        AZStd::vector<AZStd::string> FindDuplicateObservationIds(
+            const AZStd::vector<CandidateObservation>& observations)
+        {
+            AZStd::vector<AZStd::string> identities;
+            identities.reserve(observations.size());
+            for (const CandidateObservation& observation : observations)
+            {
+                identities.push_back(observation.m_observationId);
+            }
+            AZStd::sort(identities.begin(), identities.end());
+            AZStd::vector<AZStd::string> duplicates;
+            for (size_t index = 1; index < identities.size(); ++index)
+            {
+                if (identities[index] == identities[index - 1])
+                {
+                    AddUnique(duplicates, identities[index]);
+                }
+            }
+            return duplicates;
+        }
     } // namespace
 
     const AZStd::vector<ProviderDescriptor>& GetCanonicalProviders()
@@ -202,6 +224,7 @@ namespace TaintedGrailModdingSDK::GameInformationAcquisition
             || !IsSha256Fingerprint(observation.m_sourceFingerprint)
             || !IsSha256Fingerprint(observation.m_valueFingerprint)
             || !IsBoundedText(observation.m_subjectRef, 1024)
+            || !IsStableContractId(observation.m_claimId)
             || !IsBoundedText(observation.m_claim, 8192)
             || !IsBoundedText(observation.m_evidenceKind, 128)
             || !IsBoundedText(observation.m_confidence, 64)
@@ -234,20 +257,27 @@ namespace TaintedGrailModdingSDK::GameInformationAcquisition
         ReconciliationResult result;
         result.m_canPromoteAutomatically = false;
         result.m_grantsRuntimePermission = false;
-        for (const CandidateObservation& observation : observations)
+
+        if (observations.size() > MaximumObservationCount)
         {
-            if (!ValidateObservation(observation, profile))
+            for (const CandidateObservation& observation : observations)
             {
                 AddUnique(result.m_rejectedObservationIds, observation.m_observationId);
-                continue;
             }
-            const auto duplicate = AZStd::find_if(
-                result.m_candidates.begin(), result.m_candidates.end(),
-                [&observation](const CandidateObservation& candidate)
-                {
-                    return candidate.m_observationId == observation.m_observationId;
-                });
-            if (duplicate != result.m_candidates.end())
+            AZStd::sort(
+                result.m_rejectedObservationIds.begin(),
+                result.m_rejectedObservationIds.end());
+            return result;
+        }
+
+        const AZStd::vector<AZStd::string> duplicateIds =
+            FindDuplicateObservationIds(observations);
+        for (const CandidateObservation& observation : observations)
+        {
+            if (AZStd::find(
+                    duplicateIds.begin(), duplicateIds.end(), observation.m_observationId)
+                != duplicateIds.end()
+                || !ValidateObservation(observation, profile))
             {
                 AddUnique(result.m_rejectedObservationIds, observation.m_observationId);
                 continue;
@@ -262,6 +292,10 @@ namespace TaintedGrailModdingSDK::GameInformationAcquisition
                 if (left.m_subjectRef != right.m_subjectRef)
                 {
                     return left.m_subjectRef < right.m_subjectRef;
+                }
+                if (left.m_claimId != right.m_claimId)
+                {
+                    return left.m_claimId < right.m_claimId;
                 }
                 const ProviderDescriptor* leftProvider = FindProvider(left.m_providerId);
                 const ProviderDescriptor* rightProvider = FindProvider(right.m_providerId);
@@ -278,7 +312,9 @@ namespace TaintedGrailModdingSDK::GameInformationAcquisition
             size_t end = begin + 1;
             while (end < result.m_candidates.size()
                 && result.m_candidates[end].m_subjectRef
-                    == result.m_candidates[begin].m_subjectRef)
+                    == result.m_candidates[begin].m_subjectRef
+                && result.m_candidates[end].m_claimId
+                    == result.m_candidates[begin].m_claimId)
             {
                 ++end;
             }
@@ -291,9 +327,10 @@ namespace TaintedGrailModdingSDK::GameInformationAcquisition
             {
                 Conflict conflict;
                 conflict.m_subjectRef = result.m_candidates[begin].m_subjectRef;
+                conflict.m_claimId = result.m_candidates[begin].m_claimId;
                 conflict.m_valueFingerprints = AZStd::move(fingerprints);
                 conflict.m_reason =
-                    "Providers disagree; precedence does not silently override a conflicting observation.";
+                    "Providers disagree on one typed claim; precedence does not silently override a conflicting observation.";
                 for (size_t index = begin; index < end; ++index)
                 {
                     conflict.m_observationIds.push_back(
@@ -332,7 +369,7 @@ namespace TaintedGrailModdingSDK::GameInformationAcquisition
         evidence.m_gameVersion = observation.m_gameVersion;
         evidence.m_branch = observation.m_branch;
         evidence.m_subjectRef = observation.m_subjectRef;
-        evidence.m_claim = observation.m_claim;
+        evidence.m_claim = observation.m_claimId + ": " + observation.m_claim;
         evidence.m_evidenceKind = observation.m_evidenceKind;
         evidence.m_confidence = observation.m_confidence;
         evidence.m_locator = observation.m_locator;
