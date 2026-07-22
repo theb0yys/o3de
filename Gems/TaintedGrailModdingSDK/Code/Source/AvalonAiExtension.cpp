@@ -314,6 +314,7 @@ namespace TaintedGrailModdingSDK::AvalonAiExtension
             AddIssue(
                 result, manifest.m_packageId, "manifest.collection-bounds",
                 "Avalon AI manifest collections are empty or exceed contract bounds.");
+            return result;
         }
         if (HasDuplicates(manifest.m_supportedActorRoles)
             || HasDuplicates(manifest.m_requiredCapabilities))
@@ -390,19 +391,24 @@ namespace TaintedGrailModdingSDK::AvalonAiExtension
                     result, goal.m_goalId, "goal.invalid",
                     "Avalon AI goal identity or priority is invalid.");
             }
-            if (goal.m_conditions.size() > MaximumConditionsPerGoal)
+            const bool conditionsWithinBound =
+                goal.m_conditions.size() <= MaximumConditionsPerGoal;
+            if (!conditionsWithinBound)
             {
                 AddIssue(
                     result, goal.m_goalId, "goal.condition-count",
                     "Avalon AI goal condition count exceeds the contract bound.");
             }
-            for (const PlanningCondition& condition : goal.m_conditions)
+            else
             {
-                if (!ValidateCondition(condition))
+                for (const PlanningCondition& condition : goal.m_conditions)
                 {
-                    AddIssue(
-                        result, goal.m_goalId, "goal.condition-invalid",
-                        "Avalon AI goal contains an invalid planning condition.");
+                    if (!ValidateCondition(condition))
+                    {
+                        AddIssue(
+                            result, goal.m_goalId, "goal.condition-invalid",
+                            "Avalon AI goal contains an invalid planning condition.");
+                    }
                 }
             }
         }
@@ -435,29 +441,38 @@ namespace TaintedGrailModdingSDK::AvalonAiExtension
                     result, action.m_actionId, "action.target-key-invalid",
                     "Avalon AI action target-key ID must resolve to one declared package key.");
             }
-            if (action.m_conditions.size() > MaximumConditionsPerAction
-                || action.m_effects.size() > MaximumEffectsPerAction)
+            const bool conditionsWithinBound =
+                action.m_conditions.size() <= MaximumConditionsPerAction;
+            const bool effectsWithinBound =
+                action.m_effects.size() <= MaximumEffectsPerAction;
+            if (!conditionsWithinBound || !effectsWithinBound)
             {
                 AddIssue(
                     result, action.m_actionId, "action.planning-count",
                     "Avalon AI action conditions or effects exceed the contract bound.");
             }
-            for (const PlanningCondition& condition : action.m_conditions)
+            if (conditionsWithinBound)
             {
-                if (!ValidateCondition(condition))
+                for (const PlanningCondition& condition : action.m_conditions)
                 {
-                    AddIssue(
-                        result, action.m_actionId, "action.condition-invalid",
-                        "Avalon AI action contains an invalid planning condition.");
+                    if (!ValidateCondition(condition))
+                    {
+                        AddIssue(
+                            result, action.m_actionId, "action.condition-invalid",
+                            "Avalon AI action contains an invalid planning condition.");
+                    }
                 }
             }
-            for (const PlanningEffect& effect : action.m_effects)
+            if (effectsWithinBound)
             {
-                if (!ValidateEffect(effect))
+                for (const PlanningEffect& effect : action.m_effects)
                 {
-                    AddIssue(
-                        result, action.m_actionId, "action.effect-invalid",
-                        "Avalon AI action contains an invalid planning effect.");
+                    if (!ValidateEffect(effect))
+                    {
+                        AddIssue(
+                            result, action.m_actionId, "action.effect-invalid",
+                            "Avalon AI action contains an invalid planning effect.");
+                    }
                 }
             }
         }
