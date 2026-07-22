@@ -23,12 +23,22 @@ This capability is represented by a short-lived publication grant. The grant bin
 The publisher:
 
 - accepts only lifecycle results with `status = completed` and `lifecycle_completed = true`;
-- rejects blocked, timed-out, nonzero and elevation-pending lifecycle results;
+- accepts non-elevated completed lifecycle results as before;
+- accepts elevated completed lifecycle results only when `elevation_request_confirmed = true`, `elevated_completion_observed = true`, and `elevated_completion_observation_sha256` is present;
+- rejects raw elevation-pending lifecycle results that are still `elevation-requested-pending-completion-receipt`;
+- rejects blocked, timed-out, nonzero and output-limit lifecycle results;
+- records elevated lifecycle provenance on the state record without giving that record new authority;
 - writes only inside an absolute, existing, non-symlink SDK state root;
 - uses the expected previous-state hash to prevent stale overwrite;
 - writes canonical JSON bytes to a deterministic same-directory temporary file;
 - fsyncs the file and atomically replaces the target state file;
 - emits a publication receipt bound to the exact state record and lifecycle result.
+
+## Elevated lifecycle policy
+
+Raw `ElevationHelper/` results prove only that the operating system accepted the prompt. They remain non-publishable until `LifecycleCoordinator/` consumes an authenticated `ElevatedCompletionReceipt/` observation and produces a completed lifecycle result.
+
+Completed elevated lifecycle results are publishable only after that observation is present. Blocked elevated lifecycle results remain non-publishable.
 
 ## Boundary
 
