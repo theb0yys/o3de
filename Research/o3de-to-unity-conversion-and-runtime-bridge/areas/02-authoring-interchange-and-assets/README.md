@@ -30,6 +30,19 @@ envelopes, but the envelopes do not replace its identity, transformation, proven
 - Asset Processor rejection must not leave published source assets changed; qualification needs an isolated
   scratch project/scan root or an explicit reversible publication model.
 
+## Active focused research question
+
+The current research process advances through
+[`CANONICAL_INTERCHANGE_SCHEMA_RESEARCH_QUESTION.md`](CANONICAL_INTERCHANGE_SCHEMA_RESEARCH_QUESTION.md).
+
+That question requires the minimum schema 1 field inventory, canonical serialization rules, identity and native-
+binding state machine, spatial and temporal basis, payload model, transformation and loss taxonomy, provenance
+and legal state, determinism classes, validation/error inventory, schema evolution, and positive/negative
+fixtures.
+
+The question is research-only and does not authorize schema implementation, provider execution, native-host
+mutation, or runtime work.
+
 ## Authority boundary
 
 Format documentation and a successful import do not establish cross-engine compatibility. No format or
