@@ -10,22 +10,48 @@ The optional route packages are the [FOA Mono Runtime Adapter](../../tainted-gra
 
 ## Route record requirements
 
-Every runtime profile binds exact game/branch/runtime, loader and framework versions, target framework and compiler assumptions, dependencies, source/build/package identities, installation and rollback scope, startup evidence, capabilities, prohibitions, and staleness state.
+Every runtime profile must bind:
+
+- exact game version and branch;
+- runtime kind;
+- loader name and exact version;
+- framework/adapter name and exact version;
+- target framework and compiler assumptions;
+- required dependencies;
+- source/build/package identities;
+- installation and rollback scope;
+- loader discovery and startup evidence;
+- supported capabilities and explicit prohibitions;
+- staleness and supersession state.
 
 ## Current pinned route state
 
-- Mono: FoA `1.23.401`, Unity `6000.0.64f1`, BepInEx `5.4.23.3`, Tainted Framework `0.1.33`, evidence state `HostLiveLoadValidated`.
-- IL2CPP: FoA `1.23.401`, Unity `6000.0.64f1`, BepInEx `6.0.0-be.735`, Tainted Framework `0.1.36`, evidence state `PackageInstallValidated`.
+The system-port track currently records:
 
-Those observations qualify only their exact profiles. Installation selection, deployment, game launch, runtime mutation and save access remain separately governed.
+- Mono: game `1.23.401`, Unity `6000.0.64f1`, BepInEx `5.4.23.3`, Tainted Framework `0.1.33`, evidence state `HostLiveLoadValidated`;
+- IL2CPP: game `1.23.401`, Unity `6000.0.64f1`, BepInEx `6.0.0-be.735`, Tainted Framework `0.1.36`, evidence state `PackageInstallValidated`.
+
+Those observations qualify only their exact profiles. Current active installation selection, deployment, game launch, runtime mutation and save access remain separately governed.
 
 ## Implementation state
 
-Completed independently for both routes: project-owned source package, exact manifest and compatibility, deterministic non-executable build plan, external-executor review gate with execution authorization disabled, typed external runtime-result evidence, and adversarial repository validation.
+Completed independently for both routes:
 
-IL2CPP additionally requires exact generated-interop manifests for `Assembly-CSharp.dll` and `TG.Main.dll`; these inputs are never projected onto Mono.
+- project-owned route-specific source packages;
+- exact manifests, compatibility, dependencies and expected binary declarations;
+- deterministic build plans with execution disabled;
+- external-executor review gates with execution authorization disabled;
+- typed external runtime-result evidence and adversarial validation.
 
-Still required separately for each route: external source build against a lawful exact local profile, executor and controlled deployment/removal tooling, project-owned binary live-load evidence, hook-target verification, collision/load-order reports, and profile migration/staleness tooling.
+IL2CPP additionally requires exact generated-interop manifests for `Assembly-CSharp.dll` and `TG.Main.dll`; those inputs are never projected onto Mono.
+
+Still required separately for each route:
+
+- external source build against an exact lawful local profile;
+- separately reviewed executor and controlled deployment/removal tooling;
+- exact live-load evidence for each project-owned adapter binary;
+- live hook-target verification, collision and load-order reports;
+- profile migration and staleness tooling.
 
 ## Safety rule
 
