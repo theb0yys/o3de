@@ -6,6 +6,7 @@ All four registrations are prefixes resolved by type and method name without par
 
 ```yaml
 hook_id: tg.hook.economy.story-change-currency-execute
+title: Story currency change execution
 status: candidate
 hook_class: method-patch
 domain: rewards-story-and-economy
@@ -26,6 +27,7 @@ limitations: [Exact Execute overload and amount storage are unresolved, downstre
 
 ```yaml
 hook_id: tg.hook.economy.story-change-items-quantity-execute
+title: Story item-quantity change execution
 status: candidate
 hook_class: method-patch
 domain: rewards-story-and-economy
@@ -46,6 +48,7 @@ limitations: [Exact Execute overload and item-row schema are unresolved]
 
 ```yaml
 hook_id: tg.hook.economy.alive-location-death-reward-before-death
+title: Alive-location death reward observation
 status: candidate
 hook_class: method-patch
 domain: rewards-combat-and-loot
@@ -66,6 +69,7 @@ limitations: [Exact overload and reward lifecycle ordering are unresolved]
 
 ```yaml
 hook_id: tg.hook.economy.bounty-pay-wealth-execute
+title: Bounty wealth payment execution
 status: candidate
 hook_class: method-patch
 domain: rewards-crime-and-economy
