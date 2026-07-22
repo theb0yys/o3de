@@ -15,10 +15,10 @@ The current source authority is:
 
 ```text
 repository: theb0yys/FOA-SDK
-commit: b6975dde94a04c948bb05705fe2d36b3f38cd82e
+commit: 7d3d31371b4327ee3abbaa48b8741b4390bb9e0e
 ```
 
-The descriptive branch name is not retrieval authority. No branch, tag, release, latest-version lookup, redirect, or GitHub API response can replace the exact commit.
+This commit is the first clean acquisition-branch ancestor containing the approved knowledge and project-owned seed bytes. It therefore remains reachable through the eventual merged history. The descriptive branch name is not retrieval authority. No branch, tag, release, latest-version lookup, redirect, or GitHub API response can replace the exact commit.
 
 ## Approved content
 
@@ -133,7 +133,7 @@ Repository validation includes:
 - symlink, tamper, overwrite, unknown-package and repository-output refusal;
 - exact production source and seed fingerprints;
 - a deterministic golden plan;
-- mutation tests for authority escalation, source tampering, unapproved PNG inclusion, loss of atomic publication, stale plans and gate removal;
-- the non-network local acquisition fixture in `run_local_validation.py`.
+- mutation tests for authority escalation, source tampering, unapproved PNG inclusion, loss of atomic publication, stale plans and mandatory-test removal;
+- mandatory discovery of package tests through the Gem tool-test bridge.
 
 O3DE compilation, CTest and Windows UI evidence are separate host gates and are not implied by successful acquisition-provider tests.
