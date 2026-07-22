@@ -14,6 +14,7 @@ Installer/
 ├── SuiteWizard/        selectable suite user experience
 │   ├── Catalog/        reviewed catalogue discovery and explicit selection
 │   ├── Host/           native graphical choice, review, and confirmation surface
+│   ├── Receipt/        deterministic local confirmation-receipt persistence
 │   ├── Resolver/       deterministic package decision and dry-run plan layer
 │   └── ViewModel/      deterministic presentation and review-confirmation layer
 ├── Bootstrapper/       prerequisites, acquisition and verified handoff
@@ -47,9 +48,11 @@ The wizard does not resolve packages itself. It submits explicit selections, exc
 
 `Installer/SuiteWizard/ViewModel/` verifies the resolver plan, derives stable UI rows and required acknowledgements, and creates a review-only confirmation bound to exact `plan_sha256` and `view_model_sha256` values. Any catalogue, selection, plan, display-model, acknowledgement, confirmer identity, timestamp, or confirmation mutation invalidates the current review chain.
 
-A valid resolution plan and confirmation are still non-executable. The graphical confirmation remains transient and is not written by this unit. A separately reviewed persistence, acquisition, or execution layer must later reverify the exact accepted chain before receiving any operational capability.
+`Installer/SuiteWizard/Receipt/` re-verifies the exact plan, view-model and confirmation before any persistence. It emits a self-contained canonical receipt with `receipt_sha256`, publishes only to an explicitly selected existing external directory, rejects symbolic-link paths and noncanonical bytes, accepts a byte-identical existing receipt idempotently, and never overwrites a different file.
 
-A selection never grants game-launch, runtime-execution, deployment, save-mutation, signing, publication, catalog-mutation, or evidence-promotion authority. A confirmation also grants no acquisition, installation, elevation, or any of those operational authorities.
+A valid resolution plan, confirmation and receipt are still non-executable. Receipt publication is local evidence persistence, not network publication, installation or deployment. A separately reviewed acquisition or execution layer must later reverify the exact accepted chain before receiving any operational capability.
+
+A selection never grants game-launch, runtime-execution, deployment, save-mutation, signing, publication, catalog-mutation, or evidence-promotion authority. A confirmation or receipt also grants no acquisition, installation, elevation, or any of those operational authorities.
 
 ## Bootstrapper
 
@@ -75,11 +78,13 @@ For identical suite bytes, package-manifest bytes, explicit selections and compa
 
 The resolver performs no acquisition, file copying, installation, repair, upgrade, rollback, uninstall, elevation, game launch, runtime execution, deployment, save mutation, signing or publication.
 
-## Wizard view-model and confirmation
+## Wizard view-model, confirmation and receipt
 
 The engine-neutral view-model contract lives at `Installer/SuiteWizard/ViewModel/`. It emits canonical JSON conforming to `view-model.schema.json`, including exact package rows, flattened payload rows, warnings, policies, totals, acknowledgement requirements and `view_model_sha256`.
 
 `confirmation.schema.json` defines a review-only record bound to the exact plan and view-model hashes, the complete acknowledgement set, caller-supplied identity and caller-supplied UTC time. Confirmation generation reads no clock or environment state and grants no execution authority.
+
+`Installer/SuiteWizard/Receipt/receipt.schema.json` defines the self-contained canonical persistence bundle. Receipt verification reconstructs and verifies the complete embedded plan/view-model/confirmation chain before accepting `receipt_sha256`.
 
 ## Existing Windows packaging
 
@@ -97,10 +102,11 @@ Installer changes require, as applicable:
 4. graphical host coverage for required/default/optional controls, refresh invalidation and resolver-backed review rows;
 5. graphical acknowledgement coverage, exact plan/view-model binding, deterministic confirmation creation and confirmation invalidation;
 6. deterministic view-model and exact-hash confirmation;
-7. dependency/conflict and compatibility tests;
-8. path, symlink, case-collision, and traversal rejection;
-9. exact inventory, hash, provenance, licence, and redistribution review;
-10. clean install, repair, upgrade, rollback, and uninstall smoke tests;
-11. preservation of external workspaces and user-authored content;
-12. generated-output hygiene;
-13. explicit proof that no release, signing, runtime, deployment, save, acquisition, installation or elevation authority was introduced by review-only contracts.
+7. deterministic canonical receipt derivation, atomic create-once persistence, idempotency and exact-chain re-verification;
+8. dependency/conflict and compatibility tests;
+9. path, symlink, case-collision, and traversal rejection;
+10. exact inventory, hash, provenance, licence, and redistribution review;
+11. clean install, repair, upgrade, rollback, and uninstall smoke tests;
+12. preservation of external workspaces and user-authored content;
+13. generated-output hygiene;
+14. explicit proof that no release, signing, runtime, deployment, save, acquisition, installation, elevation or network-publication authority was introduced by review-only contracts.
