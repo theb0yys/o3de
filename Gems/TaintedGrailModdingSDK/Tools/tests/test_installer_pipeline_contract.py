@@ -24,6 +24,7 @@ import verify_installer_artifacts as artifacts
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 WORKFLOW = REPO_ROOT / ".github/workflows/tainted-grail-sdk-installer.yml"
+INSTALLER_PAYLOAD = REPO_ROOT / "Installer/Launcher/Windows/InstallerPayload.cs"
 VERSION = "0.1.0"
 
 
@@ -58,6 +59,17 @@ class InstallerPipelineContractTests(unittest.TestCase):
                 {wizard.name, msi.name, portable_zip.name},
             )
 
+    def test_cpack_work_files_cannot_leak_into_retained_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_artifact_set(root)
+            (root / "_CPack_Packages").mkdir()
+            with self.assertRaisesRegex(
+                artifacts.ArtifactVerificationError,
+                "artifact set mismatch",
+            ):
+                artifacts.verify_artifact_set(root, VERSION)
+
     def test_checksum_mismatch_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -76,6 +88,15 @@ class InstallerPipelineContractTests(unittest.TestCase):
             artifacts.parse_checksum_record(f"{digest}  payload.msi\r\n", "payload.msi")
         with self.assertRaisesRegex(artifacts.ArtifactVerificationError, "lowercase sha256"):
             artifacts.parse_checksum_record(f"{digest}  other.msi\n", "payload.msi")
+
+    def test_embedded_msi_parser_requires_the_same_canonical_record(self) -> None:
+        source = INSTALLER_PAYLOAD.read_text(encoding="utf-8")
+        self.assertIn('text.EndsWith("\\n", StringComparison.Ordinal)', source)
+        self.assertIn("text.Contains('\\r')", source)
+        self.assertIn('Split("  ", StringSplitOptions.None)', source)
+        self.assertIn("parts.Length != 2", source)
+        self.assertIn('Path.GetExtension(parts[1]), ".msi"', source)
+        self.assertNotIn("text.Trim().Split", source)
 
     def test_workflow_enforces_the_approved_pipeline_order(self) -> None:
         workflow = WORKFLOW.read_text(encoding="utf-8")
@@ -106,6 +127,33 @@ class InstallerPipelineContractTests(unittest.TestCase):
             workflow,
         )
         self.assertIn('--artifact-root "${{ env.SDK_ARTIFACTS }}"', workflow)
+
+    def test_cpack_work_area_is_separate_from_retained_artifacts(self) -> None:
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn(
+            '"SDK_PACKAGE_OUTPUT=$env:RUNNER_TEMP/tg-sdk-package-output" >> $env:GITHUB_ENV',
+            workflow,
+        )
+        self.assertIn("-G WIX -B $env:SDK_PACKAGE_OUTPUT", workflow)
+        self.assertNotIn("-G WIX -B $env:SDK_ARTIFACTS", workflow)
+        self.assertIn(
+            "Copy-Item -LiteralPath $msi.FullName -Destination (Join-Path $env:SDK_ARTIFACTS $msi.Name)",
+            workflow,
+        )
+
+    def test_lifecycle_smoke_proves_manifest_shortcut_repair_and_uninstall(self) -> None:
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        for fragment in (
+            "Installed MSI manifest differs from the exact reviewed staging manifest",
+            "CreateShortcut($startMenuEntry)",
+            "MSI Start Menu entry targets",
+            "WriteAllBytes($launcher",
+            "MSI repair did not restore the reviewed product-owned launcher bytes",
+            "Repaired launcher self-test failed",
+            "MSI uninstall left the product manifest installed",
+            "MSI uninstall removed external workspace data",
+        ):
+            self.assertIn(fragment, workflow)
 
 
 if __name__ == "__main__":
