@@ -14,7 +14,7 @@ env:
 jobs:
   validate-entry:
     name: Validate dedicated project and trusted clickable entry
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 20
 
     steps:
