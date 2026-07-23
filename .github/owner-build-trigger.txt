@@ -1,1 +1,1 @@
-Owner-directed FOA-SDK installer build trigger: exact current main source.
+Owner-directed FOA-SDK installer build trigger: clean canonical source branch.
