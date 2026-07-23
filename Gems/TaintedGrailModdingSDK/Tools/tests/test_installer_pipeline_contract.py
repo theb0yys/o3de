@@ -25,6 +25,15 @@ import verify_installer_artifacts as artifacts
 REPO_ROOT = Path(__file__).resolve().parents[4]
 WORKFLOW = REPO_ROOT / ".github/workflows/tainted-grail-sdk-installer.yml"
 INSTALLER_PAYLOAD = REPO_ROOT / "Installer/Launcher/Windows/InstallerPayload.cs"
+INSTALLER_IMPLEMENTATION = (
+    WORKFLOW,
+    REPO_ROOT / "Installer/Packaging/Windows/CMakeLists.txt",
+    REPO_ROOT / "Installer/Launcher/Windows/Program.cs",
+    INSTALLER_PAYLOAD,
+    REPO_ROOT / "Installer/Launcher/Windows/WindowsInstallerRunner.cs",
+    REPO_ROOT / "Installer/Launcher/Windows/InstallerWizardForm.cs",
+    REPO_ROOT / "Installer/Launcher/Windows/InstalledEditorLauncher.cpp",
+)
 VERSION = "0.1.0"
 
 
@@ -118,6 +127,13 @@ class InstallerPipelineContractTests(unittest.TestCase):
         positions = [workflow.index(f"- name: {name}") for name in ordered_steps]
         self.assertEqual(positions, sorted(positions))
 
+    def test_inventory_and_stage_consume_only_the_o3de_install_root(self) -> None:
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.assertEqual(workflow.count("--sdk-root $env:SDK_INSTALL"), 2)
+        self.assertNotIn("--sdk-root $env:SDK_BUILD", workflow)
+        self.assertNotIn("--sdk-root $env:SDK_VALIDATION_BUILD", workflow)
+        self.assertIn("--scan-path \"$env:SDK_INSTALL\"", workflow)
+
     def test_zip_and_msi_are_built_from_the_same_verified_stage(self) -> None:
         workflow = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("--stage-root $env:SDK_STAGE", workflow)
@@ -154,6 +170,34 @@ class InstallerPipelineContractTests(unittest.TestCase):
             "MSI uninstall removed external workspace data",
         ):
             self.assertIn(fragment, workflow)
+
+    def test_explicitly_excluded_installer_capabilities_remain_absent(self) -> None:
+        forbidden = (
+            "signtool",
+            "azuresigntool",
+            "codesign",
+            "gh release create",
+            "softprops/action-gh-release",
+            "backgroundservice",
+            "new-service",
+            "start-service",
+            "schtasks",
+            "httpclient",
+            "webclient",
+            "downloadfile",
+            "winget install",
+            "choco install",
+            "vcredist",
+            "bepinex",
+            "harmony",
+            "savegames",
+            "telemetry",
+            "merlin workshop",
+        )
+        for path in INSTALLER_IMPLEMENTATION:
+            contents = path.read_text(encoding="utf-8").casefold()
+            for fragment in forbidden:
+                self.assertNotIn(fragment, contents, f"{path} contains excluded capability {fragment!r}")
 
 
 if __name__ == "__main__":
