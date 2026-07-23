@@ -29,7 +29,7 @@ jobs:
       - name: Initialize external build roots
         shell: pwsh
         run: |
-          "O3DE_ROOT=$env:RUNNER_TEMP/o3de" >> $env:GITHUB_ENV
+          "O3DE_ROOT=$env:GITHUB_WORKSPACE/o3de" >> $env:GITHUB_ENV
           "FOA_BUILD_ROOT=$env:RUNNER_TEMP/foa-build" >> $env:GITHUB_ENV
           "SDK_VALIDATION_BUILD=$env:RUNNER_TEMP/foa-build/tg-sdk-installer-validation" >> $env:GITHUB_ENV
           "SDK_BUILD=$env:RUNNER_TEMP/foa-build/tg-sdk-installer-engine" >> $env:GITHUB_ENV
@@ -51,7 +51,7 @@ jobs:
         with:
           repository: o3de/o3de
           ref: ${{ env.O3DE_COMMIT }}
-          path: ${{ runner.temp }}/o3de
+          path: o3de
           fetch-depth: 1
           persist-credentials: false
           lfs: false
