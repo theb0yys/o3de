@@ -19,6 +19,7 @@ if str(TOOLS_ROOT) not in sys.path:
 
 from run_local_validation import VALIDATORS
 from validate_installer_workflow import (
+    CANONICAL_INSTALLER_WORKFLOW,
     LEGACY_INSTALLER_ROOT,
     OBSOLETE_INSTALLER_ROOTS,
     REQUIRED_FILE_FRAGMENTS,
@@ -60,7 +61,7 @@ class InstallerWorkflowValidatorTests(unittest.TestCase):
     def test_missing_exact_inventory_gate_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
-            workflow = repo / ".github/workflows/tainted-grail-sdk-installer.yml"
+            workflow = repo / CANONICAL_INSTALLER_WORKFLOW
             workflow.write_text(
                 workflow.read_text(encoding="utf-8").replace("approved_inventory_sha256:", ""),
                 encoding="utf-8",
@@ -71,7 +72,7 @@ class InstallerWorkflowValidatorTests(unittest.TestCase):
     def test_public_release_command_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
-            workflow = repo / ".github/workflows/tainted-grail-sdk-installer.yml"
+            workflow = repo / CANONICAL_INSTALLER_WORKFLOW
             workflow.write_text(
                 workflow.read_text(encoding="utf-8") + "gh release create v0.1.0\n",
                 encoding="utf-8",
@@ -85,7 +86,7 @@ class InstallerWorkflowValidatorTests(unittest.TestCase):
     def test_runner_context_outside_steps_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
-            workflow = repo / ".github/workflows/tainted-grail-sdk-installer.yml"
+            workflow = repo / CANONICAL_INSTALLER_WORKFLOW
             workflow.write_text(
                 workflow.read_text(encoding="utf-8")
                 + "SDK_BUILD: ${{ runner.temp }}/foa-build/tg-sdk-installer-engine\n",
@@ -100,7 +101,7 @@ class InstallerWorkflowValidatorTests(unittest.TestCase):
     def test_mutable_windows_runner_alias_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
-            workflow = repo / ".github/workflows/tainted-grail-sdk-installer.yml"
+            workflow = repo / CANONICAL_INSTALLER_WORKFLOW
             workflow.write_text(
                 workflow.read_text(encoding="utf-8") + "runs-on: windows-latest\n",
                 encoding="utf-8",
@@ -114,7 +115,7 @@ class InstallerWorkflowValidatorTests(unittest.TestCase):
     def test_installer_runner_pin_is_required(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
-            workflow = repo / ".github/workflows/tainted-grail-sdk-installer.yml"
+            workflow = repo / CANONICAL_INSTALLER_WORKFLOW
             workflow.write_text(
                 workflow.read_text(encoding="utf-8").replace(
                     f"runs-on: {WINDOWS_RUNNER}",
@@ -131,7 +132,7 @@ class InstallerWorkflowValidatorTests(unittest.TestCase):
     def test_git_fetchcontent_mode_is_required_for_validation_configure(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
-            workflow = repo / ".github/workflows/tainted-grail-sdk-installer.yml"
+            workflow = repo / CANONICAL_INSTALLER_WORKFLOW
             workflow.write_text(
                 workflow.read_text(encoding="utf-8").replace(
                     "-DO3DE_FETCHCONTENT_FORCE_GIT=ON",
@@ -149,7 +150,7 @@ class InstallerWorkflowValidatorTests(unittest.TestCase):
     def test_git_fetchcontent_mode_is_required_for_install_configure(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repo = self.make_repo(Path(temporary))
-            workflow = repo / ".github/workflows/tainted-grail-sdk-installer.yml"
+            workflow = repo / CANONICAL_INSTALLER_WORKFLOW
             first = workflow.read_text(encoding="utf-8")
             first_position = first.index("-DO3DE_FETCHCONTENT_FORCE_GIT=ON")
             second_position = first.index("-DO3DE_FETCHCONTENT_FORCE_GIT=ON", first_position + 1)
@@ -162,6 +163,48 @@ class InstallerWorkflowValidatorTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 InstallerWorkflowValidationError,
                 "O3DE_FETCHCONTENT_FORCE_GIT",
+            ):
+                validate_installer_workflow(repo)
+
+    def test_wix_extension_cache_must_be_isolated(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = self.make_repo(Path(temporary))
+            workflow = repo / CANONICAL_INSTALLER_WORKFLOW
+            workflow.write_text(
+                workflow.read_text(encoding="utf-8").replace(
+                    '"WIX_EXTENSIONS=$env:RUNNER_TEMP/wix-extensions" >> $env:GITHUB_ENV',
+                    '"WIX_EXTENSIONS=$env:USERPROFILE/.wix" >> $env:GITHUB_ENV',
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(InstallerWorkflowValidationError, "WIX_EXTENSIONS"):
+                validate_installer_workflow(repo)
+
+    def test_cpack_work_area_cannot_be_the_retained_artifact_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = self.make_repo(Path(temporary))
+            workflow = repo / CANONICAL_INSTALLER_WORKFLOW
+            workflow.write_text(
+                workflow.read_text(encoding="utf-8") + "-G WIX -B $env:SDK_ARTIFACTS\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                InstallerWorkflowValidationError,
+                "SDK_ARTIFACTS",
+            ):
+                validate_installer_workflow(repo)
+
+    def test_renamed_alternate_installer_workflow_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = self.make_repo(Path(temporary))
+            alternate = repo / ".github/workflows/renamed-package-route.yml"
+            alternate.write_text(
+                "name: alternate\nrun: python developer_preview_installer.py stage\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                InstallerWorkflowValidationError,
+                "Alternate workflow",
             ):
                 validate_installer_workflow(repo)
 
