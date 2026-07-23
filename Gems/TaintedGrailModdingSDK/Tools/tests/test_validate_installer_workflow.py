@@ -22,6 +22,7 @@ from validate_installer_workflow import (
     LEGACY_INSTALLER_ROOT,
     OBSOLETE_INSTALLER_ROOTS,
     REQUIRED_FILE_FRAGMENTS,
+    WINDOWS_RUNNER,
     InstallerWorkflowValidationError,
     validate_installer_workflow,
 )
@@ -92,6 +93,37 @@ class InstallerWorkflowValidatorTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 InstallerWorkflowValidationError,
                 "runner.temp",
+            ):
+                validate_installer_workflow(repo)
+
+    def test_mutable_windows_runner_alias_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = self.make_repo(Path(temporary))
+            workflow = repo / ".github/workflows/tainted-grail-sdk-installer.yml"
+            workflow.write_text(
+                workflow.read_text(encoding="utf-8") + "runs-on: windows-latest\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                InstallerWorkflowValidationError,
+                "windows-latest",
+            ):
+                validate_installer_workflow(repo)
+
+    def test_installer_runner_pin_is_required(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = self.make_repo(Path(temporary))
+            workflow = repo / ".github/workflows/tainted-grail-sdk-installer.yml"
+            workflow.write_text(
+                workflow.read_text(encoding="utf-8").replace(
+                    f"runs-on: {WINDOWS_RUNNER}",
+                    "runs-on: windows-2025",
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                InstallerWorkflowValidationError,
+                WINDOWS_RUNNER,
             ):
                 validate_installer_workflow(repo)
 
