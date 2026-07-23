@@ -1,0 +1,217 @@
+{
+  "generated_at": "2026-07-23T12:49:25Z",
+  "fix_build_runs": [
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-23T12:48:00Z",
+      "databaseId": 30008459593,
+      "displayTitle": "Fix canonical installer build and produce EXE",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "ed0f766d7189271a874b443c824d342e41b912f2",
+      "status": "completed"
+    }
+  ],
+  "canonical_installer_runs": [
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-23T05:33:48Z",
+      "databaseId": 29982490161,
+      "displayTitle": "FOA-SDK Windows Installer",
+      "event": "workflow_dispatch",
+      "headBranch": "installer-build-source",
+      "headSha": "de5d1d44d3161387bad45ed2a57a48a3fa489016",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-23T05:19:55Z",
+      "databaseId": 29981859396,
+      "displayTitle": "FOA-SDK Windows Installer",
+      "event": "workflow_dispatch",
+      "headBranch": "main",
+      "headSha": "f66de29aefb5def1aea9dfa0279878b9d2350d08",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-23T05:17:23Z",
+      "databaseId": 29981751739,
+      "displayTitle": "FOA-SDK Windows Installer",
+      "event": "workflow_dispatch",
+      "headBranch": "main",
+      "headSha": "d35ec04635414fac6dd7602718f06fdd0a287404",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-23T00:20:14Z",
+      "databaseId": 29968784129,
+      "displayTitle": "FOA-SDK Windows Installer",
+      "event": "workflow_dispatch",
+      "headBranch": "installer",
+      "headSha": "fe7b745f32f269d7024b0b6e20f52f1e0d29699f",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-23T00:06:00Z",
+      "databaseId": 29968103816,
+      "displayTitle": "Merge pull request #176 from theb0yys/installer",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "db837703269484894d64b9f9907a104d5940f5b1",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T23:57:53Z",
+      "databaseId": 29967697584,
+      "displayTitle": "Make Windows validation fixtures portable",
+      "event": "push",
+      "headBranch": "installer",
+      "headSha": "1d9a61a2f42afd605b204f7bd05378dc4635bf8d",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T23:22:38Z",
+      "databaseId": 29965929396,
+      "displayTitle": "Merge pull request #175 from theb0yys/agent/gate5-final-compiled-veri…",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "ce2220f81aa90e0651c634caf2ea8fe12466d0a0",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T23:22:29Z",
+      "databaseId": 29965921390,
+      "displayTitle": "Merge pull request #175 from theb0yys/agent/gate5-final-compiled-veri…",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "ce2220f81aa90e0651c634caf2ea8fe12466d0a0",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T23:22:19Z",
+      "databaseId": 29965912486,
+      "displayTitle": "Merge pull request #175 from theb0yys/agent/gate5-final-compiled-veri…",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "ce2220f81aa90e0651c634caf2ea8fe12466d0a0",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T23:13:50Z",
+      "databaseId": 29965474085,
+      "displayTitle": "Add replay retention tombstones",
+      "event": "push",
+      "headBranch": "agent/tg-semantic-hook-batch-014",
+      "headSha": "59601b61e6a5b428b9aa1e841fa0a85c6565ff33",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T23:13:16Z",
+      "databaseId": 29965444564,
+      "displayTitle": "Add quota reconciliation checkpoints",
+      "event": "push",
+      "headBranch": "agent/tg-semantic-hook-batch-014",
+      "headSha": "6a72a8b64add50d8781ec3a230f286720891b9d2",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T23:12:31Z",
+      "databaseId": 29965405923,
+      "displayTitle": "Add workflow matrix evolution receipts",
+      "event": "push",
+      "headBranch": "agent/tg-semantic-hook-batch-014",
+      "headSha": "829a0d62eee36430f02f1d9b855be43260a5b9d6",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T23:11:49Z",
+      "databaseId": 29965370207,
+      "displayTitle": "Add appeal history compaction proofs",
+      "event": "push",
+      "headBranch": "agent/tg-semantic-hook-batch-014",
+      "headSha": "219c670611b84956ec752ed7b9c9ce7b22b6606f",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T22:57:50Z",
+      "databaseId": 29964618899,
+      "displayTitle": "Merge pull request #175 from theb0yys/agent/gate5-final-compiled-veri…",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "ce2220f81aa90e0651c634caf2ea8fe12466d0a0",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T22:57:20Z",
+      "databaseId": 29964593693,
+      "displayTitle": "Merge pull request #173 from theb0yys/agent/harden-installer-executio…",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "0c910c6a1d655fa3a2d23a593522e5ba2b523a82",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T22:53:20Z",
+      "databaseId": 29964378983,
+      "displayTitle": "Merge pull request #167 from theb0yys/agent/tg-semantic-hook-batch-013",
+      "event": "push",
+      "headBranch": "agent/tg-semantic-hooks-integration",
+      "headSha": "fb5e6a1df3dc8ba72dc45c6fef4a7d2c22945c5e",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T22:50:50Z",
+      "databaseId": 29964243178,
+      "displayTitle": "Merge pull request #173 from theb0yys/agent/harden-installer-executio…",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "0c910c6a1d655fa3a2d23a593522e5ba2b523a82",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T22:49:30Z",
+      "databaseId": 29964168278,
+      "displayTitle": "Merge pull request #173 from theb0yys/agent/harden-installer-executio…",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "0c910c6a1d655fa3a2d23a593522e5ba2b523a82",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T22:47:56Z",
+      "databaseId": 29964083359,
+      "displayTitle": "Bind corrected manifest and package fingerprints",
+      "event": "push",
+      "headBranch": "agent/gate5-final-compiled-verification",
+      "headSha": "76eb7c4d5df6f551449a3a1ec75c78fa5c2d17ae",
+      "status": "completed"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-07-22T22:47:15Z",
+      "databaseId": 29964044777,
+      "displayTitle": "Merge pull request #173 from theb0yys/agent/harden-installer-executio…",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "0c910c6a1d655fa3a2d23a593522e5ba2b523a82",
+      "status": "completed"
+    }
+  ]
+}
