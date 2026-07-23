@@ -37,6 +37,7 @@ jobs:
           "SDK_INVENTORY=$env:RUNNER_TEMP/tg-sdk-installer-inventory.json" >> $env:GITHUB_ENV
           "SDK_NOTICES=$env:RUNNER_TEMP/NOTICES.txt" >> $env:GITHUB_ENV
           "SDK_PACKAGES=$env:RUNNER_TEMP/THIRD_PARTY_PACKAGES.json" >> $env:GITHUB_ENV
+          "SDK_CONFIGURE_LOG=$env:RUNNER_TEMP/tg-sdk-installer-configure.log" >> $env:GITHUB_ENV
 
       - name: Check out exact FOA-SDK pull-request head
         uses: actions/checkout@v4
@@ -82,7 +83,21 @@ jobs:
           cmake -S $env:O3DE_ROOT -B $env:SDK_VALIDATION_BUILD -G "Visual Studio 17 2022" -A x64 `
             -DLY_PROJECTS="$project" `
             -DLY_3RDPARTY_PATH="$packages" `
-            -DLY_DISABLE_TEST_MODULES=OFF
+            -DLY_DISABLE_TEST_MODULES=OFF 2>&1 |
+            Tee-Object -FilePath $env:SDK_CONFIGURE_LOG
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload configure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: foa-sdk-installer-configure-${{ github.run_id }}
+          path: |
+            ${{ env.SDK_CONFIGURE_LOG }}
+            ${{ env.SDK_VALIDATION_BUILD }}\CMakeCache.txt
+            ${{ env.SDK_VALIDATION_BUILD }}\CMakeFiles\CMakeConfigureLog.yaml
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Build required compiled Catalog tests
         run: >-
