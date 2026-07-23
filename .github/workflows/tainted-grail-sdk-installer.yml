@@ -56,7 +56,7 @@ permissions:
 jobs:
   build-installer:
     name: Inventory or package prebuilt Windows SDK
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 360
     env:
       O3DE_COMMIT: 68683f23fb747380d3efa2424bd5f30242e9c5a2
