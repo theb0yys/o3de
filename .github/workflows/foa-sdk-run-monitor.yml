@@ -8,7 +8,7 @@ on:
 
 permissions:
   actions: read
-  contents: read
+  contents: write
   issues: write
   pull-requests: write
 
@@ -16,7 +16,7 @@ jobs:
   report:
     runs-on: ubuntu-24.04
     steps:
-      - name: Report installer runs
+      - name: Persist installer run status
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
@@ -25,4 +25,22 @@ jobs:
           set -euo pipefail
           fix_runs="$(gh run list --repo "$REPOSITORY" --workflow foa-sdk-fix-and-build.yml --limit 10 --json databaseId,status,conclusion,headSha,headBranch,createdAt,event,displayTitle)"
           canonical_runs="$(gh run list --repo "$REPOSITORY" --workflow tainted-grail-sdk-installer.yml --limit 20 --json databaseId,status,conclusion,headSha,headBranch,createdAt,event,displayTitle)"
-          gh pr comment 180 --repo "$REPOSITORY" --body "Installer correction/build monitor:\n\nFix/build orchestration:\n\`\`\`json\n$fix_runs\n\`\`\`\n\nCanonical installer runs:\n\`\`\`json\n$canonical_runs\n\`\`\`"
+          jq -n \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --argjson fix "$fix_runs" \
+            --argjson canonical "$canonical_runs" \
+            '{generated_at:$generated_at,fix_build_runs:$fix,canonical_installer_runs:$canonical}' > status.json
+          path='.github/foa-sdk-build-status.json'
+          encoded="$(base64 -w0 status.json)"
+          existing="$(gh api "repos/$REPOSITORY/contents/$path" --jq .sha 2>/dev/null || true)"
+          if [[ -n "$existing" ]]; then
+            gh api "repos/$REPOSITORY/contents/$path" --method PUT \
+              -f message='Update installer build status' \
+              -f content="$encoded" \
+              -f sha="$existing" >/dev/null
+          else
+            gh api "repos/$REPOSITORY/contents/$path" --method PUT \
+              -f message='Record installer build status' \
+              -f content="$encoded" >/dev/null
+          fi
+          gh pr comment 180 --repo "$REPOSITORY" --body "Installer correction/build status was refreshed in \`$path\`."
