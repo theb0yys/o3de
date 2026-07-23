@@ -1,13 +1,147 @@
 name: FOA-SDK Exact Installer Inventory
 
 on:
-  workflow_dispatch:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - ".github/workflows/foa-sdk-installer-inventory-pr.yml"
 
 permissions:
   contents: read
 
+concurrency:
+  group: foa-sdk-exact-installer-inventory-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
-  placeholder:
-    runs-on: ubuntu-latest
+  inventory:
+    name: Build exact reviewed Windows SDK inventory
+    if: github.head_ref == 'installer'
+    runs-on: windows-2022
+    timeout-minutes: 360
+    env:
+      O3DE_COMMIT: 68683f23fb747380d3efa2424bd5f30242e9c5a2
+
     steps:
-      - run: echo inventory workflow scaffold
+      - name: Initialize external build roots
+        shell: pwsh
+        run: |
+          "O3DE_ROOT=$env:RUNNER_TEMP/o3de" >> $env:GITHUB_ENV
+          "FOA_BUILD_ROOT=$env:RUNNER_TEMP/foa-build" >> $env:GITHUB_ENV
+          "SDK_VALIDATION_BUILD=$env:RUNNER_TEMP/foa-build/tg-sdk-installer-validation" >> $env:GITHUB_ENV
+          "SDK_BUILD=$env:RUNNER_TEMP/foa-build/tg-sdk-installer-engine" >> $env:GITHUB_ENV
+          "SDK_INSTALL=$env:RUNNER_TEMP/tg-sdk-install" >> $env:GITHUB_ENV
+          "SDK_INVENTORY=$env:RUNNER_TEMP/tg-sdk-installer-inventory.json" >> $env:GITHUB_ENV
+          "SDK_NOTICES=$env:RUNNER_TEMP/NOTICES.txt" >> $env:GITHUB_ENV
+          "SDK_PACKAGES=$env:RUNNER_TEMP/THIRD_PARTY_PACKAGES.json" >> $env:GITHUB_ENV
+
+      - name: Check out exact FOA-SDK pull-request head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          lfs: true
+
+      - name: Check out exact external O3DE source
+        uses: actions/checkout@v4
+        with:
+          repository: o3de/o3de
+          ref: ${{ env.O3DE_COMMIT }}
+          path: ${{ runner.temp }}/o3de
+          fetch-depth: 1
+          persist-credentials: false
+          lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify exact repository and engine inputs
+        shell: pwsh
+        run: |
+          $actualHead = (git rev-parse HEAD).Trim()
+          $actualEngine = (git -C $env:O3DE_ROOT rev-parse HEAD).Trim()
+          $expectedHead = "${{ github.event.pull_request.head.sha }}"
+          if ($actualHead -cne $expectedHead) {
+            throw "FOA-SDK head mismatch: expected $expectedHead, found $actualHead"
+          }
+          if ($actualEngine -cne $env:O3DE_COMMIT) {
+            throw "O3DE head mismatch: expected $env:O3DE_COMMIT, found $actualEngine"
+          }
+
+      - name: Configure compiled validation build
+        shell: pwsh
+        run: |
+          $project = Join-Path $env:GITHUB_WORKSPACE "TaintedGrailModdingEditor"
+          $packages = Join-Path $env:RUNNER_TEMP "o3de-packages"
+          cmake -S $env:O3DE_ROOT -B $env:SDK_VALIDATION_BUILD -G "Visual Studio 17 2022" -A x64 `
+            -DLY_PROJECTS="$project" `
+            -DLY_3RDPARTY_PATH="$packages" `
+            -DLY_DISABLE_TEST_MODULES=OFF
+
+      - name: Build required compiled Catalog tests
+        run: >-
+          cmake --build $env:SDK_VALIDATION_BUILD --config profile
+          --target TaintedGrailModdingSDK.Catalog.Tests -- /m
+
+      - name: Run authoritative repository and compiled-test validation
+        env:
+          FOA_O3DE_ROOT: ${{ env.O3DE_ROOT }}
+        run: >-
+          python Gems/TaintedGrailModdingSDK/Tools/run_local_validation.py
+          --engine-root "${{ env.O3DE_ROOT }}"
+          --ctest-build-dir "${{ env.SDK_VALIDATION_BUILD }}"
+          --keep-going
+
+      - name: Configure prebuilt O3DE SDK layout
+        shell: pwsh
+        run: |
+          $project = Join-Path $env:GITHUB_WORKSPACE "TaintedGrailModdingEditor"
+          $packages = Join-Path $env:RUNNER_TEMP "o3de-packages"
+          cmake -S $env:O3DE_ROOT -B $env:SDK_BUILD -G "Visual Studio 17 2022" -A x64 `
+            -DLY_PROJECTS="$project" `
+            -DLY_3RDPARTY_PATH="$packages" `
+            -DLY_DISABLE_TEST_MODULES=ON `
+            -DO3DE_INSTALL_ENGINE_NAME=TaintedGrailFoASDK `
+            -DCMAKE_INSTALL_PREFIX="$env:SDK_INSTALL"
+
+      - name: Build canonical O3DE INSTALL target
+        run: cmake --build $env:SDK_BUILD --config profile --target INSTALL -- /m
+
+      - name: Generate notices and third-party package inventory
+        run: >-
+          python "$env:O3DE_ROOT/scripts/license_scanner/license_scanner.py"
+          --scan-path "$env:SDK_INSTALL"
+          --license-file-path "$env:SDK_NOTICES"
+          --package-file-path "$env:SDK_PACKAGES"
+
+      - name: Generate exact installer inventory
+        shell: pwsh
+        run: |
+          python Gems/TaintedGrailModdingSDK/Tools/developer_preview_installer.py inventory `
+            --repo-root $env:GITHUB_WORKSPACE `
+            --sdk-root $env:SDK_INSTALL `
+            --notices $env:SDK_NOTICES `
+            --packages $env:SDK_PACKAGES `
+            --version "0.1.0" `
+            --channel "development" `
+            --output $env:SDK_INVENTORY
+          $inventory = Get-Content -LiteralPath $env:SDK_INVENTORY -Raw | ConvertFrom-Json
+          "SDK_INVENTORY_SHA256=$($inventory.inventory_sha256)" >> $env:GITHUB_ENV
+          Write-Host "Exact inventory SHA-256: $($inventory.inventory_sha256)"
+
+      - name: Upload exact inventory for mandatory human redistribution review
+        uses: actions/upload-artifact@v4
+        with:
+          name: foa-sdk-installer-inventory-${{ github.run_id }}
+          path: |
+            ${{ env.SDK_INVENTORY }}
+            ${{ env.SDK_NOTICES }}
+            ${{ env.SDK_PACKAGES }}
+          if-no-files-found: error
+          retention-days: 30
