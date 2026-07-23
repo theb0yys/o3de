@@ -20,15 +20,23 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       REPOSITORY: ${{ github.repository }}
-      SOURCE_SHA: ${{ github.event.pull_request.base.sha }}
       VERSION: 0.1.0
       CHANNEL: development
 
     steps:
+      - name: Resolve exact current main source
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha="$(gh api "repos/$REPOSITORY/commits/main" --jq .sha)"
+          test -n "$source_sha"
+          echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
+
       - name: Record orchestration start
         shell: bash
         run: |
-          gh pr comment 180 --repo "$REPOSITORY" --body "Owner-directed canonical installer orchestration started for source commit \`$SOURCE_SHA\`."
+          gh pr comment 180 --repo "$REPOSITORY" --body "Owner-directed canonical installer orchestration started for exact source commit \`${{ steps.source.outputs.sha }}\`."
 
       - name: Dispatch inventory
         id: dispatch_inventory
@@ -49,6 +57,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          source_sha='${{ steps.source.outputs.sha }}'
           run_id=""
           for attempt in $(seq 1 120); do
             run_id="$(gh run list \
@@ -58,7 +67,7 @@ jobs:
               --event workflow_dispatch \
               --limit 30 \
               --json databaseId,headSha,createdAt \
-              --jq ".[] | select(.headSha == \"$SOURCE_SHA\" and .createdAt >= \"${{ steps.dispatch_inventory.outputs.dispatched_at }}\") | .databaseId" \
+              --jq ".[] | select(.headSha == \"$source_sha\" and .createdAt >= \"${{ steps.dispatch_inventory.outputs.dispatched_at }}\") | .databaseId" \
               | head -n 1)"
             if [[ -n "$run_id" ]]; then break; fi
             sleep 10
@@ -98,6 +107,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          source_sha='${{ steps.source.outputs.sha }}'
           inventory_run='${{ steps.inventory.outputs.run_id }}'
           run_id=""
           for attempt in $(seq 1 120); do
@@ -108,7 +118,7 @@ jobs:
               --event workflow_dispatch \
               --limit 30 \
               --json databaseId,headSha,createdAt \
-              --jq ".[] | select(.headSha == \"$SOURCE_SHA\" and .databaseId != $inventory_run and .createdAt >= \"${{ steps.dispatch_package.outputs.dispatched_at }}\") | .databaseId" \
+              --jq ".[] | select(.headSha == \"$source_sha\" and .databaseId != $inventory_run and .createdAt >= \"${{ steps.dispatch_package.outputs.dispatched_at }}\") | .databaseId" \
               | head -n 1)"
             if [[ -n "$run_id" ]]; then break; fi
             sleep 10
@@ -130,4 +140,4 @@ jobs:
       - name: Record completed build
         shell: bash
         run: |
-          gh pr comment 180 --repo "$REPOSITORY" --body "FOA-SDK-Installer.exe built and canonical package lifecycle smoke passed. Source: \`$SOURCE_SHA\`; inventory run: \`${{ steps.inventory.outputs.run_id }}\`; package run: \`${{ steps.package.outputs.run_id }}\`; EXE SHA-256: \`${{ steps.package.outputs.sha256 }}\`. The installer is retained in the package run artifact. Post-build design audit and owner review remain next."
+          gh pr comment 180 --repo "$REPOSITORY" --body "FOA-SDK-Installer.exe built and canonical package lifecycle smoke passed. Source: \`${{ steps.source.outputs.sha }}\`; inventory run: \`${{ steps.inventory.outputs.run_id }}\`; package run: \`${{ steps.package.outputs.run_id }}\`; EXE SHA-256: \`${{ steps.package.outputs.sha256 }}\`. The installer is retained in the package run artifact. Post-build design audit and owner review remain next."
