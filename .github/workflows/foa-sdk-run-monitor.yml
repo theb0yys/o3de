@@ -1,0 +1,27 @@
+name: FOA-SDK build run monitor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/foa-sdk-run-monitor.yml
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Report canonical installer runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          runs="$(gh run list --repo "$REPOSITORY" --workflow tainted-grail-sdk-installer.yml --limit 15 --json databaseId,status,conclusion,headSha,headBranch,createdAt,event,displayTitle)"
+          gh pr comment 180 --repo "$REPOSITORY" --body "Canonical installer run monitor:\n\n\`\`\`json\n$runs\n\`\`\`"
