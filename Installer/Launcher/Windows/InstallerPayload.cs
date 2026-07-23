@@ -139,7 +139,7 @@ internal sealed class InstallerPayload : IDisposable
         if (!text.EndsWith("\n", StringComparison.Ordinal) || text.Contains('\r'))
         {
             throw new InvalidOperationException(
-                "The MSI checksum sidecar must contain one canonical LF-terminated SHA-256 record.");
+                "The MSI checksum sidecar must contain one canonical lowercase SHA-256 record terminated by LF.");
         }
 
         string[] parts = text[..^1].Split("  ", StringSplitOptions.None);
@@ -152,7 +152,7 @@ internal sealed class InstallerPayload : IDisposable
             || !string.Equals(Path.GetExtension(parts[1]), ".msi", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
-                "The MSI checksum sidecar must be '<lowercase sha256>  <installer.msi>' followed by one LF.");
+                "The MSI checksum sidecar must be one canonical lowercase SHA-256 record: '<sha256>  <installer.msi>' followed by LF.");
         }
         if (expectedFileName is not null
             && !string.Equals(parts[1], expectedFileName, StringComparison.Ordinal))
